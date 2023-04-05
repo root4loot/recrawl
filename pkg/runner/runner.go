@@ -1,0 +1,294 @@
+// Author: Daniel Antonsen (@danielantonsen)
+// Distributed Under MIT License
+
+package runner
+
+import (
+	"crypto/tls"
+	"fmt"
+	"io/ioutil"
+	"math/rand"
+	"net/http"
+	"regexp"
+	"strings"
+	"sync"
+	"time"
+
+	"github.com/PuerkitoBio/purell"
+	"github.com/jpillora/go-tld"
+	"github.com/root4loot/urldiscover/pkg/log"
+	"github.com/root4loot/urldiscover/pkg/options"
+	"github.com/root4loot/urldiscover/pkg/util"
+)
+
+var (
+	mainTarget *tld.URL
+	re         = regexp.MustCompile(`(?:"|')(?:(((?:[a-zA-Z]{1,10}://|//)[^"'/]{1,}\.[a-zA-Z]{2,}[^"']{0,})|((?:/|\.\./|\./)[^"'><,;|*()(%%$^/\\\[\]][^"'><,;|()]{1,})|([a-zA-Z0-9_\-/]{1,}/[a-zA-Z0-9_\-/]{1,}\.(?:[a-zA-Z]{1,4}|action)(?:[\?|#][^"|']{0,}|))|([a-zA-Z0-9_\-/]{1,}/[a-zA-Z0-9_\-/]{3,}(?:[\?|#][^"|']{0,}|))|([a-zA-Z0-9_\-]{1,}\.(?:[\?|#][^"|']{0,}|))))(?:"|')`)
+)
+
+type Runner struct {
+	Options *options.Options
+	Results chan Result
+	client  *http.Client
+}
+
+type Result struct {
+	RequestURL string
+	StatusCode int
+	Error      error
+}
+
+type Results struct {
+	Results []Result
+}
+
+// NewRunner creates a new runner
+func NewRunner(o *options.Options) (runner *Runner) {
+	runner = &Runner{}
+	runner.Results = make(chan Result)
+	runner.Options = o
+	runner.client = &http.Client{
+		Transport: &http.Transport{
+			TLSClientConfig:       &tls.Config{InsecureSkipVerify: true},
+			MaxIdleConnsPerHost:   o.Concurrency,
+			ResponseHeaderTimeout: time.Duration(o.ResponseHeaderTimeout) * time.Second,
+		},
+		Timeout: time.Duration(o.Timeout) * time.Second,
+	}
+	return runner
+}
+
+// Run starts the runner
+func (r *Runner) Run(target string) {
+	r.Results = make(chan Result)
+	r.Options.ValidateOptions()
+	r.Options.SetDefaultsMissing()
+	target = util.EnsureScheme(target)
+	mainTarget, _ = tld.Parse(target)
+
+	r.setScope(target)
+	c_queue, c_urls, c_wait := r.makeQueue()
+	c_wait <- 1
+
+	var wg sync.WaitGroup
+	for i := 0; i < r.Options.Concurrency; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			r.worker(c_urls, c_queue, c_wait, r.Results)
+		}()
+	}
+	r.queueURL(c_queue, mainTarget)
+	wg.Wait()
+
+	// close the r.Results channel after all workers have finished
+	close(r.Results)
+}
+
+// makeQueue creates a queue of URLs to be processed by workers
+func (r *Runner) makeQueue() (chan<- *tld.URL, <-chan *tld.URL, chan<- int) {
+	visited := make(map[string]bool)
+	queueCount := 0
+	c_wait := make(chan int)
+	c_urls := make(chan *tld.URL)
+	c_queue := make(chan *tld.URL)
+
+	go func() {
+		for delta := range c_wait {
+			queueCount += delta
+			if queueCount == 0 {
+				close(c_queue)
+			}
+		}
+	}()
+
+	go func() {
+		for q := range c_queue {
+			if r.inScope(q) && !visited[q.String()] {
+				visited[q.String()] = true
+				c_urls <- q
+			} else {
+				c_wait <- -1
+			}
+		}
+		close(c_urls)
+		close(c_wait)
+	}()
+
+	return c_queue, c_urls, c_wait
+}
+
+// queueURL adds a URL to the queue
+func (r *Runner) queueURL(c_queue chan<- *tld.URL, url *tld.URL) {
+	c_queue <- url
+}
+
+// worker is a worker that processes URLs from the queue
+func (r *Runner) worker(c_urls <-chan *tld.URL, c_queue chan<- *tld.URL, c_wait chan<- int, c_result chan<- Result) {
+	for c_url := range c_urls {
+		var rawURLs []string
+		if c_url == nil || c_url.Host == "" {
+			c_wait <- -1
+			continue
+		}
+		_, resp, err := r.request(c_url)
+		if err != nil {
+			log.Warningf("%v", err.Error())
+			r.Results <- Result{RequestURL: c_url.String(), StatusCode: 0, Error: err}
+			continue
+		}
+
+		landingURL, _ := tld.Parse(resp.Request.URL.String())
+		if util.IsTextContentType(resp.Header.Get("Content-Type")) {
+			c_wait <- len(rawURLs) - 1
+			continue
+		}
+
+		paths, err := r.scrape(resp)
+		if err != nil {
+			log.Warningf("%v", err)
+			c_wait <- len(rawURLs) - 1
+			continue
+		}
+
+		rawURLs, err = r.setURL(landingURL, paths)
+		if err != nil {
+			log.Warningf("%v", err)
+			c_wait <- len(rawURLs) - 1
+			continue
+		}
+
+		c_wait <- len(rawURLs) - 1
+		for i := range rawURLs {
+			var u *tld.URL
+			if rawURLs[i], err = normalizeURLString(rawURLs[i]); err != nil {
+				c_wait <- len(rawURLs) - 1
+				continue
+			}
+
+			if u, err = tld.Parse(rawURLs[i]); err != nil {
+				log.Warningf("%v", err)
+				c_wait <- len(rawURLs) - 1
+				continue
+			}
+			time.Sleep(r.getDelay() * time.Millisecond)
+			go r.queueURL(c_queue, u)
+		}
+		r.Results <- Result{RequestURL: c_url.String(), StatusCode: resp.StatusCode, Error: nil}
+	}
+}
+
+// request makes a request to a URL
+func (r *Runner) request(u *tld.URL) (req *http.Request, resp *http.Response, err error) {
+	req, err = http.NewRequest("GET", u.String(), nil)
+	if err != nil {
+		return
+	}
+
+	if r.Options.UserAgent != "" {
+		req.Header.Add("User-Agent", r.Options.UserAgent)
+	}
+
+	resp, err = r.client.Do(req)
+
+	if err != nil {
+		if strings.Contains(fmt.Sprint(err), "gave HTTP response to HTTPS client") {
+			u.Scheme = strings.Replace(u.Scheme, "https://", "http://", 1)
+			r.request(u)
+		}
+	}
+	return
+}
+
+// setURL sets the URL for a request
+func (r *Runner) setURL(u *tld.URL, paths []string) (rawURLs []string, err error) {
+	var line string
+	for i := range paths {
+		if paths[i] == u.String() || isMime(paths[i]) || paths[i] == "" || strings.HasSuffix(u.String(), paths[i]) {
+			continue
+		}
+		if util.HasFile(u.String()) {
+			line = u.String()
+		} else if util.HasScheme(paths[i]) {
+			line = paths[i]
+		} else if util.IsDomain(paths[i]) {
+			line = paths[i]
+		} else if strings.HasPrefix(paths[i], "//") {
+			line = strings.TrimLeft(paths[i], "/")
+		} else if strings.HasPrefix(paths[i], "/") && strings.ContainsAny(paths[i], ".") {
+			line = u.Scheme + "://" + u.Host + "/" + paths[i]
+		} else if strings.HasPrefix(paths[i], "/") {
+			line = u.Scheme + "://" + u.Host + "/" + paths[i] + "/"
+		} else {
+			if util.HasFile(paths[i]) {
+				line = u.Scheme + "://" + u.Host + "/" + u.Path + "/" + paths[i]
+			} else {
+				line = u.Scheme + "://" + u.Host + "/" + u.Path + "/" + paths[i] + "/"
+			}
+		}
+		line = util.EnsureScheme(line)
+		rawURLs = append(rawURLs, line)
+	}
+	return
+}
+
+// scrape scrapes a response for paths
+func (r *Runner) scrape(resp *http.Response) (res []string, err error) {
+	body, err := ioutil.ReadAll(resp.Body)
+	var matches [][]string
+
+	if err == nil {
+		matches = re.FindAllStringSubmatch(string(body), -1)
+	} else {
+		return nil, err
+	}
+	for _, match := range matches {
+		if len(match) > 0 {
+			res = append(res, match[1])
+		}
+	}
+
+	return util.Unique(res), err
+}
+
+// URL normalization flag rules
+const normalizationFlags purell.NormalizationFlags = purell.FlagRemoveDefaultPort |
+	purell.FlagLowercaseScheme |
+	purell.FlagLowercaseHost |
+	purell.FlagDecodeDWORDHost |
+	purell.FlagDecodeOctalHost |
+	purell.FlagDecodeHexHost |
+	purell.FlagRemoveUnnecessaryHostDots |
+	purell.FlagRemoveDotSegments |
+	purell.FlagRemoveDuplicateSlashes |
+	purell.FlagUppercaseEscapes |
+	purell.FlagRemoveEmptyPortSeparator |
+	purell.FlagDecodeUnnecessaryEscapes |
+	purell.FlagRemoveTrailingSlash |
+	purell.FlagEncodeNecessaryEscapes |
+	purell.FlagSortQuery
+
+// normalizeURLString normalizes a URL string
+func normalizeURLString(rawURL string) (normalizedURL string, err error) {
+	normalizedURL, err = purell.NormalizeURLString(rawURL, normalizationFlags)
+	return normalizedURL, err
+}
+
+// isMime checks if a URL is a mime type
+func isMime(rawURL string) bool {
+	mimes := []string{"audio", "application", "font", "image", "multipart", "text", "video"}
+	for _, mime := range mimes {
+		if strings.HasPrefix(rawURL, mime) {
+			return true
+		}
+	}
+	return false
+}
+
+// delay returns total delay from options
+func (r *Runner) getDelay() time.Duration {
+	if r.Options.DelayJitter != 0 {
+		return time.Duration(r.Options.Delay + rand.Intn(r.Options.DelayJitter))
+	}
+	return time.Duration(r.Options.Delay)
+}
