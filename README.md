@@ -1,13 +1,13 @@
 ![Go version](https://img.shields.io/badge/Go-v1.19-blue.svg) [![Contribute](https://img.shields.io/badge/Contribute-Welcome-green.svg)](CONTRIBUTING.md)
 # urldiscover
 
-Fast URL discovery tool written in Go.
+URL discovery tool.
 
 - Written in Go (with [lib](#as-lib) support)
 - Supports IPv4
 - Has scoping capabilities
 - Has pipe support
-- Constructs url's from hidden endpoints embedded in scripts, stylesheets, etc
+- Discovers url's from hidden endpoints embedded in scripts, stylesheets, etc
 - Fast ⚡️
 
 ## Installation
@@ -53,12 +53,12 @@ OUTPUT:
 
 ## Example
 
-Target *.example.com  
+Target `*.example.com`
 ```
 ➜ urldiscover -t example.com
 ``` 
 
-Target *.example.com & 103.196.38.38
+Target `*.example.com` and `103.196.38.38`
 ```
 ➜ urldiscover -t example.com,103.196.38.38
 ```
@@ -68,17 +68,17 @@ Target all hosts in given file
 ➜ urldiscover -i targets.txt
 ```
 
-Target -t \*.example.com & \*.andme.com (if found)
+Target `*.example.com` and `*.andme.com` (if found)
 ```
 ➜ urldiscover -t example.com -ih andme.com
 ```
 
-Target all domains that contain a certain word
+Target all domains that contain `example`
 ```
 ➜ urldiscover -t example.com -ih example
 ```
 
-Crawl \*.example.com but avoid me.example.com  
+Target `*.example.com` but avoid `me.example.com`  
 ```
 ➜ urldiscover -t example.com -eh me.example.com
 ```
@@ -146,7 +146,7 @@ func main() {
 
 ## Contributing
 
-Contributions are welcome and greatly appreciated. To contribute to the project, please follow these steps: To contribute to the project, please follow these steps:
+Contributions are welcome and greatly appreciated. To contribute to the project, please follow these steps:
 
 1. Create an issue to discuss the change you would like to make.
 2. Fork the repository and create a new branch for your feature or bug fix.
