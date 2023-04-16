@@ -103,7 +103,7 @@ https://www.hackerone.com/sites/default/files/js/js_uj-ULd1j2hO5xijovTKN3LjREthK
 
 ## As lib
 ```
-go get https://github.com/root4loot/urldiscover@master
+go get github.com/root4loot/urldiscover@master
 ```
 
 ```go
