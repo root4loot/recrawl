@@ -14,15 +14,14 @@ import (
 )
 
 type Options struct {
-	Include               []string // domains to be included
-	Exclude               []string // domains to be included
-	Concurrency           int      // number of concurrent requests
-	Timeout               int      // Request timeout duration (in seconds)
-	Delay                 int      // delay between each request (in ms)
-	DelayJitter           int      // maximum jitter to add to delay (in ms)
-	ResponseHeaderTimeout int      // Response header timeout duration (in seconds)
-	UserAgent             string   // custom user-agent
-	CLI                   CLI      // CLI options
+	Include     []string // domains to be included
+	Exclude     []string // domains to be included
+	Concurrency int      // number of concurrent requests
+	Timeout     int      // Request timeout duration (in seconds)
+	Delay       int      // delay between each request (in ms)
+	DelayJitter int      // maximum jitter to add to delay (in ms)
+	UserAgent   string   // custom user-agent
+	CLI         CLI      // CLI options
 }
 
 type CLI struct {
@@ -41,12 +40,11 @@ type CLI struct {
 // Default returns the default options
 func Default() *Options {
 	return &Options{
-		Concurrency:           10,
-		Timeout:               10,
-		Delay:                 0,
-		DelayJitter:           0,
-		ResponseHeaderTimeout: 10,
-		UserAgent:             "pathfinder",
+		Concurrency: 20,
+		Timeout:     10,
+		Delay:       0,
+		DelayJitter: 0,
+		UserAgent:   "pathfinder",
 	}
 }
 
@@ -70,7 +68,7 @@ func (from *Options) SetDefaultsMissing() {
 }
 
 func (o *Options) ValidateOptions() {
-	if o.Concurrency < 0 || o.Timeout < 0 || o.ResponseHeaderTimeout < 0 || o.Delay < 0 || o.DelayJitter < 0 {
+	if o.Concurrency < 0 || o.Timeout < 0 || o.Delay < 0 || o.DelayJitter < 0 {
 		fmt.Printf("%s %s\n", color.FgRed.Text("[!]"), "options must be greater than 0")
 	}
 	if strings.Contains(o.CLI.Target, ", ") ||

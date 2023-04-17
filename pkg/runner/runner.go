@@ -51,7 +51,7 @@ func NewRunner(o *options.Options) (runner *Runner) {
 		Transport: &http.Transport{
 			TLSClientConfig:       &tls.Config{InsecureSkipVerify: true},
 			MaxIdleConnsPerHost:   o.Concurrency,
-			ResponseHeaderTimeout: time.Duration(o.ResponseHeaderTimeout) * time.Second,
+			ResponseHeaderTimeout: time.Duration(o.Timeout) * time.Second,
 		},
 		Timeout: time.Duration(o.Timeout) * time.Second,
 	}

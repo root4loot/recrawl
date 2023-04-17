@@ -119,7 +119,6 @@ func (c *CLI) usage() {
 	fmt.Printf("  %s, %s\t  %s\t\t (Default: %v) <%s>\n", "-to", "--timeout", "max request timeout", options.Default().Timeout, "seconds")
 	fmt.Printf("  %s,  %s\t\t  %s\t (Default: %v)  <%s>\n", "-d", "--delay", "delay between requests", options.Default().Delay, "milliseconds")
 	fmt.Printf("  %s, %s\t  %s\t (Default: %v)  <%s>\n", "-dj", "--delay-jitter", "max jitter between requests", options.Default().DelayJitter, "milliseconds")
-	fmt.Printf("  %s, %s\t  %s\t (Default: %v) <%s>\n", "-ht", "--header-timeout", "response-header timeout", options.Default().ResponseHeaderTimeout, "seconds")
 	fmt.Printf("  %s, %s\t  %s\t\t (Default: %v)\n", "-ua", "--user-agent", "set user agent", "urldiscover")
 
 	fmt.Printf("\n%s\n", "OUTPUT:")
@@ -157,8 +156,6 @@ func (c *CLI) parseAndSetOptions() {
 	flag.IntVar(&opts.Delay, "d", options.Default().Delay, "")
 	flag.IntVar(&opts.DelayJitter, "delay-jitter", options.Default().DelayJitter, "")
 	flag.IntVar(&opts.DelayJitter, "dj", options.Default().DelayJitter, "")
-	flag.IntVar(&opts.ResponseHeaderTimeout, "header-timeout", options.Default().ResponseHeaderTimeout, "")
-	flag.IntVar(&opts.ResponseHeaderTimeout, "ht", options.Default().ResponseHeaderTimeout, "")
 	flag.StringVar(&opts.UserAgent, "user-agent", options.Default().UserAgent, "")
 	flag.StringVar(&opts.UserAgent, "ua", options.Default().UserAgent, "")
 

@@ -122,7 +122,6 @@ func main() {
 		Exclude:               []string{"support.hackerone.com"},
 		Concurrency:           20,
 		Timeout:               10,
-		ResponseHeaderTimeout: 10,
 		Delay:                 0,
 		DelayJitter:           0,
 		UserAgent:             "urldiscover",
