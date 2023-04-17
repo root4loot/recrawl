@@ -199,7 +199,7 @@ func (c *CLI) getTargets() (targets []string) {
 
 // appendToFile appends the given lines to the given file
 func (c *CLI) appendToFile(lines []string) {
-	file, err := os.OpenFile(c.opts.CLI.Infile, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644)
+	file, err := os.OpenFile(c.opts.CLI.Outfile, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644)
 	if err != nil {
 		log.Errorf("could not open file: %v", err)
 	}
