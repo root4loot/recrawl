@@ -146,7 +146,7 @@ func (r *Runner) worker(c_urls <-chan *tld.URL, c_queue chan<- *tld.URL, c_wait 
 
 		paths, err := r.scrape(resp)
 		if err != nil {
-			log.Warningf("%v", err)
+			log.Warningf("Timeout exceeded for %v", landingURL)
 			c_wait <- len(rawURLs) - 1
 			continue
 		}
