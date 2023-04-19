@@ -18,6 +18,7 @@ import (
 	"github.com/root4loot/urldiscover/pkg/options"
 	"github.com/root4loot/urldiscover/pkg/runner"
 	"github.com/root4loot/urldiscover/pkg/util"
+	"github.com/root4loot/urldiscover/version"
 )
 
 type CLI struct {
@@ -97,7 +98,7 @@ func (c *CLI) checkForExits() {
 		os.Exit(0)
 	}
 	if c.opts.CLI.Version {
-		fmt.Println("urldiscover ", version)
+		fmt.Println("urldiscover ", version.Version)
 		os.Exit(0)
 	}
 
@@ -257,5 +258,5 @@ func (c *CLI) hasOutfile() bool {
 
 // banner prints the banner
 func (c *CLI) banner() {
-	fmt.Println("\nurldiscover", version, "by", author)
+	fmt.Println("\nurldiscover", version.Version, "by", author)
 }
