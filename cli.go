@@ -10,6 +10,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"text/tabwriter"
 
 	"github.com/projectdiscovery/gologger"
 	"github.com/projectdiscovery/gologger/levels"
@@ -26,7 +27,7 @@ type CLI struct {
 const author = "@danielantonsen"
 
 // processor is a goroutine that processes the results as they come in
-func (c *CLI) processor(runner *runner.Runner) {
+func (c *CLI) processResults(runner *runner.Runner) {
 	go func() {
 		for result := range runner.Results {
 			if !runner.Options.CLI.Silence {
@@ -53,7 +54,7 @@ func main() {
 	if cli.hasStdin() {
 		scanner := bufio.NewScanner(os.Stdin)
 		for scanner.Scan() {
-			cli.processor(runner)
+			cli.processResults(runner)
 			runner.Run(scanner.Text())
 		}
 	} else if cli.hasInfile() {
@@ -64,7 +65,7 @@ func main() {
 		targets = cli.getTargets()
 	}
 	for _, target := range targets {
-		cli.processor(runner)
+		cli.processResults(runner)
 		runner.Run(target)
 	}
 	// example.ExampleRun()
@@ -107,28 +108,38 @@ func (c *CLI) checkForExits() {
 
 // usage prints the usage information
 func (c *CLI) usage() {
-	fmt.Println("\nUsage: " + os.Args[0] + " [options] -t <target>")
-	fmt.Printf("\n%s\n", "TARGETING:")
-	fmt.Printf("  %s,  %s\t\t  %s  \t\t\t    (%s)\n", "-t", "--target", "target host", "comma-separated")
-	fmt.Printf("  %s,  %s\t\t  %s \t    (%s)\n", "-i", "--infile", "file containing targets", "one per line")
-	fmt.Printf("  %s, %s\t  %s   (%s)\n", "-ih", "--include-host", "also crawl this host (if found)", "comma-separated")
-	fmt.Printf("  %s, %s\t  %s (%s)\n", "-eh", "--exclude-host", "do not crawl this host (if found)", "comma-separated")
+	// create a new tabwriter
+	w := tabwriter.NewWriter(os.Stdout, 2, 0, 3, ' ', 0)
 
-	fmt.Printf("\n%s\n", "CONFIGURATIONS:")
-	fmt.Printf("  %s,  %s\t  %s\t (Default: %v)\n", "-c", "--concurrency", "number of concurrent requests", options.Default().Concurrency)
-	fmt.Printf("  %s, %s\t  %s\t\t (Default: %v) <%s>\n", "-to", "--timeout", "max request timeout", options.Default().Timeout, "seconds")
-	fmt.Printf("  %s,  %s\t\t  %s\t (Default: %v)  <%s>\n", "-d", "--delay", "delay between requests", options.Default().Delay, "milliseconds")
-	fmt.Printf("  %s, %s\t  %s\t (Default: %v)  <%s>\n", "-dj", "--delay-jitter", "max jitter between requests", options.Default().DelayJitter, "milliseconds")
-	fmt.Printf("  %s, %s\t  %s\t\t (Default: %v)\n", "-ua", "--user-agent", "set user agent", "urldiscover")
+	// print the usage header
+	fmt.Fprintln(w, "Usage:\t"+os.Args[0]+" [options] -t <target>")
 
-	fmt.Printf("\n%s\n", "OUTPUT:")
-	fmt.Printf("  %s,  %s\t  %s\n", "-o", "--outfile", "output results to given file")
-	fmt.Printf("  %s, %s\t  %s\n", "-hs", "--hide-status", "hide status code from output")
-	fmt.Printf("  %s, %s\t  %s\n", "-hw", "--hide-warning", "hide warnings from output")
-	fmt.Printf("  %s,  %s\t  %s\n", "-s", "--silence", "silence results from output")
-	fmt.Printf("  %s,  %s\t  %s\n", "-v", "--version", "display version")
-	fmt.Printf("  %s,  %s\t\t  %s\n", "-h", "--help", "display help")
-	fmt.Println("")
+	// print the targeting section
+	fmt.Fprintln(w, "\nTARGETING:")
+	fmt.Fprintf(w, "\t%s,\t%s\t%s\t(%s)\n", "-t", "--target", "target host", "comma-separated")
+	fmt.Fprintf(w, "\t%s,\t%s\t%s\t(%s)\n", "-i", "--infile", "file containing targets", "one per line")
+	fmt.Fprintf(w, "\t%s,\t%s\t%s\t(%s)\n", "-ih", "--include-host", "also crawl this host (if found)", "comma-separated")
+	fmt.Fprintf(w, "\t%s,\t%s\t%s\t(%s)\n", "-eh", "--exclude-host", "do not crawl this host (if found)", "comma-separated")
+
+	// print the configurations section
+	fmt.Fprintln(w, "\nCONFIGURATIONS:")
+	fmt.Fprintf(w, "\t%s,\t%s\t%s\t(Default: %v seconds)\n", "-c", "--concurrency", "number of concurrent requests", options.Default().Concurrency)
+	fmt.Fprintf(w, "\t%s,\t%s\t%s\t(Default: %v seconds)\n", "-to", "--timeout", "max request timeout", options.Default().Timeout)
+	fmt.Fprintf(w, "\t%s,\t%s\t%s\t(Default: %v milliseconds)\n", "-d", "--delay", "delay between requests", options.Default().Delay)
+	fmt.Fprintf(w, "\t%s,\t%s\t%s\t(Default: %v milliseconds)\n", "-dj", "--delay-jitter", "max jitter between requests", options.Default().DelayJitter)
+	fmt.Fprintf(w, "\t%s,\t%s\t%s\t(Default: %v)\n", "-ua", "--user-agent", "set user agent", "urldiscover")
+
+	// print the output section
+	fmt.Fprintln(w, "\nOUTPUT:")
+	fmt.Fprintf(w, "\t%s,\t%s\t%s\n", "-o", "--outfile", "output results to given file")
+	fmt.Fprintf(w, "\t%s,\t%s\t%s\n", "-hs", "--hide-status", "hide status code from output")
+	fmt.Fprintf(w, "\t%s,\t%s\t%s\n", "-hw", "--hide-warning", "hide warnings from output")
+	fmt.Fprintf(w, "\t%s,\t%s\t%s\n", "-s", "--silence", "silence results from output")
+	fmt.Fprintf(w, "\t%s,\t%s\t%s\n", "-v", "--version", "display version")
+	fmt.Fprintf(w, "\t%s,\t%s\t%s\n", "-h", "--help", "display help")
+
+	// flush the tabwriter
+	w.Flush()
 }
 
 // parseAndSetOptions parses the command line options and sets the options

@@ -29,26 +29,25 @@ docker run -it urldiscover -h
 Usage: ./urldiscover [options] (-t <target>|-i targets.txt)
 
 TARGETING:
-  -t,  --target           target host                       (comma-separated)
-  -i,  --infile           file containing targets           (one per line)
-  -ih, --include-host     also crawl this host (if found)   (comma-separated)
-  -eh, --exclude-host     do not crawl this host (if found) (comma-separated)
+   -t,    --target         target host                         (comma-separated)
+   -i,    --infile         file containing targets             (one per line)
+   -ih,   --include-host   also crawl this host (if found)     (comma-separated)
+   -eh,   --exclude-host   do not crawl this host (if found)   (comma-separated)
 
 CONFIGURATIONS:
-  -c,  --concurrency      number of concurrent requests  (Default: 10)
-  -to, --timeout          max request timeout            (Default: 10) <seconds>
-  -d,  --delay            delay between requests         (Default: 0)  <milliseconds>
-  -dj, --delay-jitter     max jitter between requests    (Default: 0)  <milliseconds>
-  -ht, --header-timeout   response-header timeout        (Default: 10) <seconds>
-  -ua, --user-agent       set user agent                 (Default: urldiscover)
+   -c,    --concurrency    number of concurrent requests   (Default: 20 seconds)
+   -to,   --timeout        max request timeout             (Default: 10 seconds)
+   -d,    --delay          delay between requests          (Default: 0 milliseconds)
+   -dj,   --delay-jitter   max jitter between requests     (Default: 0 milliseconds)
+   -ua,   --user-agent     set user agent                  (Default: urldiscover)
 
 OUTPUT:
-  -o,  --outfile          output results to given file
-  -hs, --hide-status      hide status code from output
-  -hw, --hide-warning     hide warnings from output
-  -s,  --silence          silence results from output
-  -v,  --version          display version
-  -h,  --help             display help
+   -o,    --outfile        output results to given file
+   -hs,   --hide-status    hide status code from output
+   -hw,   --hide-warning   hide warnings from output
+   -s,    --silence        silence results from output
+   -v,    --version        display version
+   -h,    --help           display help
 ```
 
 ## Example
