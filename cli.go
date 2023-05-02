@@ -100,7 +100,9 @@ func (c *CLI) checkForExits() {
 	}
 
 	if !c.hasStdin() && !c.hasInfile() && !c.hasTarget() {
-		log.Fatalf("%s", "Missing target -t|--target")
+		fmt.Println("")
+		log.Errorf("%s\n\n", "Missing target (see --help for usage)")
+		c.usage()
 	}
 }
 
