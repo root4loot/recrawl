@@ -83,7 +83,7 @@ func (c *CLI) parseFlags() {
 	flag.BoolVar(&opts.CLI.HideWarning, "hw", false, "")
 	flag.BoolVar(&opts.CLI.HideWarning, "hide-warning", false, "")
 	flag.BoolVar(&opts.CLI.HideStatusCodes, "hs", false, "")
-	flag.BoolVar(&opts.CLI.HideWarning, "hide-status", false, "")
+	flag.BoolVar(&opts.CLI.HideStatusCodes, "hide-status", false, "")
 	flag.BoolVar(&opts.CLI.Help, "help", false, "")
 	flag.BoolVar(&opts.CLI.Help, "h", false, "")
 	flag.BoolVar(&opts.CLI.Version, "version", false, "")
