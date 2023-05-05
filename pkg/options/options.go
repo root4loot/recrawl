@@ -45,7 +45,7 @@ func Default() *Options {
 		Timeout:     10,
 		Delay:       0,
 		DelayJitter: 0,
-		UserAgent:   "pathfinder",
+		UserAgent:   "urldiscover",
 	}
 }
 
