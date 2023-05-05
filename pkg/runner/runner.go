@@ -220,7 +220,7 @@ func (r *Runner) setURL(u *tld.URL, paths []string) (rawURLs []string, err error
 		} else if strings.HasPrefix(paths[i], "/") {
 			line = u.Scheme + "://" + u.Host + "/" + paths[i] + "/"
 		} else {
-			if util.HasFile(paths[i]) {
+			if util.HasFile(paths[i]) || util.HasParam(paths[i]) {
 				line = u.Scheme + "://" + u.Host + "/" + u.Path + "/" + paths[i]
 			} else {
 				line = u.Scheme + "://" + u.Host + "/" + u.Path + "/" + paths[i] + "/"

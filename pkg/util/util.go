@@ -33,6 +33,12 @@ func HasScheme(url string) bool {
 	return re.MatchString(url)
 }
 
+// HasParam checks if a URL has a parameter
+func HasParam(str string) bool {
+	re := regexp.MustCompile(`\?.*`)
+	return re.MatchString(str)
+}
+
 // Ensure ensures a URL has a scheme
 func EnsureScheme(target string) string {
 	if target != "" && !HasScheme(target) {
