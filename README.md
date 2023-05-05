@@ -40,6 +40,7 @@ CONFIGURATIONS:
    -d,    --delay          delay between requests          (Default: 0 milliseconds)
    -dj,   --delay-jitter   max jitter between requests     (Default: 0 milliseconds)
    -ua,   --user-agent     set user agent                  (Default: urldiscover)
+   -p,    --proxy          set proxy                       (Default: none)
 
 OUTPUT:
    -o,    --outfile        output results to given file

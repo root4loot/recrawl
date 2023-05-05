@@ -34,6 +34,7 @@ func (c *CLI) usage() {
 	fmt.Fprintf(w, "\t%s,\t%s\t%s\t(Default: %v milliseconds)\n", "-d", "--delay", "delay between requests", options.Default().Delay)
 	fmt.Fprintf(w, "\t%s,\t%s\t%s\t(Default: %v milliseconds)\n", "-dj", "--delay-jitter", "max jitter between requests", options.Default().DelayJitter)
 	fmt.Fprintf(w, "\t%s,\t%s\t%s\t(Default: %v)\n", "-ua", "--user-agent", "set user agent", "urldiscover")
+	fmt.Fprintf(w, "\t%s,\t%s\t%s\t(Default: %v)\n", "-p", "--proxy", "set proxy", "none")
 
 	// print the output section
 	fmt.Fprintln(w, "\nOUTPUT:")
@@ -74,6 +75,8 @@ func (c *CLI) parseFlags() {
 	flag.IntVar(&opts.DelayJitter, "dj", options.Default().DelayJitter, "")
 	flag.StringVar(&opts.UserAgent, "user-agent", options.Default().UserAgent, "")
 	flag.StringVar(&opts.UserAgent, "ua", options.Default().UserAgent, "")
+	flag.StringVar(&opts.Proxy, "proxy", options.Default().Proxy, "")
+	flag.StringVar(&opts.Proxy, "p", options.Default().Proxy, "")
 
 	// OUTPUT
 	flag.BoolVar(&opts.CLI.Silence, "s", false, "")

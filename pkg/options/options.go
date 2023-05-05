@@ -21,6 +21,7 @@ type Options struct {
 	Delay       int      // delay between each request (in ms)
 	DelayJitter int      // maximum jitter to add to delay (in ms)
 	UserAgent   string   // custom user-agent
+	Proxy       string   // proxy to use for requests
 	CLI         CLI      // CLI options
 }
 

@@ -9,6 +9,7 @@ import (
 	"io/ioutil"
 	"math/rand"
 	"net/http"
+	"net/url"
 	"regexp"
 	"strings"
 	"sync"
@@ -45,8 +46,10 @@ type Results struct {
 // NewRunner creates a new runner
 func NewRunner(o *options.Options) (runner *Runner) {
 	runner = &Runner{}
+
 	runner.Results = make(chan Result)
 	runner.Options = o
+
 	runner.client = &http.Client{
 		Transport: &http.Transport{
 			TLSClientConfig:       &tls.Config{InsecureSkipVerify: true},
@@ -55,6 +58,23 @@ func NewRunner(o *options.Options) (runner *Runner) {
 		},
 		Timeout: time.Duration(o.Timeout) * time.Second,
 	}
+
+	if o.Proxy != "" {
+		if !util.HasScheme(o.Proxy) {
+			o.Proxy = "http://" + o.Proxy
+		}
+		proxy, err := url.Parse(o.Proxy)
+		if err != nil {
+			log.Fatalf("Error parsing proxy URL: %s", err)
+		}
+		runner.client.Transport = &http.Transport{
+			Proxy:                 http.ProxyURL(proxy),
+			TLSClientConfig:       &tls.Config{InsecureSkipVerify: true},
+			MaxIdleConnsPerHost:   o.Concurrency,
+			ResponseHeaderTimeout: time.Duration(o.Timeout) * time.Second,
+		}
+	}
+
 	return runner
 }
 
@@ -108,6 +128,7 @@ func (r *Runner) makeQueue() (chan<- *tld.URL, <-chan *tld.URL, chan<- int) {
 				visited[q.String()] = true
 				c_urls <- q
 			} else {
+				fmt.Println("VISITED", q.String())
 				c_wait <- -1
 			}
 		}
