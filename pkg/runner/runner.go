@@ -128,7 +128,6 @@ func (r *Runner) makeQueue() (chan<- *tld.URL, <-chan *tld.URL, chan<- int) {
 				visited[q.String()] = true
 				c_urls <- q
 			} else {
-				fmt.Println("VISITED", q.String())
 				c_wait <- -1
 			}
 		}
