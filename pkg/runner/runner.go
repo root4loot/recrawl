@@ -169,6 +169,13 @@ func (r *Runner) worker(c_urls <-chan *tld.URL, c_queue chan<- *tld.URL, c_wait 
 			continue
 		}
 
+		// avoid URLs that only differ in parameter values
+		if r.isSimilarToVisitedURL(c_url.String()) {
+			// log.Debugf("Found similar for %s", c_url.String())
+			c_wait <- -1
+			continue
+		}
+
 		_, resp, err := r.request(c_url)
 
 		if resp == nil {
@@ -403,4 +410,101 @@ func (r *Runner) cleanDomain(domain string) string {
 	domain = util.AddSlashIfNeeded(domain)
 	domain = util.RemoveSlashUnwanted(domain)
 	return domain
+}
+
+// isSimilarToVisitedURL checks if a URL is similar to a visited URL
+func (r *Runner) isSimilarToVisitedURL(urlStr string) bool {
+	u, err := url.Parse(urlStr)
+	if err != nil {
+		return false
+	}
+	if u.RawQuery == "" {
+		if r.isVisited(u.Path) {
+			return true
+		}
+	} else {
+		// extract query parameters
+		params, err := url.ParseQuery(u.RawQuery)
+		if err != nil {
+			return false
+		}
+		// create a map of query parameter values
+		values := make(map[string]string)
+		for name, paramValues := range params {
+			if len(paramValues) > 0 {
+				values[name] = paramValues[0]
+			}
+		}
+		// create the canonical URL without query parameters
+		u.RawQuery = ""
+		canonicalURL := u.String()
+
+		// check if the canonical URL is already visited
+		if r.isVisited(canonicalURL) {
+			return true
+		}
+
+		// check if the alias URL only differs in the query parameter values
+		aliasValues := make(map[string]string)
+		for name, paramValues := range params {
+			if len(paramValues) > 0 {
+				aliasValues[name] = paramValues[0]
+			}
+		}
+
+		mutex.Lock()
+		defer mutex.Unlock()
+
+		for visitedURL := range visited {
+			v, err := url.Parse(visitedURL)
+			if err != nil {
+				continue
+			}
+			if v.RawQuery == "" {
+				if v.Path == u.Path && len(v.Query()) == len(params) {
+					return true
+				}
+			} else {
+				// extract query parameters
+				vParams, err := url.ParseQuery(v.RawQuery)
+				if err != nil {
+					continue
+				}
+				// create a map of query parameter values
+				vValues := make(map[string]string)
+				for name, paramValues := range vParams {
+					if len(paramValues) > 0 {
+						vValues[name] = paramValues[0]
+					}
+				}
+				// create the canonical URL without query parameters
+				v.RawQuery = ""
+				vCanonicalURL := v.String()
+
+				// check if the canonical URL matches the current URL
+				if vCanonicalURL == canonicalURL {
+					return true
+				}
+
+				// check if the alias URL only differs in the query parameter values
+				vAliasValues := make(map[string]string)
+				for name, paramValues := range vParams {
+					if len(paramValues) > 0 {
+						vAliasValues[name] = paramValues[0]
+					}
+				}
+				alias := true
+				for name, value := range aliasValues {
+					if vValues[name] != value {
+						alias = false
+						break
+					}
+				}
+				if alias {
+					return true
+				}
+			}
+		}
+	}
+	return false
 }
