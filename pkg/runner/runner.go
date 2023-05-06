@@ -145,6 +145,7 @@ func (r *Runner) makeQueue() (chan<- *tld.URL, <-chan *tld.URL, chan<- int) {
 
 // queueURL adds a URL to the queue
 func (r *Runner) queueURL(c_queue chan<- *tld.URL, url *tld.URL) {
+	url, _ = tld.Parse(r.cleanDomain(url.String()))
 	c_queue <- url
 }
 
@@ -194,28 +195,15 @@ func (r *Runner) worker(c_urls <-chan *tld.URL, c_queue chan<- *tld.URL, c_wait 
 		}
 
 		c_wait <- len(rawURLs) - 1
-
-	rawURLs:
 		for i := range rawURLs {
-			if !r.isVisited(rawURLs[i]) {
-				r.addVisited(rawURLs[i])
-				var u *tld.URL
-				if rawURLs[i], err = r.normalizeURLString(rawURLs[i]); err != nil {
-					c_wait <- len(rawURLs) - 1
-					continue
-				}
-
-				if u, err = tld.Parse(rawURLs[i]); err != nil {
-					log.Warningf("%v", err)
-					c_wait <- -1
-					continue
-				}
-				time.Sleep(r.getDelay() * time.Millisecond)
-				go r.queueURL(c_queue, u)
-			} else {
-				c_wait <- -1
-				continue rawURLs
+			var u *tld.URL
+			if u, err = tld.Parse(rawURLs[i]); err != nil {
+				log.Warningf("%v", err)
+				c_wait <- len(rawURLs) - 1
+				continue
 			}
+			time.Sleep(r.getDelay() * time.Millisecond)
+			go r.queueURL(c_queue, u)
 		}
 		r.Results <- Result{RequestURL: c_url.String(), StatusCode: resp.StatusCode, Error: nil}
 	}
@@ -296,8 +284,9 @@ func (r *Runner) setURL(u *tld.URL, paths []string) (rawURLs []string, err error
 				line = u.Scheme + "://" + u.Host + "/" + u.Path + "/" + paths[i] + "/"
 			}
 		}
-		line = util.EnsureScheme(line)
-		rawURLs = append(rawURLs, line)
+
+		normalized, _ := r.normalizeURLString(line)
+		rawURLs = append(rawURLs, normalized)
 	}
 	return
 }
@@ -329,6 +318,7 @@ const normalizationFlags purell.NormalizationFlags = purell.FlagRemoveDefaultPor
 	purell.FlagDecodeOctalHost |
 	purell.FlagDecodeHexHost |
 	purell.FlagRemoveUnnecessaryHostDots |
+	purell.FlagRemoveTrailingSlash |
 	purell.FlagRemoveDotSegments |
 	purell.FlagRemoveDuplicateSlashes |
 	purell.FlagUppercaseEscapes |
@@ -376,4 +366,12 @@ func (r *Runner) isVisited(key string) bool {
 	defer mutex.Unlock()
 	_, ok := visited[key]
 	return ok
+}
+
+// cleanDomain cleans a domain for use in a URL
+func (r *Runner) cleanDomain(domain string) string {
+	domain = util.TrimDoubleSlashes(domain)
+	domain = util.EnsureScheme(domain)
+	domain = util.AddSlashIfNeeded(domain)
+	return domain
 }
