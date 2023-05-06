@@ -162,6 +162,13 @@ func (r *Runner) worker(c_urls <-chan *tld.URL, c_queue chan<- *tld.URL, c_wait 
 			continue
 		}
 
+		// avoid example.com/foo/bar/foo/bar/foo/bar
+		if r.isTrapped(c_url.Path) {
+			// log.Debugf("Trapped in a loop %s", c_url.String())
+			c_wait <- -1
+			continue
+		}
+
 		_, resp, err := r.request(c_url)
 
 		if resp == nil {
@@ -179,6 +186,7 @@ func (r *Runner) worker(c_urls <-chan *tld.URL, c_queue chan<- *tld.URL, c_wait 
 		}
 
 		landingURL, _ := tld.Parse(resp.Request.URL.String())
+
 		if util.IsTextContentType(resp.Header.Get("Content-Type")) {
 			c_wait <- len(rawURLs) - 1
 			continue
@@ -211,6 +219,7 @@ func (r *Runner) worker(c_urls <-chan *tld.URL, c_queue chan<- *tld.URL, c_wait 
 		}
 		r.Results <- Result{RequestURL: c_url.String(), StatusCode: resp.StatusCode, Error: nil}
 	}
+
 }
 
 // request makes a request to a URL
@@ -345,6 +354,21 @@ func (r *Runner) isMime(rawURL string) bool {
 		if strings.HasPrefix(rawURL, mime) {
 			return true
 		}
+	}
+	return false
+}
+
+// returns true if path contains words of high occurence
+func (r *Runner) isTrapped(path string) bool {
+	var tot int
+	parts := strings.Split(path, "/")
+	if len(parts) >= 10 {
+		for _, part := range parts[1:] {
+			if part != "" {
+				tot += strings.Count(path, part)
+			}
+		}
+		return tot/len(parts) >= 3
 	}
 	return false
 }
