@@ -5,6 +5,7 @@ package runner
 
 import (
 	"crypto/tls"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"math/rand"
@@ -42,6 +43,11 @@ type Result struct {
 type Results struct {
 	Results []Result
 }
+
+var (
+	visited map[string]bool
+	mutex   = &sync.Mutex{}
+)
 
 // NewRunner creates a new runner
 func NewRunner(o *options.Options) (runner *Runner) {
@@ -107,11 +113,11 @@ func (r *Runner) Run(target string) {
 
 // makeQueue creates a queue of URLs to be processed by workers
 func (r *Runner) makeQueue() (chan<- *tld.URL, <-chan *tld.URL, chan<- int) {
-	visited := make(map[string]bool)
-	queueCount := 0
+	visited = make(map[string]bool)
 	c_wait := make(chan int)
 	c_urls := make(chan *tld.URL)
 	c_queue := make(chan *tld.URL)
+	queueCount := 0
 
 	go func() {
 		for delta := range c_wait {
@@ -124,8 +130,7 @@ func (r *Runner) makeQueue() (chan<- *tld.URL, <-chan *tld.URL, chan<- int) {
 
 	go func() {
 		for q := range c_queue {
-			if r.inScope(q) && !visited[q.String()] {
-				visited[q.String()] = true
+			if r.inScope(q) && !r.isVisited(q.String()) {
 				c_urls <- q
 			} else {
 				c_wait <- -1
@@ -151,10 +156,17 @@ func (r *Runner) worker(c_urls <-chan *tld.URL, c_queue chan<- *tld.URL, c_wait 
 			c_wait <- -1
 			continue
 		}
+
 		_, resp, err := r.request(c_url)
 		if err != nil {
 			log.Warningf("%v", err.Error())
 			r.Results <- Result{RequestURL: c_url.String(), StatusCode: 0, Error: err}
+			continue
+		}
+
+		// was redirected to a url that was already visited
+		if resp == nil {
+			c_wait <- -1
 			continue
 		}
 
@@ -200,6 +212,14 @@ func (r *Runner) worker(c_urls <-chan *tld.URL, c_queue chan<- *tld.URL, c_wait 
 
 // request makes a request to a URL
 func (r *Runner) request(u *tld.URL) (req *http.Request, resp *http.Response, err error) {
+
+	defer r.addVisited(u.String())
+
+	// Check if URL has already been visited
+	if r.isVisited(u.String()) {
+		return nil, nil, nil
+	}
+
 	req, err = http.NewRequest("GET", u.String(), nil)
 	if err != nil {
 		return
@@ -207,6 +227,25 @@ func (r *Runner) request(u *tld.URL) (req *http.Request, resp *http.Response, er
 
 	if r.Options.UserAgent != "" {
 		req.Header.Add("User-Agent", r.Options.UserAgent)
+	}
+
+	// Only follow redirects if the new URL has not been visited
+	r.client.CheckRedirect = func(req *http.Request, via []*http.Request) error {
+		if len(via) >= 10 {
+			return errors.New("stopped after 10 redirects")
+		}
+
+		nextURL, err := req.URL.Parse(req.Response.Header.Get("Location"))
+		if err != nil {
+			return err
+		}
+
+		if !r.isVisited(nextURL.String()) {
+			r.addVisited(nextURL.String())
+			return nil
+		}
+
+		return errors.New("already visited")
 	}
 
 	resp, err = r.client.Do(req)
@@ -311,4 +350,19 @@ func (r *Runner) getDelay() time.Duration {
 		return time.Duration(r.Options.Delay + rand.Intn(r.Options.DelayJitter))
 	}
 	return time.Duration(r.Options.Delay)
+}
+
+// addVisited adds a URL to the visited map
+func (r *Runner) addVisited(key string) {
+	mutex.Lock()
+	visited[key] = true
+	mutex.Unlock()
+}
+
+// isVisited checks if a URL has been visited
+func (r *Runner) isVisited(key string) bool {
+	mutex.Lock()
+	defer mutex.Unlock()
+	_, ok := visited[key]
+	return ok
 }
