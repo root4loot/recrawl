@@ -158,14 +158,17 @@ func (r *Runner) worker(c_urls <-chan *tld.URL, c_queue chan<- *tld.URL, c_wait 
 		}
 
 		_, resp, err := r.request(c_url)
-		if err != nil {
-			log.Warningf("%v", err.Error())
-			r.Results <- Result{RequestURL: c_url.String(), StatusCode: 0, Error: err}
+
+		if resp == nil {
+			c_wait <- -1
 			continue
 		}
 
-		// was redirected to a url that was already visited
-		if resp == nil {
+		if err != nil {
+			if !strings.Contains(err.Error(), "already visited") {
+				log.Warningf("%v", err.Error())
+				r.Results <- Result{RequestURL: c_url.String(), StatusCode: 0, Error: err}
+			}
 			c_wait <- -1
 			continue
 		}
@@ -191,20 +194,28 @@ func (r *Runner) worker(c_urls <-chan *tld.URL, c_queue chan<- *tld.URL, c_wait 
 		}
 
 		c_wait <- len(rawURLs) - 1
-		for i := range rawURLs {
-			var u *tld.URL
-			if rawURLs[i], err = normalizeURLString(rawURLs[i]); err != nil {
-				c_wait <- len(rawURLs) - 1
-				continue
-			}
 
-			if u, err = tld.Parse(rawURLs[i]); err != nil {
-				log.Warningf("%v", err)
-				c_wait <- len(rawURLs) - 1
-				continue
+	rawURLs:
+		for i := range rawURLs {
+			if !r.isVisited(rawURLs[i]) {
+				r.addVisited(rawURLs[i])
+				var u *tld.URL
+				if rawURLs[i], err = r.normalizeURLString(rawURLs[i]); err != nil {
+					c_wait <- len(rawURLs) - 1
+					continue
+				}
+
+				if u, err = tld.Parse(rawURLs[i]); err != nil {
+					log.Warningf("%v", err)
+					c_wait <- -1
+					continue
+				}
+				time.Sleep(r.getDelay() * time.Millisecond)
+				go r.queueURL(c_queue, u)
+			} else {
+				c_wait <- -1
+				continue rawURLs
 			}
-			time.Sleep(r.getDelay() * time.Millisecond)
-			go r.queueURL(c_queue, u)
 		}
 		r.Results <- Result{RequestURL: c_url.String(), StatusCode: resp.StatusCode, Error: nil}
 	}
@@ -263,7 +274,7 @@ func (r *Runner) request(u *tld.URL) (req *http.Request, resp *http.Response, er
 func (r *Runner) setURL(u *tld.URL, paths []string) (rawURLs []string, err error) {
 	var line string
 	for i := range paths {
-		if paths[i] == u.String() || isMime(paths[i]) || paths[i] == "" || strings.HasSuffix(u.String(), paths[i]) {
+		if paths[i] == u.String() || r.isMime(paths[i]) || paths[i] == "" || strings.HasSuffix(u.String(), paths[i]) {
 			continue
 		}
 		if util.HasFile(u.String()) {
@@ -328,13 +339,13 @@ const normalizationFlags purell.NormalizationFlags = purell.FlagRemoveDefaultPor
 	purell.FlagSortQuery
 
 // normalizeURLString normalizes a URL string
-func normalizeURLString(rawURL string) (normalizedURL string, err error) {
+func (r *Runner) normalizeURLString(rawURL string) (normalizedURL string, err error) {
 	normalizedURL, err = purell.NormalizeURLString(rawURL, normalizationFlags)
 	return normalizedURL, err
 }
 
 // isMime checks if a URL is a mime type
-func isMime(rawURL string) bool {
+func (r *Runner) isMime(rawURL string) bool {
 	mimes := []string{"audio", "application", "font", "image", "multipart", "text", "video"}
 	for _, mime := range mimes {
 		if strings.HasPrefix(rawURL, mime) {
