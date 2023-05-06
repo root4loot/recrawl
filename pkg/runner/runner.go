@@ -73,11 +73,15 @@ func NewRunner(o *options.Options) (runner *Runner) {
 		if err != nil {
 			log.Fatalf("Error parsing proxy URL: %s", err)
 		}
-		runner.client.Transport = &http.Transport{
-			Proxy:                 http.ProxyURL(proxy),
-			TLSClientConfig:       &tls.Config{InsecureSkipVerify: true},
-			MaxIdleConnsPerHost:   o.Concurrency,
-			ResponseHeaderTimeout: time.Duration(o.Timeout) * time.Second,
+
+		runner.client = &http.Client{
+			Transport: &http.Transport{
+				Proxy:                 http.ProxyURL(proxy),
+				TLSClientConfig:       &tls.Config{InsecureSkipVerify: true},
+				MaxIdleConnsPerHost:   o.Concurrency,
+				ResponseHeaderTimeout: time.Duration(o.Timeout) * time.Second,
+			},
+			Timeout: time.Duration(o.Timeout) * time.Second,
 		}
 	}
 
