@@ -4,6 +4,8 @@
 package runner
 
 import (
+	"net"
+	"regexp"
 	"strings"
 
 	"github.com/root4loot/urldiscover/pkg/log"
@@ -24,11 +26,19 @@ type exclude struct {
 	word   string
 }
 
+var (
+	re_singleWord = regexp.MustCompile(`^[A-Za-z0-9]+$`)
+)
+
 var includes []include
 var excludes []exclude
 
 // check checks if the url matches the include rule
 func isIncluded(target *tld.URL, includes []include) bool {
+	if target == nil {
+		return false
+	}
+
 	for _, include := range includes {
 		if util.IsIP(mainTarget.Host) {
 			if ips, err := util.IPv4(target.Host); err == nil {
@@ -41,9 +51,14 @@ func isIncluded(target *tld.URL, includes []include) bool {
 		}
 		if include.domain != nil {
 			match := func() bool {
-				match1 := target.Domain+"."+target.TLD == mainTarget.Domain+"."+mainTarget.TLD && target.Port == mainTarget.Port
+				match1 := false
+				// word
 				if include.word != "" {
+					if net.ParseIP(target.String()) == nil { // not IP
+						match1 = target.Domain+"."+target.TLD == mainTarget.Domain+"."+mainTarget.TLD && target.Port == mainTarget.Port
+					}
 					return match1 || strings.Contains(target.Host, include.word)
+					// IP
 				} else if include.ip != nil {
 					isTargetIP := func() bool {
 						if ips, err := util.IPv4(target.Host); err == nil {
@@ -56,7 +71,8 @@ func isIncluded(target *tld.URL, includes []include) bool {
 						return false
 					}
 					return target.Host == include.ip.Host || isTargetIP()
-				} else if include.domain != nil {
+					// domain
+				} else if include.domain != nil && target.Domain != "" && target.TLD != "" {
 					match2 := target.Domain == mainTarget.Domain &&
 						target.TLD == mainTarget.TLD &&
 						target.Port == mainTarget.Port
@@ -113,7 +129,7 @@ func (r *Runner) setIncludes() {
 		if util.IsIP(target) {
 			includes = append(includes, include{domain: nil, ip: u, word: ""})
 		}
-		if isWord(target) {
+		if isSingleWord(target) {
 			includes = append(includes, include{domain: nil, ip: nil, word: target})
 		}
 		if util.IsDomain(target) {
@@ -129,7 +145,7 @@ func (r *Runner) setExcludes() {
 		if util.IsIP(target) {
 			excludes = append(excludes, exclude{domain: nil, ip: u, word: ""})
 		}
-		if isWord(target) {
+		if isSingleWord(target) {
 			excludes = append(excludes, exclude{domain: nil, ip: nil, word: target})
 		}
 		if util.IsDomain(target) {
@@ -146,6 +162,7 @@ func (r *Runner) inScope(u *tld.URL) bool {
 // setScope sets the scope for the runner
 func (r *Runner) setScope(mainTarget string) {
 	u, err := tld.Parse(mainTarget)
+
 	if err != nil {
 		log.Fatalf("error parsing main target: %s", err)
 	}
@@ -154,8 +171,7 @@ func (r *Runner) setScope(mainTarget string) {
 	r.setExcludes()
 }
 
-// isWord checks if the string is a word
-func isWord(s string) bool {
-	words := strings.Fields(s)
-	return len(words) == 1
+// isSingleWord checks if the string is a word
+func isSingleWord(s string) bool {
+	return re_singleWord.MatchString(s)
 }
