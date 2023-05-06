@@ -377,5 +377,6 @@ func (r *Runner) cleanDomain(domain string) string {
 	domain = util.TrimDoubleSlashes(domain)
 	domain = util.EnsureScheme(domain)
 	domain = util.AddSlashIfNeeded(domain)
+	domain = util.RemoveSlashUnwanted(domain)
 	return domain
 }

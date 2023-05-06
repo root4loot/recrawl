@@ -68,6 +68,14 @@ func AddSlashIfNeeded(url string) string {
 	}
 }
 
+// RemoveSlashUnwanted removes undesired "/" suffix from a URL
+func RemoveSlashUnwanted(url string) string {
+	if strings.HasSuffix(url, "/") && strings.Contains(url, "?") || strings.Contains(url, "#") || strings.Contains(url, "=") {
+		return url[:len(url)-1]
+	}
+	return url
+}
+
 // TrimDoubleSlashes trims double slashes from a URL
 func TrimDoubleSlashes(target string) string {
 	if strings.HasPrefix(target, "http://") {
