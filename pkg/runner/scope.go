@@ -154,13 +154,13 @@ func (r *Runner) setExcludes() {
 	}
 }
 
-// setIncludeScope determines if the url is in scope
-func (r *Runner) inScope(u *tld.URL) bool {
+// InScope determines if the url is in scope
+func (r *Runner) InScope(u *tld.URL) bool {
 	return r.isIncluded(u, includes) && !r.isExcluded(u, excludes)
 }
 
-// setScope sets the scope for the runner
-func (r *Runner) setScope(mainTarget string) {
+// SetScope sets the scope for the runner
+func (r *Runner) SetScope(mainTarget string) {
 	u, err := tld.Parse(mainTarget)
 
 	if err != nil {

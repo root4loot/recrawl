@@ -96,7 +96,7 @@ func (r *Runner) Run(target string) {
 	target = util.EnsureScheme(target)
 	mainTarget, _ = tld.Parse(target)
 
-	r.setScope(target)
+	r.SetScope(target)
 	c_queue, c_urls, c_wait := r.makeQueue()
 	c_wait <- 1
 
@@ -134,7 +134,7 @@ func (r *Runner) makeQueue() (chan<- *tld.URL, <-chan *tld.URL, chan<- int) {
 
 	go func() {
 		for q := range c_queue {
-			if r.inScope(q) && !r.isVisited(q.String()) {
+			if r.InScope(q) && !r.isVisited(q.String()) {
 				c_urls <- q
 			} else {
 				c_wait <- -1
