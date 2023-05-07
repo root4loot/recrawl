@@ -34,7 +34,7 @@ var includes []include
 var excludes []exclude
 
 // check checks if the url matches the include rule
-func isIncluded(target *tld.URL, includes []include) bool {
+func (r *Runner) isIncluded(target *tld.URL, includes []include) bool {
 	if target == nil {
 		return false
 	}
@@ -103,7 +103,7 @@ func isIncluded(target *tld.URL, includes []include) bool {
 }
 
 // check checks if the url matches the exclude rule
-func isExcluded(u *tld.URL, excludes []exclude) bool {
+func (r *Runner) isExcluded(u *tld.URL, excludes []exclude) bool {
 	for _, exclude := range excludes {
 		value := func() bool {
 			if exclude.word != "" {
@@ -129,7 +129,7 @@ func (r *Runner) setIncludes() {
 		if util.IsIP(target) {
 			includes = append(includes, include{domain: nil, ip: u, word: ""})
 		}
-		if isSingleWord(target) {
+		if r.isSingleWord(target) {
 			includes = append(includes, include{domain: nil, ip: nil, word: target})
 		}
 		if util.IsDomain(target) {
@@ -145,7 +145,7 @@ func (r *Runner) setExcludes() {
 		if util.IsIP(target) {
 			excludes = append(excludes, exclude{domain: nil, ip: u, word: ""})
 		}
-		if isSingleWord(target) {
+		if r.isSingleWord(target) {
 			excludes = append(excludes, exclude{domain: nil, ip: nil, word: target})
 		}
 		if util.IsDomain(target) {
@@ -156,7 +156,7 @@ func (r *Runner) setExcludes() {
 
 // setIncludeScope determines if the url is in scope
 func (r *Runner) inScope(u *tld.URL) bool {
-	return isIncluded(u, includes) && !isExcluded(u, excludes)
+	return r.isIncluded(u, includes) && !r.isExcluded(u, excludes)
 }
 
 // setScope sets the scope for the runner
@@ -172,6 +172,6 @@ func (r *Runner) setScope(mainTarget string) {
 }
 
 // isSingleWord checks if the string is a word
-func isSingleWord(s string) bool {
+func (r *Runner) isSingleWord(s string) bool {
 	return re_singleWord.MatchString(s)
 }
