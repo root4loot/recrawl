@@ -18,9 +18,9 @@ import (
 
 	"github.com/PuerkitoBio/purell"
 	"github.com/jpillora/go-tld"
-	"github.com/root4loot/urldiscover/pkg/log"
-	"github.com/root4loot/urldiscover/pkg/options"
-	"github.com/root4loot/urldiscover/pkg/util"
+	"github.com/root4loot/urlwalk/pkg/log"
+	"github.com/root4loot/urlwalk/pkg/options"
+	"github.com/root4loot/urlwalk/pkg/util"
 )
 
 var (

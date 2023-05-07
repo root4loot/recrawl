@@ -3,8 +3,8 @@ package main
 import (
 	"fmt"
 
-	"github.com/root4loot/urldiscover/pkg/options"
-	"github.com/root4loot/urldiscover/pkg/runner"
+	"github.com/root4loot/urlwalk/pkg/options"
+	"github.com/root4loot/urlwalk/pkg/runner"
 )
 
 func main() {
@@ -15,7 +15,7 @@ func main() {
 		Timeout:     10,
 		Delay:       0,
 		DelayJitter: 0,
-		UserAgent:   "urldiscover",
+		UserAgent:   "urlwalk",
 	}
 
 	runner := runner.NewRunner(&options)

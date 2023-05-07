@@ -1,5 +1,5 @@
 ![Go version](https://img.shields.io/badge/Go-v1.19-blue.svg) [![Contribute](https://img.shields.io/badge/Contribute-Welcome-green.svg)](CONTRIBUTING.md)
-# urldiscover
+# urlwalk
 
 URL discovery tool.
 
@@ -14,19 +14,19 @@ URL discovery tool.
 
 ### Go
 ```
-go install github.com/root4loot/urldiscover@master
+go install github.com/root4loot/urlwalk@master
 ```
 
 ### Docker
 ```
-git clone https://github.com/root4loot/urldiscover.git && cd urldiscover
-docker build -t urldiscover .
-docker run -it urldiscover -h
+git clone https://github.com/root4loot/urlwalk.git && cd urlwalk
+docker build -t urlwalk .
+docker run -it urlwalk -h
 ```
 
 ## Usage
 ```
-Usage: ./urldiscover [options] (-t <target>|-i targets.txt)
+Usage: ./urlwalk [options] (-t <target>|-i targets.txt)
 
 TARGETING:
    -t,    --target         target host                         (comma-separated)
@@ -39,7 +39,7 @@ CONFIGURATIONS:
    -to,   --timeout        max request timeout             (Default: 10 seconds)
    -d,    --delay          delay between requests          (Default: 0 milliseconds)
    -dj,   --delay-jitter   max jitter between requests     (Default: 0 milliseconds)
-   -ua,   --user-agent     set user agent                  (Default: urldiscover)
+   -ua,   --user-agent     set user agent                  (Default: urlwalk)
    -p,    --proxy          set proxy                       (Default: none)
 
 OUTPUT:
@@ -55,39 +55,39 @@ OUTPUT:
 
 Target `*.example.com`
 ```
-➜ urldiscover -t example.com
+➜ urlwalk -t example.com
 ``` 
 
 Target `*.example.com` and `103.196.38.38`
 ```
-➜ urldiscover -t example.com,103.196.38.38
+➜ urlwalk -t example.com,103.196.38.38
 ```
 
 Target all hosts in given file
 ```
-➜ urldiscover -i targets.txt
+➜ urlwalk -i targets.txt
 ```
 
 Target `*.example.com` and `*.andme.com` (if found)
 ```
-➜ urldiscover -t example.com -ih andme.com
+➜ urlwalk -t example.com -ih andme.com
 ```
 
 Target all domains that contain `example`
 ```
-➜ urldiscover -t example.com -ih example
+➜ urlwalk -t example.com -ih example
 ```
 
 Target `*.example.com` but avoid `me.example.com`  
 ```
-➜ urldiscover -t example.com -eh me.example.com
+➜ urlwalk -t example.com -eh me.example.com
 ```
 
 ### Example running
 
 Extract URL's that end in `js`
 ```
-➜ urldiscover -t hackerone.com -hs | grep 'js$'
+➜ urlwalk -t hackerone.com -hs | grep 'js$'
 
 https://www.hackerone.com/sites/default/files/js/js_Ikd9nsZ0AFAesOLgcgjc7F6CRoODbeqOn7SVbsXgALQ.js
 https://www.hackerone.com/sites/default/files/js/js_hg8lQy2HP5Rw6yIz03HhGKfvnyySwjoFdqpvXgRJD6I.js
@@ -103,7 +103,7 @@ https://www.hackerone.com/sites/default/files/js/js_uj-ULd1j2hO5xijovTKN3LjREthK
 
 ## As lib
 ```
-go get github.com/root4loot/urldiscover@master
+go get github.com/root4loot/urlwalk@master
 ```
 
 ```go
@@ -112,8 +112,8 @@ package main
 import (
 	"fmt"
 
-	"github.com/root4loot/urldiscover/pkg/options"
-	"github.com/root4loot/urldiscover/pkg/runner"
+	"github.com/root4loot/urlwalk/pkg/options"
+	"github.com/root4loot/urlwalk/pkg/runner"
 )
 
 func main() {
@@ -124,7 +124,7 @@ func main() {
 		Timeout:               10,
 		Delay:                 0,
 		DelayJitter:           0,
-		UserAgent:             "urldiscover",
+		UserAgent:             "urlwalk",
 	}
 
 	runner := runner.NewRunner(&options)

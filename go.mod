@@ -1,8 +1,6 @@
-module github.com/root4loot/urldiscover
+module github.com/root4loot/urlwalk
 
 go 1.19
-
-retract v1.0.0
 
 require (
 	github.com/PuerkitoBio/purell v1.1.1

@@ -8,8 +8,8 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/root4loot/urldiscover/pkg/log"
-	"github.com/root4loot/urldiscover/pkg/util"
+	"github.com/root4loot/urlwalk/pkg/log"
+	"github.com/root4loot/urlwalk/pkg/util"
 
 	"github.com/jpillora/go-tld"
 )

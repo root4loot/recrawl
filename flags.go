@@ -6,11 +6,11 @@ import (
 	"os"
 	"text/tabwriter"
 
-	"github.com/root4loot/urldiscover/pkg/options"
+	"github.com/root4loot/urlwalk/pkg/options"
 )
 
 func (c *CLI) banner() {
-	fmt.Println("\nurldiscover", version, "by", author)
+	fmt.Println("\nurlwalk", version, "by", author)
 }
 
 func (c *CLI) usage() {
@@ -33,7 +33,7 @@ func (c *CLI) usage() {
 	fmt.Fprintf(w, "\t%s,\t%s\t%s\t(Default: %v seconds)\n", "-to", "--timeout", "max request timeout", options.Default().Timeout)
 	fmt.Fprintf(w, "\t%s,\t%s\t%s\t(Default: %v milliseconds)\n", "-d", "--delay", "delay between requests", options.Default().Delay)
 	fmt.Fprintf(w, "\t%s,\t%s\t%s\t(Default: %v milliseconds)\n", "-dj", "--delay-jitter", "max jitter between requests", options.Default().DelayJitter)
-	fmt.Fprintf(w, "\t%s,\t%s\t%s\t(Default: %v)\n", "-ua", "--user-agent", "set user agent", "urldiscover")
+	fmt.Fprintf(w, "\t%s,\t%s\t%s\t(Default: %v)\n", "-ua", "--user-agent", "set user agent", "urlwalk")
 	fmt.Fprintf(w, "\t%s,\t%s\t%s\t(Default: %v)\n", "-p", "--proxy", "set proxy", "none")
 
 	// print the output section

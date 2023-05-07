@@ -12,10 +12,10 @@ import (
 
 	"github.com/projectdiscovery/gologger"
 	"github.com/projectdiscovery/gologger/levels"
-	"github.com/root4loot/urldiscover/pkg/log"
-	"github.com/root4loot/urldiscover/pkg/options"
-	"github.com/root4loot/urldiscover/pkg/runner"
-	"github.com/root4loot/urldiscover/pkg/util"
+	"github.com/root4loot/urlwalk/pkg/log"
+	"github.com/root4loot/urlwalk/pkg/options"
+	"github.com/root4loot/urlwalk/pkg/runner"
+	"github.com/root4loot/urlwalk/pkg/util"
 )
 
 type CLI struct {
@@ -95,7 +95,7 @@ func (c *CLI) checkForExits() {
 		os.Exit(0)
 	}
 	if c.opts.CLI.Version {
-		fmt.Println("urldiscover ", version)
+		fmt.Println("urlwalk ", version)
 		os.Exit(0)
 	}
 
