@@ -1,14 +1,17 @@
 ![Go version](https://img.shields.io/badge/Go-v1.19-blue.svg) [![Contribute](https://img.shields.io/badge/Contribute-Welcome-green.svg)](CONTRIBUTING.md)
 # urlwalk
 
-URL discovery tool.
+urlwalk is a Go library and command-line interface tool for recursively crawling websites and extracting URLs. It provides a simple yet flexible API for developers to integrate URL discovery into their projects. It's particularly useful for security professionals, web developers, and anyone who needs to extract and analyze URLs from websites.
 
-- Written in Go (with [lib](#as-lib) support)
-- Supports IPv4
-- Has scoping capabilities
-- Has pipe support
-- Discovers url's from hidden endpoints embedded in scripts, stylesheets, etc
-- Fast ⚡️
+### Key Features
+
+- Discover hidden endpoints with urlwalk's versatile, regex-based approach.
+- Avoid duplicate URLs and crawl traps for more accurate results.
+- Customize your crawl with scoping capabilities for greater control.
+- Target IPv4 addresses in addition to hostnames.
+- Use urlwalk's easy-to-use CLI with piped input support.
+- Integrate endpoint discovery into your own tools with urlwalk's library.
+- Optimized for performance with the use of standard HTTP library and concurrent crawling.
 
 ## Installation
 
