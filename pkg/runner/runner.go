@@ -25,7 +25,8 @@ import (
 
 var (
 	mainTarget *tld.URL
-	re         = regexp.MustCompile(`(?:"|')(?:(((?:[a-zA-Z]{1,10}://|//)[^"'/]{1,}\.[a-zA-Z]{2,}[^"']{0,})|((?:/|\.\./|\./)[^"'><,;|*()(%%$^/\\\[\]][^"'><,;|()]{1,})|([a-zA-Z0-9_\-/]{1,}/[a-zA-Z0-9_\-/]{1,}\.(?:[a-zA-Z]{1,4}|action)(?:[\?|#][^"|']{0,}|))|([a-zA-Z0-9_\-/]{1,}/[a-zA-Z0-9_\-/]{3,}(?:[\?|#][^"|']{0,}|))|([a-zA-Z0-9_\-]{1,}\.(?:[\?|#][^"|']{0,}|))))(?:"|')`)
+	re_path    = regexp.MustCompile(`(?:"|')(?:(((?:[a-zA-Z]{1,10}://|//)[^"'/]{1,}\.[a-zA-Z]{2,}[^"']{0,})|((?:/|\.\./|\./)[^"'><,;|*()(%%$^/\\\[\]][^"'><,;|()]{1,})|([a-zA-Z0-9_\-/]{1,}/[a-zA-Z0-9_\-/]{1,}\.(?:[a-zA-Z]{1,4}|action)(?:[\?|#][^"|']{0,}|))|([a-zA-Z0-9_\-/]{1,}/[a-zA-Z0-9_\-/]{3,}(?:[\?|#][^"|']{0,}|))|([a-zA-Z0-9_\-]{1,}\.(?:[\?|#][^"|']{0,}|))))(?:"|')`)
+	re_robots  = regexp.MustCompile(`(?:Allow|Disallow):\s*(.*)`)
 )
 
 type Runner struct {
@@ -45,8 +46,9 @@ type Results struct {
 }
 
 var (
-	visited map[string]bool
-	mutex   = &sync.Mutex{}
+	visitedURL  map[string]bool
+	visitedHost map[string]bool
+	mutex       = &sync.Mutex{}
 )
 
 // NewRunner creates a new runner
@@ -117,7 +119,8 @@ func (r *Runner) Run(target string) {
 
 // makeQueue creates a queue of URLs to be processed by workers
 func (r *Runner) makeQueue() (chan<- *tld.URL, <-chan *tld.URL, chan<- int) {
-	visited = make(map[string]bool)
+	visitedURL = make(map[string]bool)
+	visitedHost = make(map[string]bool)
 	c_wait := make(chan int)
 	c_urls := make(chan *tld.URL)
 	c_queue := make(chan *tld.URL)
@@ -134,7 +137,7 @@ func (r *Runner) makeQueue() (chan<- *tld.URL, <-chan *tld.URL, chan<- int) {
 
 	go func() {
 		for q := range c_queue {
-			if r.InScope(q) && !r.isVisited(q.String()) {
+			if r.InScope(q) && !r.isVisitedURL(q.String()) {
 				c_urls <- q
 			} else {
 				c_wait <- -1
@@ -145,6 +148,20 @@ func (r *Runner) makeQueue() (chan<- *tld.URL, <-chan *tld.URL, chan<- int) {
 	}()
 
 	return c_queue, c_urls, c_wait
+}
+
+// addRobots queues URLs from robots.txt
+func (r *Runner) addRobots(c_queue chan<- *tld.URL, c_wait chan<- int, rawURL string) {
+	rawURL = util.EnsureScheme(rawURL)
+	u, _ := tld.Parse(rawURL)
+
+	if u.Host != "" && !r.isVisitedHost(u.Hostname()) {
+		rawURL = u.Scheme + "://" + u.Hostname() + "/robots.txt"
+		u, _ = tld.Parse(rawURL)
+		c_wait <- 1
+		r.addVisitedHost(u.Hostname())
+		r.queueURL(c_queue, u)
+	}
 }
 
 // queueURL adds a URL to the queue
@@ -178,6 +195,9 @@ func (r *Runner) worker(c_urls <-chan *tld.URL, c_queue chan<- *tld.URL, c_wait 
 
 		_, resp, err := r.request(c_url)
 
+		// add robots.txt to queue
+		r.addRobots(c_queue, c_wait, c_url.String())
+
 		if resp == nil {
 			c_wait <- -1
 			continue
@@ -200,6 +220,7 @@ func (r *Runner) worker(c_urls <-chan *tld.URL, c_queue chan<- *tld.URL, c_wait 
 		}
 
 		paths, err := r.scrape(resp)
+
 		if err != nil {
 			log.Warningf("Timeout exceeded for %v", landingURL)
 			c_wait <- len(rawURLs) - 1
@@ -231,11 +252,10 @@ func (r *Runner) worker(c_urls <-chan *tld.URL, c_queue chan<- *tld.URL, c_wait 
 
 // request makes a request to a URL
 func (r *Runner) request(u *tld.URL) (req *http.Request, resp *http.Response, err error) {
-
-	defer r.addVisited(u.String())
+	defer r.addVisitedURL(u.String())
 
 	// Check if URL has already been visited
-	if r.isVisited(u.String()) {
+	if r.isVisitedURL(u.String()) {
 		return nil, nil, nil
 	}
 
@@ -259,8 +279,8 @@ func (r *Runner) request(u *tld.URL) (req *http.Request, resp *http.Response, er
 			return err
 		}
 
-		if !r.isVisited(nextURL.String()) {
-			r.addVisited(nextURL.String())
+		if !r.isVisitedURL(nextURL.String()) {
+			r.addVisitedURL(nextURL.String())
 			return nil
 		}
 
@@ -286,7 +306,11 @@ func (r *Runner) setURL(u *tld.URL, paths []string) (rawURLs []string, err error
 			continue
 		}
 		if util.HasFile(u.String()) {
-			line = u.String()
+			if u.Path == "/robots.txt" {
+				line = u.Scheme + "://" + u.Host + "/" + paths[i]
+			} else {
+				line = u.String()
+			}
 		} else if util.HasScheme(paths[i]) {
 			line = paths[i]
 		} else if util.IsDomain(paths[i]) {
@@ -317,7 +341,11 @@ func (r *Runner) scrape(resp *http.Response) (res []string, err error) {
 	var matches [][]string
 
 	if err == nil {
-		matches = re.FindAllStringSubmatch(string(body), -1)
+		if strings.HasSuffix(resp.Request.URL.String(), "robots.txt") {
+			matches = re_robots.FindAllStringSubmatch(string(body), -1)
+		} else {
+			matches = re_path.FindAllStringSubmatch(string(body), -1)
+		}
 	} else {
 		return nil, err
 	}
@@ -388,18 +416,33 @@ func (r *Runner) getDelay() time.Duration {
 	return time.Duration(r.Options.Delay)
 }
 
-// addVisited adds a URL to the visited map
-func (r *Runner) addVisited(key string) {
+// addVisitedURL adds a URL to the visitedURL map
+func (r *Runner) addVisitedURL(key string) {
 	mutex.Lock()
-	visited[key] = true
+	visitedURL[key] = true
 	mutex.Unlock()
 }
 
-// isVisited checks if a URL has been visited
-func (r *Runner) isVisited(key string) bool {
+// addVisitedHost adds a host to the visitedHost map
+func (r *Runner) addVisitedHost(key string) {
+	mutex.Lock()
+	visitedHost[key] = true
+	mutex.Unlock()
+}
+
+// isVisitedURL checks if a URL has been visited
+func (r *Runner) isVisitedURL(key string) bool {
 	mutex.Lock()
 	defer mutex.Unlock()
-	_, ok := visited[key]
+	_, ok := visitedURL[key]
+	return ok
+}
+
+// isVisitedHost checks if a host has been visited
+func (r *Runner) isVisitedHost(key string) bool {
+	mutex.Lock()
+	defer mutex.Unlock()
+	_, ok := visitedHost[key]
 	return ok
 }
 
@@ -419,7 +462,7 @@ func (r *Runner) isSimilarToVisitedURL(urlStr string) bool {
 		return false
 	}
 	if u.RawQuery == "" {
-		if r.isVisited(u.Path) {
+		if r.isVisitedURL(u.Path) {
 			return true
 		}
 	} else {
@@ -440,7 +483,7 @@ func (r *Runner) isSimilarToVisitedURL(urlStr string) bool {
 		canonicalURL := u.String()
 
 		// check if the canonical URL is already visited
-		if r.isVisited(canonicalURL) {
+		if r.isVisitedURL(canonicalURL) {
 			return true
 		}
 
@@ -455,7 +498,7 @@ func (r *Runner) isSimilarToVisitedURL(urlStr string) bool {
 		mutex.Lock()
 		defer mutex.Unlock()
 
-		for visitedURL := range visited {
+		for visitedURL := range visitedURL {
 			v, err := url.Parse(visitedURL)
 			if err != nil {
 				continue
