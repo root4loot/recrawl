@@ -168,3 +168,8 @@ func (c *CLI) hasInfile() bool {
 func (c *CLI) hasOutfile() bool {
 	return c.opts.CLI.Outfile != ""
 }
+
+// hasResolversFile determines if the user has provided a resolvers file
+func (c *CLI) hasResolversFile() bool {
+	return c.opts.CLI.ResolversFile != ""
+}

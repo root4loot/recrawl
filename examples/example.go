@@ -15,6 +15,7 @@ func main() {
 		Timeout:     10,
 		Delay:       0,
 		DelayJitter: 0,
+		Resolvers:   []string{"8.8.8.8", "208.67.222.222"},
 		UserAgent:   "urlwalk",
 	}
 

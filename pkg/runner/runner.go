@@ -18,6 +18,7 @@ import (
 
 	"github.com/PuerkitoBio/purell"
 	"github.com/jpillora/go-tld"
+	"github.com/root4loot/goutils/nethttp"
 	"github.com/root4loot/urlwalk/pkg/log"
 	"github.com/root4loot/urlwalk/pkg/options"
 	"github.com/root4loot/urlwalk/pkg/util"
@@ -58,14 +59,20 @@ func NewRunner(o *options.Options) (runner *Runner) {
 	runner.Results = make(chan Result)
 	runner.Options = o
 
-	runner.client = &http.Client{
-		Transport: &http.Transport{
-			TLSClientConfig:       &tls.Config{InsecureSkipVerify: true},
-			MaxIdleConnsPerHost:   o.Concurrency,
-			ResponseHeaderTimeout: time.Duration(o.Timeout) * time.Second,
-		},
-		Timeout: time.Duration(o.Timeout) * time.Second,
+	// new client with optional resolvers
+	if len(o.Resolvers) > 0 {
+		runner.client, _ = nethttp.ClientWithOptionalResolvers(o.Resolvers...)
+	} else {
+		runner.client, _ = nethttp.ClientWithOptionalResolvers()
 	}
+
+	// set client transport
+	runner.client.Transport = &http.Transport{
+		TLSClientConfig:       &tls.Config{InsecureSkipVerify: true},
+		MaxIdleConnsPerHost:   o.Concurrency,
+		ResponseHeaderTimeout: time.Duration(o.Timeout) * time.Second,
+	}
+	runner.client.Timeout = time.Duration(o.Timeout) * time.Second
 
 	if o.Proxy != "" {
 		if !util.HasScheme(o.Proxy) {

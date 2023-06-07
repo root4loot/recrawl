@@ -22,6 +22,7 @@ type Options struct {
 	DelayJitter int      // maximum jitter to add to delay (in ms)
 	UserAgent   string   // custom user-agent
 	Proxy       string   // proxy to use for requests
+	Resolvers   []string // resolvers to use for DNS resolution
 	CLI         CLI      // CLI options
 }
 
@@ -30,6 +31,7 @@ type CLI struct {
 	Exclude         string // targets to be included (comma separated)
 	Target          string // target host
 	Infile          string // file containin targets (newline separated)
+	ResolversFile   string // file containing resolvers (newline separated)
 	Outfile         string // file to write results
 	HideStatusCodes bool   // show status code
 	HideWarning     bool   // hide warning

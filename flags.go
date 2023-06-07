@@ -35,6 +35,7 @@ func (c *CLI) usage() {
 	fmt.Fprintf(w, "\t%s,\t%s\t%s\t(Default: %v milliseconds)\n", "-dj", "--delay-jitter", "max jitter between requests", options.Default().DelayJitter)
 	fmt.Fprintf(w, "\t%s,\t%s\t%s\t(Default: %v)\n", "-ua", "--user-agent", "set user agent", "urlwalk")
 	fmt.Fprintf(w, "\t%s,\t%s\t%s\t(Default: %v)\n", "-p", "--proxy", "set proxy", "none")
+	fmt.Fprintf(w, "\t%s,\t%s\t%s\t(Default: %v)\n", "-r", "--resolvers", "file containing list of resolvers", "System DNS")
 
 	// print the output section
 	fmt.Fprintln(w, "\nOUTPUT:")
@@ -77,6 +78,8 @@ func (c *CLI) parseFlags() {
 	flag.StringVar(&opts.UserAgent, "ua", options.Default().UserAgent, "")
 	flag.StringVar(&opts.Proxy, "proxy", options.Default().Proxy, "")
 	flag.StringVar(&opts.Proxy, "p", options.Default().Proxy, "")
+	flag.StringVar(&opts.CLI.ResolversFile, "resolvers", "", "")
+	flag.StringVar(&opts.CLI.ResolversFile, "r", "", "")
 
 	// OUTPUT
 	flag.BoolVar(&opts.CLI.Silence, "s", false, "")
