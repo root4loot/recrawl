@@ -18,7 +18,7 @@ import (
 
 	"github.com/PuerkitoBio/purell"
 	"github.com/jpillora/go-tld"
-	"github.com/root4loot/goutils/nethttp"
+	"github.com/root4loot/goutils/httputil"
 	"github.com/root4loot/urlwalk/pkg/log"
 	"github.com/root4loot/urlwalk/pkg/options"
 	"github.com/root4loot/urlwalk/pkg/util"
@@ -61,9 +61,9 @@ func NewRunner(o *options.Options) (runner *Runner) {
 
 	// new client with optional resolvers
 	if len(o.Resolvers) > 0 {
-		runner.client, _ = nethttp.ClientWithOptionalResolvers(o.Resolvers...)
+		runner.client, _ = httputil.ClientWithOptionalResolvers(o.Resolvers...)
 	} else {
-		runner.client, _ = nethttp.ClientWithOptionalResolvers()
+		runner.client, _ = httputil.ClientWithOptionalResolvers()
 	}
 
 	// set client transport
