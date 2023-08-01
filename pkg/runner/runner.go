@@ -177,8 +177,8 @@ func (r *Runner) addRobots(c_queue chan<- *tld.URL, c_wait chan<- int, rawURL st
 	rawURL = util.EnsureScheme(rawURL)
 	u, _ := tld.Parse(rawURL)
 
-	if u.Host != "" && !r.isVisitedHost(u.Hostname()) {
-		rawURL = u.Scheme + "://" + u.Hostname() + "/robots.txt"
+	if u.Host != "" && !r.isVisitedHost(u.Host) {
+		rawURL = u.Scheme + "://" + u.Host + "/robots.txt"
 		u, _ = tld.Parse(rawURL)
 		c_wait <- 1
 		r.addVisitedHost(u.Hostname())
