@@ -47,8 +47,10 @@ github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZb
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
 github.com/projectdiscovery/gologger v1.1.8 h1:CFlCzGlqAhPqWIrAXBt1OVh5jkMs1qgoR/z4xhdzLNE=
 github.com/projectdiscovery/gologger v1.1.8/go.mod h1:bNyVaC1U/NpJtFkJltcesn01NR3K8Hg6RsLVce6yvrw=
-github.com/root4loot/goutils v0.0.0-20230704140923-544e57a37f62 h1:zLRqz2GYNQWCHy3FL78vS8AeTPahAReYshbfnBXi52I=
-github.com/root4loot/goutils v0.0.0-20230704140923-544e57a37f62/go.mod h1:/8q9ygQEj1HroI01Psv0+DmJN9QIqbhJI5CmKpXqoo0=
+github.com/root4loot/goscope v0.0.0-20230801105116-515fefd56ceb h1:QKEcV3Wjv+q/rnjTy4IwIMYXPkzCoQrXi6nob8ZP/ZE=
+github.com/root4loot/goscope v0.0.0-20230801105116-515fefd56ceb/go.mod h1:uQpXRlVAUGFfOYGJlPn2lH/rzJTzBO5hsW5Pb8KZ2x0=
+github.com/root4loot/goutils v0.0.0-20230801103333-e731e0ad7b42 h1:H45aYzG/9dnKfhsMteswBf7W0DdIIXBrJZtGdo6rGSk=
+github.com/root4loot/goutils v0.0.0-20230801103333-e731e0ad7b42/go.mod h1:/8q9ygQEj1HroI01Psv0+DmJN9QIqbhJI5CmKpXqoo0=
 github.com/stretchr/objx v0.1.0/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+wExME=
 github.com/stretchr/objx v0.4.0/go.mod h1:YvHI0jy2hoMjB+UWwv71VJQ9isScKT/TqJzVSSt89Yw=
 github.com/stretchr/testify v1.3.0/go.mod h1:M5WIy9Dh21IEIfnGCwXGc5bZfKNJtfHm1UVUgZn+9EI=

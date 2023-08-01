@@ -18,6 +18,7 @@ import (
 
 	"github.com/PuerkitoBio/purell"
 	"github.com/jpillora/go-tld"
+	"github.com/root4loot/goscope"
 	"github.com/root4loot/goutils/httputil"
 	"github.com/root4loot/urlwalk/pkg/log"
 	"github.com/root4loot/urlwalk/pkg/options"
@@ -33,6 +34,7 @@ var (
 type Runner struct {
 	Options *options.Options
 	Results chan Result
+	Scope   *goscope.Scope
 	client  *http.Client
 }
 
@@ -58,6 +60,17 @@ func NewRunner(o *options.Options) (runner *Runner) {
 
 	runner.Results = make(chan Result)
 	runner.Options = o
+	runner.Scope = goscope.NewScope()
+
+	// add includes
+	for _, include := range o.Include {
+		runner.Scope.AddInclude(include)
+	}
+
+	// add excludes
+	for _, exclude := range o.Exclude {
+		runner.Scope.AddExclude(exclude)
+	}
 
 	// new client with optional resolvers
 	if len(o.Resolvers) > 0 {
@@ -105,7 +118,9 @@ func (r *Runner) Run(target string) {
 	target = util.EnsureScheme(target)
 	mainTarget, _ = tld.Parse(target)
 
-	r.SetScope(target)
+	r.Scope.AddInclude(target)
+	r.Scope.AddInclude("*."+mainTarget.Host, mainTarget.Host) // assume all subdomains are in scope
+
 	c_queue, c_urls, c_wait := r.makeQueue()
 	c_wait <- 1
 
@@ -144,7 +159,7 @@ func (r *Runner) makeQueue() (chan<- *tld.URL, <-chan *tld.URL, chan<- int) {
 
 	go func() {
 		for q := range c_queue {
-			if r.InScope(q) && !r.isVisitedURL(q.String()) {
+			if r.Scope.InScope(q.Host) && !r.isVisitedURL(q.String()) {
 				c_urls <- q
 			} else {
 				c_wait <- -1

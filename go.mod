@@ -7,7 +7,8 @@ require (
 	github.com/gookit/color v1.5.2
 	github.com/jpillora/go-tld v1.2.1
 	github.com/projectdiscovery/gologger v1.1.8
-	github.com/root4loot/goutils v0.0.0-20230704140923-544e57a37f62
+	github.com/root4loot/goscope v0.0.0-20230801105116-515fefd56ceb
+	github.com/root4loot/goutils v0.0.0-20230801103333-e731e0ad7b42
 )
 
 require (
