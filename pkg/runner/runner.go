@@ -274,12 +274,14 @@ func (r *Runner) worker(c_urls <-chan *tld.URL, c_queue chan<- *tld.URL, c_wait 
 
 // request makes a request to a URL
 func (r *Runner) request(u *tld.URL) (req *http.Request, resp *http.Response, err error) {
-	defer r.addVisitedURL(u.String())
 
 	// Check if URL has already been visited
 	if r.isVisitedURL(u.String()) {
 		return nil, nil, nil
 	}
+
+	// addd visited
+	r.addVisitedURL(u.String())
 
 	req, err = http.NewRequest("GET", u.String(), nil)
 	if err != nil {
