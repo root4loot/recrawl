@@ -27,7 +27,7 @@ import (
 
 var (
 	mainTarget *tld.URL
-	re_path    = regexp.MustCompile(`(?:"|')(?:(((?:[a-zA-Z]{1,10}://|//)[^"'/]{1,}\.[a-zA-Z]{2,}[^"']{0,})|((?:/|\.\./|\./)[^"'><,;|*()(%%$^/\\\[\]][^"'><,;|()]{1,})|([a-zA-Z0-9_\-/]{1,}/[a-zA-Z0-9_\-/]{1,}\.(?:[a-zA-Z]{1,4}|action)(?:[\?|#][^"|']{0,}|))|([a-zA-Z0-9_\-/]{1,}/[a-zA-Z0-9_\-/]{3,}(?:[\?|#][^"|']{0,}|))|([a-zA-Z0-9_\-]{1,}\.(?:[\?|#][^"|']{0,}|))))(?:"|')`)
+	re_path    = regexp.MustCompile(`(?:"|')(?:(((?:[a-zA-Z]{1,10}://|//)[^"'/]{1,}\.[a-zA-Z]{2,}[^"']*)|((?:/|\.\./|\./)[^"'><,;|*()(%%$^/\\\[\]][^"'><,;|()]*[^"'><,;|()]*))|([a-zA-Z0-9_\-/]{1,}/[a-zA-Z0-9_\-/]{1,}\.(?:[a-zA-Z]{1,4}|action)(?:[\?|#][^"|']*)?)|([a-zA-Z0-9_\-/]{1,}/[a-zA-Z0-9_\-/]{3,}(?:[\?|#][^"|']*)?)|([a-zA-Z0-9_\-]+(?:\.[a-zA-Z]{1,4})+))(?:"|')`)
 	re_robots  = regexp.MustCompile(`(?:Allow|Disallow):\s*(.*)`)
 )
 
@@ -181,7 +181,7 @@ func (r *Runner) addRobots(c_queue chan<- *tld.URL, c_wait chan<- int, rawURL st
 		rawURL = u.Scheme + "://" + u.Host + "/robots.txt"
 		u, _ = tld.Parse(rawURL)
 		c_wait <- 1
-		r.addVisitedHost(u.Hostname())
+		r.addVisitedHost(u.Host)
 		r.queueURL(c_queue, u)
 	}
 }
@@ -234,7 +234,8 @@ func (r *Runner) worker(c_urls <-chan *tld.URL, c_queue chan<- *tld.URL, c_wait 
 			continue
 		}
 
-		landingURL, _ := tld.Parse(resp.Request.URL.String())
+		// landingURL, _ := tld.Parse(resp.Request.URL.String())
+		landingURL := resp.Request.URL.String()
 
 		if util.IsTextContentType(resp.Header.Get("Content-Type")) {
 			c_wait <- len(rawURLs) - 1
@@ -250,6 +251,7 @@ func (r *Runner) worker(c_urls <-chan *tld.URL, c_queue chan<- *tld.URL, c_wait 
 		}
 
 		rawURLs, err = r.setURL(landingURL, paths)
+
 		if err != nil {
 			log.Warningf("%v", err)
 			c_wait <- len(rawURLs) - 1
@@ -323,17 +325,29 @@ func (r *Runner) request(u *tld.URL) (req *http.Request, resp *http.Response, er
 }
 
 // setURL sets the URL for a request
-func (r *Runner) setURL(u *tld.URL, paths []string) (rawURLs []string, err error) {
+func (r *Runner) setURL(rawURL string, paths []string) (rawURLs []string, err error) {
 	var line string
+
+	u, err := url.Parse(rawURL)
+	if err != nil {
+		return nil, err
+	}
+
 	for i := range paths {
-		if paths[i] == u.String() || r.isMime(paths[i]) || paths[i] == "" || strings.HasSuffix(u.String(), paths[i]) {
+		if paths[i] == u.Host || r.isMime(paths[i]) || paths[i] == "" || strings.HasSuffix(u.Host, paths[i]) {
 			continue
 		}
-		if util.HasFile(u.String()) {
+
+		// add leading slash on single words (likely files) if missing
+		if !strings.HasPrefix(paths[i], "/") && !strings.HasPrefix(paths[i], "http") {
+			paths[i] = "/" + paths[i]
+		}
+
+		if util.HasFile(u.Host) {
 			if u.Path == "/robots.txt" {
 				line = u.Scheme + "://" + u.Host + "/" + paths[i]
 			} else {
-				line = u.String()
+				line = u.Host
 			}
 		} else if util.HasScheme(paths[i]) {
 			line = paths[i]
@@ -362,20 +376,21 @@ func (r *Runner) setURL(u *tld.URL, paths []string) (rawURLs []string, err error
 // scrape scrapes a response for paths
 func (r *Runner) scrape(resp *http.Response) (res []string, err error) {
 	body, err := ioutil.ReadAll(resp.Body)
-	var matches [][]string
+	var matches []string
 
 	if err == nil {
 		if strings.HasSuffix(resp.Request.URL.String(), "robots.txt") {
-			matches = re_robots.FindAllStringSubmatch(string(body), -1)
+			matches = re_robots.FindAllString(string(body), -1)
 		} else {
-			matches = re_path.FindAllStringSubmatch(string(body), -1)
+			matches = mergeRegexMatches(re_path.String(), string(body))
 		}
 	} else {
 		return nil, err
 	}
 	for _, match := range matches {
 		if len(match) > 0 {
-			res = append(res, match[1])
+			match = r.removeQuotes(match)
+			res = append(res, match)
 		}
 	}
 
@@ -574,4 +589,25 @@ func (r *Runner) isSimilarToVisitedURL(urlStr string) bool {
 		}
 	}
 	return false
+}
+
+// mergeRegexMatches merges regex matches
+func mergeRegexMatches(regexPattern, input string) []string {
+	regex := regexp.MustCompile(regexPattern)
+	allMatches := regex.FindAllString(input, -1)
+	return allMatches
+}
+
+// removeQuotes takes a string as input and removes single and double quotes if they are both prefixed and trailing.
+func (r *Runner) removeQuotes(input string) string {
+	if len(input) < 2 {
+		return input
+	}
+
+	// Check if the string starts and ends with quotes (single or double)
+	if (input[0] == '"' && input[len(input)-1] == '"') || (input[0] == '\'' && input[len(input)-1] == '\'') {
+		// Remove the first and last characters (quotes) from the string
+		return input[1 : len(input)-1]
+	}
+	return input
 }
