@@ -122,13 +122,14 @@ import (
 
 func main() {
 	options := options.Options{
-		Include:               []string{"example.com"},
-		Exclude:               []string{"support.hackerone.com"},
-		Concurrency:           20,
-		Timeout:               10,
-		Delay:                 0,
-		DelayJitter:           0,
-		UserAgent:             "urlwalk",
+		Include:     []string{"example.com"},
+		Exclude:     []string{"support.hackerone.com"},
+		Concurrency: 20,
+		Timeout:     10,
+		Delay:       0,
+		DelayJitter: 0,
+		Resolvers:   []string{"8.8.8.8", "208.67.222.222"},
+		UserAgent:   "urlwalk",
 	}
 
 	runner := runner.NewRunner(&options)
@@ -140,9 +141,14 @@ func main() {
 		}
 	}()
 
-	// start the runner and begin processing results
+	// single target
 	runner.Run("hackerone.com")
+
+	// multiple targets
+	targets := []string{"hackerone.com", "bugcrowd.com"}
+	runner.Run(targets...)
 }
+
 ```
 
 ---

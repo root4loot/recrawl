@@ -111,15 +111,21 @@ func NewRunner(o *options.Options) (runner *Runner) {
 }
 
 // Run starts the runner
-func (r *Runner) Run(target string) {
+func (r *Runner) Run(targets ...string) {
 	r.Results = make(chan Result)
 	r.Options.ValidateOptions()
 	r.Options.SetDefaultsMissing()
-	target = util.EnsureScheme(target)
-	mainTarget, _ = tld.Parse(target)
 
-	r.Scope.AddInclude(target)
-	r.Scope.AddInclude("*."+mainTarget.Host, mainTarget.Host) // assume all subdomains are in scope
+	var allURLs []*tld.URL
+	for _, target := range targets {
+		target = util.EnsureScheme(target)
+		mainTarget, _ := tld.Parse(target)
+
+		r.Scope.AddInclude(target)
+		r.Scope.AddInclude("*."+mainTarget.Host, mainTarget.Host) // assume all subdomains are in scope
+
+		allURLs = append(allURLs, mainTarget)
+	}
 
 	c_queue, c_urls, c_wait := r.makeQueue()
 	c_wait <- 1
@@ -132,7 +138,11 @@ func (r *Runner) Run(target string) {
 			r.worker(c_urls, c_queue, c_wait, r.Results)
 		}()
 	}
-	r.queueURL(c_queue, mainTarget)
+
+	for _, u := range allURLs {
+		r.queueURL(c_queue, u)
+	}
+
 	wg.Wait()
 
 	// close the r.Results channel after all workers have finished
@@ -172,20 +182,6 @@ func (r *Runner) makeQueue() (chan<- *tld.URL, <-chan *tld.URL, chan<- int) {
 	return c_queue, c_urls, c_wait
 }
 
-// addRobots queues URLs from robots.txt
-func (r *Runner) addRobots(c_queue chan<- *tld.URL, c_wait chan<- int, rawURL string) {
-	rawURL = util.EnsureScheme(rawURL)
-	u, _ := tld.Parse(rawURL)
-
-	if u.Host != "" && !r.isVisitedHost(u.Host) {
-		rawURL = u.Scheme + "://" + u.Host + "/robots.txt"
-		u, _ = tld.Parse(rawURL)
-		c_wait <- 1
-		r.addVisitedHost(u.Host)
-		r.queueURL(c_queue, u)
-	}
-}
-
 // queueURL adds a URL to the queue
 func (r *Runner) queueURL(c_queue chan<- *tld.URL, url *tld.URL) {
 	url, _ = tld.Parse(r.cleanDomain(url.String()))
@@ -216,9 +212,6 @@ func (r *Runner) worker(c_urls <-chan *tld.URL, c_queue chan<- *tld.URL, c_wait 
 		}
 
 		_, resp, err := r.request(c_url)
-
-		// add robots.txt to queue
-		r.addRobots(c_queue, c_wait, c_url.String())
 
 		if resp == nil {
 			c_wait <- -1

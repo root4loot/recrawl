@@ -28,6 +28,10 @@ func main() {
 		}
 	}()
 
-	// start the runner and begin processing results
+	// single target
 	runner.Run("hackerone.com")
+
+	// multiple targets
+	targets := []string{"hackerone.com", "bugcrowd.com"}
+	runner.Run(targets...)
 }
