@@ -28,7 +28,7 @@ import (
 var (
 	mainTarget *tld.URL
 	re_path    = regexp.MustCompile(`(?:"|')(?:(((?:[a-zA-Z]{1,10}://|//)[^"'/]{1,}\.[a-zA-Z]{2,}[^"']*)|((?:/|\.\./|\./)[^"'><,;|*()(%%$^/\\\[\]][^"'><,;|()]*[^"'><,;|()]*))|([a-zA-Z0-9_\-/]{1,}/[a-zA-Z0-9_\-/]{1,}\.(?:[a-zA-Z]{1,4}|action)(?:[\?|#][^"|']*)?)|([a-zA-Z0-9_\-/]{1,}/[a-zA-Z0-9_\-/]{3,}(?:[\?|#][^"|']*)?)|([a-zA-Z0-9_\-]+(?:\.[a-zA-Z]{1,4})+))(?:"|')`)
-	re_robots  = regexp.MustCompile(`(?:Allow|Disallow):\s*(.*)`)
+	re_robots  = regexp.MustCompile(`(?:Allow|Disallow):\s*([a-zA-Z0-9_\-/]+\.[a-zA-Z0-9]{1,4}(?:\?[^\s]*)?|[a-zA-Z0-9_\-/]+(?:/[a-zA-Z0-9_\-/]+)*(?:\?[^\s]*)?|[a-zA-Z0-9_\-/]+(?:\?[^\s]*|$))`)
 )
 
 type Runner struct {
@@ -372,23 +372,26 @@ func (r *Runner) setURL(rawURL string, paths []string) (rawURLs []string, err er
 }
 
 // scrape scrapes a response for paths
+// scrape scrapes a response for paths
 func (r *Runner) scrape(resp *http.Response) (res []string, err error) {
 	body, err := ioutil.ReadAll(resp.Body)
-	var matches []string
+	var matches [][]string
 
 	if err == nil {
 		if strings.HasSuffix(resp.Request.URL.String(), "robots.txt") {
-			matches = re_robots.FindAllString(string(body), -1)
+			matches = re_robots.FindAllStringSubmatch(string(body), -1)
 		} else {
-			matches = mergeRegexMatches(re_path.String(), string(body))
+			matches = re_path.FindAllStringSubmatch(string(body), -1)
 		}
 	} else {
 		return nil, err
 	}
+
 	for _, match := range matches {
-		if len(match) > 0 {
-			match = r.removeQuotes(match)
-			res = append(res, match)
+		if len(match) > 1 {
+			// Extract the path after "Disallow:" or "Allow:" from the second capturing group
+			path := strings.TrimSpace(match[1])
+			res = append(res, path)
 		}
 	}
 
