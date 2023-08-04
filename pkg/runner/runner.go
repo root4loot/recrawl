@@ -194,6 +194,15 @@ func (r *Runner) worker(c_urls <-chan *tld.URL, c_queue chan<- *tld.URL, c_wait 
 			continue
 		}
 
+		// Check if robots.txt is present for the host and add it to the queue
+		robotsURL := fmt.Sprintf("%s://%s/robots.txt", c_url.Scheme, c_url.Host)
+		robotsParsedURL, err := tld.Parse(robotsURL)
+		if err == nil && !r.isVisitedURL(robotsParsedURL.String()) {
+			time.Sleep(r.getDelay() * time.Millisecond)
+			c_wait <- 1
+			go r.queueURL(c_queue, robotsParsedURL)
+		}
+
 		// avoid example.com/foo/bar/foo/bar/foo/bar
 		if r.isTrapped(c_url.Path) {
 			// log.Debugf("Trapped in a loop %s", c_url.String())
@@ -261,7 +270,6 @@ func (r *Runner) worker(c_urls <-chan *tld.URL, c_queue chan<- *tld.URL, c_wait 
 		}
 		r.Results <- Result{RequestURL: c_url.String(), StatusCode: resp.StatusCode, Error: nil}
 	}
-
 }
 
 // request makes a request to a URL
