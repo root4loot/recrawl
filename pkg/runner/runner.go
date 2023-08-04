@@ -49,9 +49,8 @@ type Results struct {
 }
 
 var (
-	visitedURL  map[string]bool
-	visitedHost map[string]bool
-	mutex       = &sync.Mutex{}
+	visitedURL  sync.Map
+	visitedHost sync.Map
 )
 
 // NewRunner creates a new runner
@@ -151,8 +150,6 @@ func (r *Runner) Run(targets ...string) {
 
 // makeQueue creates a queue of URLs to be processed by workers
 func (r *Runner) makeQueue() (chan<- *tld.URL, <-chan *tld.URL, chan<- int) {
-	visitedURL = make(map[string]bool)
-	visitedHost = make(map[string]bool)
 	c_wait := make(chan int)
 	c_urls := make(chan *tld.URL)
 	c_queue := make(chan *tld.URL)
@@ -169,7 +166,7 @@ func (r *Runner) makeQueue() (chan<- *tld.URL, <-chan *tld.URL, chan<- int) {
 
 	go func() {
 		for q := range c_queue {
-			if r.Scope.InScope(q.Host) && !r.isVisitedURL(q.String()) {
+			if r.Scope.InScope(q.Host) && !r.isVisitedURL(q.String()) { // SEGFAULT
 				c_urls <- q
 			} else {
 				c_wait <- -1
@@ -448,33 +445,25 @@ func (r *Runner) getDelay() time.Duration {
 	return time.Duration(r.Options.Delay)
 }
 
-// addVisitedURL adds a URL to the visitedURL map
+// addVisitedURL adds a URL to the visitedURL sync.Map
 func (r *Runner) addVisitedURL(key string) {
-	mutex.Lock()
-	visitedURL[key] = true
-	mutex.Unlock()
+	visitedURL.Store(key, true)
 }
 
-// addVisitedHost adds a host to the visitedHost map
+// addVisitedHost adds a host to the visitedHost sync.Map
 func (r *Runner) addVisitedHost(key string) {
-	mutex.Lock()
-	visitedHost[key] = true
-	mutex.Unlock()
+	visitedHost.Store(key, true)
 }
 
 // isVisitedURL checks if a URL has been visited
 func (r *Runner) isVisitedURL(key string) bool {
-	mutex.Lock()
-	defer mutex.Unlock()
-	_, ok := visitedURL[key]
+	_, ok := visitedURL.Load(key)
 	return ok
 }
 
 // isVisitedHost checks if a host has been visited
 func (r *Runner) isVisitedHost(key string) bool {
-	mutex.Lock()
-	defer mutex.Unlock()
-	_, ok := visitedHost[key]
+	_, ok := visitedHost.Load(key)
 	return ok
 }
 
@@ -488,12 +477,15 @@ func (r *Runner) cleanDomain(domain string) string {
 }
 
 // isSimilarToVisitedURL checks if a URL is similar to a visited URL
+// isSimilarToVisitedURL checks if a URL is similar to a visited URL
 func (r *Runner) isSimilarToVisitedURL(urlStr string) bool {
 	u, err := url.Parse(urlStr)
 	if err != nil {
 		return false
 	}
+
 	if u.RawQuery == "" {
+		// Check if the canonical URL is already visited
 		if r.isVisitedURL(u.Path) {
 			return true
 		}
@@ -503,13 +495,7 @@ func (r *Runner) isSimilarToVisitedURL(urlStr string) bool {
 		if err != nil {
 			return false
 		}
-		// create a map of query parameter values
-		values := make(map[string]string)
-		for name, paramValues := range params {
-			if len(paramValues) > 0 {
-				values[name] = paramValues[0]
-			}
-		}
+
 		// create the canonical URL without query parameters
 		u.RawQuery = ""
 		canonicalURL := u.String()
@@ -527,38 +513,38 @@ func (r *Runner) isSimilarToVisitedURL(urlStr string) bool {
 			}
 		}
 
-		mutex.Lock()
-		defer mutex.Unlock()
-
-		for visitedURL := range visitedURL {
-			v, err := url.Parse(visitedURL)
-			if err != nil {
-				continue
+		// iterate over the visitedURLs using sync.Map's Range method
+		foundAlias := false
+		visitedURL.Range(func(key, value interface{}) bool {
+			vURL, ok := key.(string)
+			if !ok {
+				return true // continue the iteration
 			}
+
+			v, err := url.Parse(vURL)
+			if err != nil {
+				return true // continue the iteration
+			}
+
 			if v.RawQuery == "" {
 				if v.Path == u.Path && len(v.Query()) == len(params) {
-					return true
+					foundAlias = true
+					return false // stop the iteration
 				}
 			} else {
 				// extract query parameters
 				vParams, err := url.ParseQuery(v.RawQuery)
 				if err != nil {
-					continue
+					return true // continue the iteration
 				}
-				// create a map of query parameter values
-				vValues := make(map[string]string)
-				for name, paramValues := range vParams {
-					if len(paramValues) > 0 {
-						vValues[name] = paramValues[0]
-					}
-				}
+
 				// create the canonical URL without query parameters
 				v.RawQuery = ""
 				vCanonicalURL := v.String()
 
-				// check if the canonical URL matches the current URL
 				if vCanonicalURL == canonicalURL {
-					return true
+					foundAlias = true
+					return false // stop the iteration
 				}
 
 				// check if the alias URL only differs in the query parameter values
@@ -568,19 +554,28 @@ func (r *Runner) isSimilarToVisitedURL(urlStr string) bool {
 						vAliasValues[name] = paramValues[0]
 					}
 				}
+
 				alias := true
 				for name, value := range aliasValues {
-					if vValues[name] != value {
+					if vAliasValues[name] != value {
 						alias = false
 						break
 					}
 				}
 				if alias {
-					return true
+					foundAlias = true
+					return false // stop the iteration
 				}
 			}
+
+			return true // continue the iteration
+		})
+
+		if foundAlias {
+			return true
 		}
 	}
+
 	return false
 }
 
