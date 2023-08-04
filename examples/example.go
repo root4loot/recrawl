@@ -29,7 +29,7 @@ func main() {
 	}()
 
 	// single target
-	runner.Run("hackerone.com")
+	runner.Run("google.com")
 
 	// multiple targets
 	targets := []string{"hackerone.com", "bugcrowd.com"}
