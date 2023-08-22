@@ -56,7 +56,6 @@ var (
 // NewRunner creates a new runner
 func NewRunner(o *options.Options) (runner *Runner) {
 	runner = &Runner{}
-
 	runner.Results = make(chan Result)
 	runner.Options = o
 	runner.Scope = goscope.NewScope()
@@ -111,7 +110,6 @@ func NewRunner(o *options.Options) (runner *Runner) {
 
 // Run starts the runner
 func (r *Runner) Run(targets ...string) {
-	r.Results = make(chan Result)
 	r.Options.ValidateOptions()
 	r.Options.SetDefaultsMissing()
 
@@ -144,7 +142,6 @@ func (r *Runner) Run(targets ...string) {
 
 	wg.Wait()
 
-	// close the r.Results channel after all workers have finished
 	close(r.Results)
 }
 
@@ -160,20 +157,22 @@ func (r *Runner) makeQueue() (chan<- *tld.URL, <-chan *tld.URL, chan<- int) {
 			queueCount += delta
 			if queueCount == 0 {
 				close(c_queue)
+				close(c_wait)
 			}
 		}
 	}()
 
 	go func() {
 		for q := range c_queue {
-			if r.Scope.InScope(q.Host) && !r.isVisitedURL(q.String()) { // SEGFAULT
-				c_urls <- q
-			} else {
-				c_wait <- -1
+			if q != nil {
+				if r.Scope.InScope(q.Host) && !r.isVisitedURL(q.String()) {
+					c_urls <- q
+				} else {
+					c_wait <- -1
+				}
 			}
 		}
 		close(c_urls)
-		close(c_wait)
 	}()
 
 	return c_queue, c_urls, c_wait
