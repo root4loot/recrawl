@@ -142,7 +142,14 @@ func (r *Runner) Run(targets ...string) {
 
 	wg.Wait()
 
-	close(r.Results)
+	// Close the r.Results channel only if it's open
+	select {
+	case _, ok := <-r.Results:
+		if ok {
+			close(r.Results)
+		}
+	default:
+	}
 }
 
 // makeQueue creates a queue of URLs to be processed by workers
@@ -257,6 +264,7 @@ func (r *Runner) worker(c_urls <-chan *tld.URL, c_queue chan<- *tld.URL, c_wait 
 		}
 
 		c_wait <- len(rawURLs) - 1
+
 		for i := range rawURLs {
 			var u *tld.URL
 			if u, err = tld.Parse(rawURLs[i]); err != nil {
