@@ -4,7 +4,6 @@
 package runner
 
 import (
-	"crypto/tls"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -19,7 +18,6 @@ import (
 	"github.com/PuerkitoBio/purell"
 	"github.com/jpillora/go-tld"
 	"github.com/root4loot/goscope"
-	"github.com/root4loot/goutils/httputil"
 	"github.com/root4loot/urlwalk/pkg/log"
 	"github.com/root4loot/urlwalk/pkg/options"
 	"github.com/root4loot/urlwalk/pkg/util"
@@ -59,6 +57,7 @@ func NewRunner(o *options.Options) (runner *Runner) {
 	runner.Results = make(chan Result)
 	runner.Options = o
 	runner.Scope = goscope.NewScope()
+	runner.client = NewHTTPClient(o).client
 
 	// add includes
 	for _, include := range o.Include {
@@ -68,41 +67,6 @@ func NewRunner(o *options.Options) (runner *Runner) {
 	// add excludes
 	for _, exclude := range o.Exclude {
 		runner.Scope.AddExclude(exclude)
-	}
-
-	// new client with optional resolvers
-	if len(o.Resolvers) > 0 {
-		runner.client, _ = httputil.ClientWithOptionalResolvers(o.Resolvers...)
-	} else {
-		runner.client, _ = httputil.ClientWithOptionalResolvers()
-	}
-
-	// set client transport
-	runner.client.Transport = &http.Transport{
-		TLSClientConfig:       &tls.Config{InsecureSkipVerify: true},
-		MaxIdleConnsPerHost:   o.Concurrency,
-		ResponseHeaderTimeout: time.Duration(o.Timeout) * time.Second,
-	}
-	runner.client.Timeout = time.Duration(o.Timeout) * time.Second
-
-	if o.Proxy != "" {
-		if !util.HasScheme(o.Proxy) {
-			o.Proxy = "http://" + o.Proxy
-		}
-		proxy, err := url.Parse(o.Proxy)
-		if err != nil {
-			log.Fatalf("Error parsing proxy URL: %s", err)
-		}
-
-		runner.client = &http.Client{
-			Transport: &http.Transport{
-				Proxy:                 http.ProxyURL(proxy),
-				TLSClientConfig:       &tls.Config{InsecureSkipVerify: true},
-				MaxIdleConnsPerHost:   o.Concurrency,
-				ResponseHeaderTimeout: time.Duration(o.Timeout) * time.Second,
-			},
-			Timeout: time.Duration(o.Timeout) * time.Second,
-		}
 	}
 
 	return runner
