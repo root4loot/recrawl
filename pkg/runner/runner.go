@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"math/rand"
+	"net"
 	"net/http"
 	"net/url"
 	"regexp"
@@ -76,20 +77,23 @@ func NewRunner(o *options.Options) (runner *Runner) {
 func (r *Runner) Run(targets ...string) {
 	r.Options.ValidateOptions()
 	r.Options.SetDefaultsMissing()
+	c_queue, c_urls, c_wait := r.makeQueue()
 
 	var allURLs []*tld.URL
 	for _, target := range targets {
 		target = util.EnsureScheme(target)
 		mainTarget, _ := tld.Parse(target)
 
-		r.Scope.AddInclude(target)
-		r.Scope.AddInclude("*."+mainTarget.Host, mainTarget.Host) // assume all subdomains are in scope
+		// check if domain can be resolved
+		_, err := net.LookupHost(mainTarget.String())
+		if err != nil {
+			r.Scope.AddInclude(target)
+			r.Scope.AddInclude("*."+mainTarget.Host, mainTarget.Host) // assume all subdomains are in scope
 
-		allURLs = append(allURLs, mainTarget)
+			allURLs = append(allURLs, mainTarget)
+			c_wait <- 1
+		}
 	}
-
-	c_queue, c_urls, c_wait := r.makeQueue()
-	c_wait <- 1
 
 	var wg sync.WaitGroup
 	for i := 0; i < r.Options.Concurrency; i++ {
