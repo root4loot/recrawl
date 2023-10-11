@@ -347,7 +347,6 @@ func (r *Runner) setURL(rawURL string, paths []string) (rawURLs []string, err er
 }
 
 // scrape scrapes a response for paths
-// scrape scrapes a response for paths
 func (r *Runner) scrape(resp *http.Response) (res []string, err error) {
 	body, err := ioutil.ReadAll(resp.Body)
 	var matches [][]string
@@ -462,7 +461,6 @@ func (r *Runner) cleanDomain(domain string) string {
 	return domain
 }
 
-// isSimilarToVisitedURL checks if a URL is similar to a visited URL
 // isSimilarToVisitedURL checks if a URL is similar to a visited URL
 func (r *Runner) isSimilarToVisitedURL(urlStr string) bool {
 	u, err := url.Parse(urlStr)
