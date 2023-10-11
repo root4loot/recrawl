@@ -77,7 +77,7 @@ func NewRunner(o *options.Options) (runner *Runner) {
 func (r *Runner) Run(targets ...string) {
 	r.Options.ValidateOptions()
 	r.Options.SetDefaultsMissing()
-	c_queue, c_urls, c_wait := r.makeQueue()
+	c_queue, c_urls, c_wait := r.initializeWorkerPool()
 
 	var allURLs []*tld.URL
 	for _, target := range targets {
@@ -120,8 +120,8 @@ func (r *Runner) Run(targets ...string) {
 	}
 }
 
-// makeQueue creates a queue of URLs to be processed by workers
-func (r *Runner) makeQueue() (chan<- *tld.URL, <-chan *tld.URL, chan<- int) {
+// initializeWorkerPool creates a queue of URLs to be processed by workers
+func (r *Runner) initializeWorkerPool() (chan<- *tld.URL, <-chan *tld.URL, chan<- int) {
 	c_wait := make(chan int)
 	c_urls := make(chan *tld.URL)
 	c_queue := make(chan *tld.URL)
