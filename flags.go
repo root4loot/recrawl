@@ -29,7 +29,7 @@ func (c *CLI) usage() {
 
 	// print the configurations section
 	fmt.Fprintln(w, "\nCONFIGURATIONS:")
-	fmt.Fprintf(w, "\t%s,\t%s\t%s\t(Default: %v seconds)\n", "-c", "--concurrency", "number of concurrent requests", options.Default().Concurrency)
+	fmt.Fprintf(w, "\t%s,\t%s\t%s\t(Default: %v)\n", "-c", "--concurrency", "number of concurrent requests", options.Default().Concurrency)
 	fmt.Fprintf(w, "\t%s,\t%s\t%s\t(Default: %v seconds)\n", "-to", "--timeout", "max request timeout", options.Default().Timeout)
 	fmt.Fprintf(w, "\t%s,\t%s\t%s\t(Default: %v milliseconds)\n", "-d", "--delay", "delay between requests", options.Default().Delay)
 	fmt.Fprintf(w, "\t%s,\t%s\t%s\t(Default: %v milliseconds)\n", "-dj", "--delay-jitter", "max jitter between requests", options.Default().DelayJitter)

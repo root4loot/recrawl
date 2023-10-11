@@ -38,7 +38,7 @@ TARGETING:
    -eh,   --exclude-host   do not crawl this host (if found)   (comma-separated)
 
 CONFIGURATIONS:
-   -c,    --concurrency    number of concurrent requests       (Default: 20 seconds)
+   -c,    --concurrency    number of concurrent requests       (Default: 20)
    -to,   --timeout        max request timeout                 (Default: 10 seconds)
    -d,    --delay          delay between requests              (Default: 0 milliseconds)
    -dj,   --delay-jitter   max jitter between requests         (Default: 0 milliseconds)
