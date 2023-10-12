@@ -24,7 +24,7 @@ type CLI struct {
 
 const author = "@danielantonsen"
 
-// processor is a goroutine that processes the results as they come in
+// processResults is a goroutine that processes the results as they come in
 func (c *CLI) processResults(runner *runner.Runner) {
 	go func() {
 		for result := range runner.Results {
