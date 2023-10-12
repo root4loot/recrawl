@@ -30,7 +30,14 @@ func (c *CLI) processResults(runner *runner.Runner) {
 		for result := range runner.Results {
 			if !runner.Options.CLI.Silence {
 				if !runner.Options.CLI.HideStatusCodes {
-					fmt.Printf("%d %s\n", result.StatusCode, result.RequestURL)
+					if c.hasStatusCodeFilter() {
+						codeFilters := strings.Split(c.opts.CLI.FilterStatusCode, ",")
+						if filterStatusContains(codeFilters, strconv.Itoa(result.StatusCode)) {
+							fmt.Printf("%d %s\n", result.StatusCode, result.RequestURL)
+						}
+					} else {
+						fmt.Printf("%d %s\n", result.StatusCode, result.RequestURL)
+					}
 				} else {
 					fmt.Printf("%s\n", result.RequestURL)
 				}
@@ -154,6 +161,11 @@ func (c *CLI) hasStdin() bool {
 	return isPipedFromChrDev || isPipedFromFIFO
 }
 
+// hasStatusCodeFilter determines if the user has provided a status code filter
+func (c *CLI) hasStatusCodeFilter() bool {
+	return c.opts.CLI.FilterStatusCode != ""
+}
+
 // hasTarget determines if the user has provided a target
 func (c *CLI) hasTarget() bool {
 	return c.opts.CLI.Target != ""
@@ -172,4 +184,14 @@ func (c *CLI) hasOutfile() bool {
 // hasResolversFile determines if the user has provided a resolvers file
 func (c *CLI) hasResolversFile() bool {
 	return c.opts.CLI.ResolversFile != ""
+}
+
+// filterStatusContains determines if the given status code is in the filter
+func filterStatusContains(filterStatusCodes []string, statusCode string) bool {
+	for _, code := range filterStatusCodes {
+		if code == statusCode {
+			return true
+		}
+	}
+	return false
 }

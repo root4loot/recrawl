@@ -43,6 +43,7 @@ func (c *CLI) usage() {
 	fmt.Fprintf(w, "\t%s,\t%s\t%s\n", "-hs", "--hide-status", "hide status code from output")
 	fmt.Fprintf(w, "\t%s,\t%s\t%s\n", "-hw", "--hide-warning", "hide warnings from output")
 	fmt.Fprintf(w, "\t%s,\t%s\t%s\n", "-s", "--silence", "silence results from output")
+	fmt.Fprintf(w, "\t%s,\t%s\t%s\t\t\t\t  (%s)\n", "-fs", "--filter-status", "filter by status code", "comma-separated")
 	fmt.Fprintf(w, "\t%s,\t%s\t%s\n", "-v", "--version", "display version")
 	fmt.Fprintf(w, "\t%s,\t%s\t%s\n", "-h", "--help", "display help")
 
@@ -86,6 +87,8 @@ func (c *CLI) parseFlags() {
 	flag.BoolVar(&opts.CLI.Silence, "silence", false, "")
 	flag.StringVar(&opts.CLI.Outfile, "o", "", "")
 	flag.StringVar(&opts.CLI.Outfile, "outfile", "", "")
+	flag.StringVar(&opts.CLI.FilterStatusCode, "filter-status", "", "")
+	flag.StringVar(&opts.CLI.FilterStatusCode, "fs", "", "")
 	flag.BoolVar(&opts.CLI.HideWarning, "hw", false, "")
 	flag.BoolVar(&opts.CLI.HideWarning, "hide-warning", false, "")
 	flag.BoolVar(&opts.CLI.HideStatusCodes, "hs", false, "")

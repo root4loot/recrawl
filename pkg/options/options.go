@@ -27,17 +27,18 @@ type Options struct {
 }
 
 type CLI struct {
-	Include         string // targets to be included (comma separated)
-	Exclude         string // targets to be included (comma separated)
-	Target          string // target host
-	Infile          string // file containin targets (newline separated)
-	ResolversFile   string // file containing resolvers (newline separated)
-	Outfile         string // file to write results
-	HideStatusCodes bool   // show status code
-	HideWarning     bool   // hide warning
-	Silence         bool   // suppress output from console
-	Version         bool   // print version
-	Help            bool   // print help
+	Include          string // targets to be included (comma separated)
+	Exclude          string // targets to be included (comma separated)
+	Target           string // target host
+	Infile           string // file containin targets (newline separated)
+	ResolversFile    string // file containing resolvers (newline separated)
+	Outfile          string // file to write results
+	FilterStatusCode string // filter by status code (comma separated)
+	HideStatusCodes  bool   // show status code
+	HideWarning      bool   // hide warning
+	Silence          bool   // suppress output from console
+	Version          bool   // print version
+	Help             bool   // print help
 }
 
 // Default returns the default options
