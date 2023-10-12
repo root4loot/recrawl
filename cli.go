@@ -12,10 +12,10 @@ import (
 
 	"github.com/projectdiscovery/gologger"
 	"github.com/projectdiscovery/gologger/levels"
-	"github.com/root4loot/urlwalk/pkg/log"
-	"github.com/root4loot/urlwalk/pkg/options"
-	"github.com/root4loot/urlwalk/pkg/runner"
-	"github.com/root4loot/urlwalk/pkg/util"
+	"github.com/root4loot/recrawl/pkg/log"
+	"github.com/root4loot/recrawl/pkg/options"
+	"github.com/root4loot/recrawl/pkg/runner"
+	"github.com/root4loot/recrawl/pkg/util"
 )
 
 type CLI struct {
@@ -95,7 +95,7 @@ func (c *CLI) checkForExits() {
 		os.Exit(0)
 	}
 	if c.opts.CLI.Version {
-		fmt.Println("urlwalk ", version)
+		fmt.Println("recrawl ", version)
 		os.Exit(0)
 	}
 

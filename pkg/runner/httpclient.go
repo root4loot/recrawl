@@ -7,9 +7,9 @@ import (
 	"time"
 
 	"github.com/root4loot/goutils/httputil"
-	"github.com/root4loot/urlwalk/pkg/log"
-	"github.com/root4loot/urlwalk/pkg/options"
-	"github.com/root4loot/urlwalk/pkg/util"
+	"github.com/root4loot/recrawl/pkg/log"
+	"github.com/root4loot/recrawl/pkg/options"
+	"github.com/root4loot/recrawl/pkg/util"
 )
 
 type HTTPClient struct {

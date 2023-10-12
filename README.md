@@ -1,35 +1,35 @@
 ![Go version](https://img.shields.io/badge/Go-v1.19-blue.svg) [![Contribute](https://img.shields.io/badge/Contribute-Welcome-green.svg)](CONTRIBUTING.md)
-# urlwalk
+# recrawl
 
-urlwalk is a Go library and command-line interface tool for recursively crawling websites and extracting URLs. It provides a simple yet flexible API for developers to integrate URL discovery into their projects. It's particularly useful for security professionals, web developers, and anyone who needs to extract and analyze URLs from websites.
+recrawl is a Go library and command-line interface tool for recursively crawling websites and extracting URLs. It provides a simple yet flexible API for developers to integrate URL discovery into their projects. It's particularly useful for security professionals, web developers, and anyone who needs to extract and analyze URLs from websites.
 
 ### Key Features
 
-- Discover hidden endpoints with urlwalk's versatile, regex-based approach.
+- Discover hidden endpoints with recrawl's versatile, regex-based approach.
 - Avoid duplicate URLs and crawl traps for more accurate results.
 - Customize your crawl with scoping capabilities for greater control.
 - Target IPv4 addresses in addition to hostnames.
-- Use urlwalk's easy-to-use CLI with piped input support.
-- Integrate endpoint discovery into your own tools with urlwalk's library.
+- Use recrawl's easy-to-use CLI with piped input support.
+- Integrate endpoint discovery into your own tools with recrawl's library.
 - Optimized for performance with the use of standard HTTP library and concurrent crawling.
 
 ## Installation
 
 ### Go
 ```
-go install github.com/root4loot/urlwalk@master
+go install github.com/root4loot/recrawl@master
 ```
 
 ### Docker
 ```
-git clone https://github.com/root4loot/urlwalk.git && cd urlwalk
-docker build -t urlwalk .
-docker run -it urlwalk -h
+git clone https://github.com/root4loot/recrawl.git && cd recrawl
+docker build -t recrawl .
+docker run -it recrawl -h
 ```
 
 ## Usage
 ```
-Usage: ./urlwalk [options] (-t <target>|-i targets.txt)
+Usage: ./recrawl [options] (-t <target>|-i targets.txt)
 
 TARGETING:
    -t,    --target         target host                         (comma-separated)
@@ -42,7 +42,7 @@ CONFIGURATIONS:
    -to,   --timeout        max request timeout                 (Default: 10 seconds)
    -d,    --delay          delay between requests              (Default: 0 milliseconds)
    -dj,   --delay-jitter   max jitter between requests         (Default: 0 milliseconds)
-   -ua,   --user-agent     set user agent                      (Default: urlwalk)
+   -ua,   --user-agent     set user agent                      (Default: recrawl)
    -p,    --proxy          set proxy                           (Default: none)
    -r,    --resolvers      file containing list of resolvers   (Default: System DNS)
 
@@ -59,39 +59,39 @@ OUTPUT:
 
 Target `*.example.com`
 ```
-➜ urlwalk -t example.com
+➜ recrawl -t example.com
 ``` 
 
 Target `*.example.com` and `103.196.38.38`
 ```
-➜ urlwalk -t example.com,103.196.38.38
+➜ recrawl -t example.com,103.196.38.38
 ```
 
 Target all hosts in given file
 ```
-➜ urlwalk -i targets.txt
+➜ recrawl -i targets.txt
 ```
 
 Target `*.example.com` and `*.andme.com` (if found)
 ```
-➜ urlwalk -t example.com -ih andme.com
+➜ recrawl -t example.com -ih andme.com
 ```
 
 Target all domains that contain `example`
 ```
-➜ urlwalk -t example.com -ih example
+➜ recrawl -t example.com -ih example
 ```
 
 Target `*.example.com` but avoid `me.example.com`  
 ```
-➜ urlwalk -t example.com -eh me.example.com
+➜ recrawl -t example.com -eh me.example.com
 ```
 
 ### Example running
 
 Extract URL's that end in `js`
 ```
-➜ urlwalk -t hackerone.com -hs | grep 'js$'
+➜ recrawl -t hackerone.com -hs | grep 'js$'
 
 https://www.hackerone.com/sites/default/files/js/js_Ikd9nsZ0AFAesOLgcgjc7F6CRoODbeqOn7SVbsXgALQ.js
 https://www.hackerone.com/sites/default/files/js/js_hg8lQy2HP5Rw6yIz03HhGKfvnyySwjoFdqpvXgRJD6I.js
@@ -107,7 +107,7 @@ https://www.hackerone.com/sites/default/files/js/js_uj-ULd1j2hO5xijovTKN3LjREthK
 
 ## As lib
 ```
-go get github.com/root4loot/urlwalk@master
+go get github.com/root4loot/recrawl@master
 ```
 
 ```go
@@ -116,8 +116,8 @@ package main
 import (
 	"fmt"
 
-	"github.com/root4loot/urlwalk/pkg/options"
-	"github.com/root4loot/urlwalk/pkg/runner"
+	"github.com/root4loot/recrawl/pkg/options"
+	"github.com/root4loot/recrawl/pkg/runner"
 )
 
 func main() {
@@ -129,7 +129,7 @@ func main() {
 		Delay:       0,
 		DelayJitter: 0,
 		Resolvers:   []string{"8.8.8.8", "208.67.222.222"},
-		UserAgent:   "urlwalk",
+		UserAgent:   "recrawl",
 	}
 
 	runner := runner.NewRunner(&options)

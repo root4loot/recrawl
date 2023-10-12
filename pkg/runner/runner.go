@@ -19,9 +19,9 @@ import (
 	"github.com/PuerkitoBio/purell"
 	"github.com/jpillora/go-tld"
 	"github.com/root4loot/goscope"
-	"github.com/root4loot/urlwalk/pkg/log"
-	"github.com/root4loot/urlwalk/pkg/options"
-	"github.com/root4loot/urlwalk/pkg/util"
+	"github.com/root4loot/recrawl/pkg/log"
+	"github.com/root4loot/recrawl/pkg/options"
+	"github.com/root4loot/recrawl/pkg/util"
 )
 
 var (

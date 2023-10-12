@@ -6,11 +6,11 @@ import (
 	"os"
 	"text/tabwriter"
 
-	"github.com/root4loot/urlwalk/pkg/options"
+	"github.com/root4loot/recrawl/pkg/options"
 )
 
 func (c *CLI) banner() {
-	fmt.Println("\nurlwalk", version, "by", author)
+	fmt.Println("\nrecrawl", version, "by", author)
 }
 
 func (c *CLI) usage() {
@@ -33,7 +33,7 @@ func (c *CLI) usage() {
 	fmt.Fprintf(w, "\t%s,\t%s\t%s\t(Default: %v seconds)\n", "-to", "--timeout", "max request timeout", options.Default().Timeout)
 	fmt.Fprintf(w, "\t%s,\t%s\t%s\t(Default: %v milliseconds)\n", "-d", "--delay", "delay between requests", options.Default().Delay)
 	fmt.Fprintf(w, "\t%s,\t%s\t%s\t(Default: %v milliseconds)\n", "-dj", "--delay-jitter", "max jitter between requests", options.Default().DelayJitter)
-	fmt.Fprintf(w, "\t%s,\t%s\t%s\t(Default: %v)\n", "-ua", "--user-agent", "set user agent", "urlwalk")
+	fmt.Fprintf(w, "\t%s,\t%s\t%s\t(Default: %v)\n", "-ua", "--user-agent", "set user agent", "recrawl")
 	fmt.Fprintf(w, "\t%s,\t%s\t%s\t(Default: %v)\n", "-p", "--proxy", "set proxy", "none")
 	fmt.Fprintf(w, "\t%s,\t%s\t%s\t(Default: %v)\n", "-r", "--resolvers", "file containing list of resolvers", "System DNS")
 

@@ -3,8 +3,8 @@ package main
 import (
 	"fmt"
 
-	"github.com/root4loot/urlwalk/pkg/options"
-	"github.com/root4loot/urlwalk/pkg/runner"
+	"github.com/root4loot/recrawl/pkg/options"
+	"github.com/root4loot/recrawl/pkg/runner"
 )
 
 func main() {
@@ -16,7 +16,7 @@ func main() {
 		Delay:       0,
 		DelayJitter: 0,
 		Resolvers:   []string{"8.8.8.8", "208.67.222.222"},
-		UserAgent:   "urlwalk",
+		UserAgent:   "recrawl",
 	}
 
 	runner := runner.NewRunner(&options)

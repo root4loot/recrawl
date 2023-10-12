@@ -8,7 +8,7 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/root4loot/urlwalk/pkg/log"
+	"github.com/root4loot/recrawl/pkg/log"
 
 	"github.com/gookit/color"
 )
@@ -47,7 +47,7 @@ func Default() *Options {
 		Timeout:     10,
 		Delay:       0,
 		DelayJitter: 0,
-		UserAgent:   "urlwalk",
+		UserAgent:   "recrawl",
 	}
 }
 

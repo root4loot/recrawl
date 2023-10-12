@@ -1,4 +1,4 @@
-./urlwalk
+./recrawl
 .DS_Store
 dist/
 .vscode
