@@ -10,9 +10,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/projectdiscovery/gologger"
-	"github.com/projectdiscovery/gologger/levels"
-	"github.com/root4loot/recrawl/pkg/log"
+	"github.com/gookit/color"
 	"github.com/root4loot/recrawl/pkg/options"
 	"github.com/root4loot/recrawl/pkg/runner"
 	"github.com/root4loot/recrawl/pkg/util"
@@ -24,56 +22,30 @@ type CLI struct {
 
 const author = "@danielantonsen"
 
-// processResults is a goroutine that processes the results as they come in
-func (c *CLI) processResults(runner *runner.Runner) {
-	go func() {
-		for result := range runner.Results {
-			if !runner.Options.CLI.Silence {
-				if !runner.Options.CLI.HideStatusCodes {
-					if c.hasStatusCodeFilter() {
-						codeFilters := strings.Split(c.opts.CLI.FilterStatusCode, ",")
-						if filterStatusContains(codeFilters, strconv.Itoa(result.StatusCode)) {
-							fmt.Printf("%d %s\n", result.StatusCode, result.RequestURL)
-						}
-					} else {
-						fmt.Printf("%d %s\n", result.StatusCode, result.RequestURL)
-					}
-				} else {
-					fmt.Printf("%s\n", result.RequestURL)
-				}
-			}
-			if runner.Options.CLI.Outfile != "" {
-				c.appendToFile([]string{strconv.Itoa(result.StatusCode) + " " + result.RequestURL})
-			}
-		}
-	}()
-}
-
 func main() {
 	var targets []string
 	var err error
 	cli := newCLI()
 	cli.initialize()
-	runner := runner.NewRunner(&cli.opts)
+	r := runner.NewRunner(&cli.opts)
 
 	if cli.hasStdin() {
 		scanner := bufio.NewScanner(os.Stdin)
 		for scanner.Scan() {
-			cli.processResults(runner)
-			runner.Run(scanner.Text())
+			cli.processResults(r)
+			r.Run(scanner.Text())
 		}
 	} else if cli.hasInfile() {
 		if targets, err = util.ReadFileLines(cli.opts.CLI.Infile); err != nil {
-			log.Fatalf("Error reading file: ", err)
+			runner.Log.Fatalf("Error reading file: %v", err)
 		}
 	} else if cli.hasTarget() {
 		targets = cli.getTargets()
 	}
 	for _, target := range targets {
-		cli.processResults(runner)
-		runner.Run(target)
+		cli.processResults(r)
+		r.Run(target)
 	}
-	// example.ExampleRun()
 }
 
 // newCLI returns a new CLI instance
@@ -86,12 +58,30 @@ func (c *CLI) initialize() {
 	// defaults = options.GetDefaultOptions()
 	c.parseFlags()
 	c.checkForExits()
-	if c.opts.CLI.HideWarning {
-		gologger.DefaultLogger.SetMaxLevel(levels.LevelInfo)
-	} else {
-		gologger.DefaultLogger.SetMaxLevel(levels.LevelDebug)
-	}
 	c.opts.Include, c.opts.Exclude = c.setScope()
+}
+
+// processResults is a goroutine that processes the results as they come in
+func (c *CLI) processResults(runner *runner.Runner) {
+	go func() {
+		for result := range runner.Results {
+			if !runner.Options.CLI.HideStatusCodes {
+				if c.hasStatusCodeFilter() {
+					codeFilters := strings.Split(c.opts.CLI.FilterStatusCode, ",")
+					if filterStatusContains(codeFilters, strconv.Itoa(result.StatusCode)) {
+						fmt.Printf("%d %s\n", result.StatusCode, result.RequestURL)
+					}
+				} else {
+					fmt.Printf("%d %s\n", result.StatusCode, result.RequestURL)
+				}
+			} else {
+				fmt.Printf("%s\n", result.RequestURL)
+			}
+			if runner.Options.CLI.Outfile != "" {
+				c.appendToFile([]string{strconv.Itoa(result.StatusCode) + " " + result.RequestURL})
+			}
+		}
+	}()
 }
 
 // checkForExits checks for the presence of the -h|--help and -v|--version flags
@@ -108,7 +98,7 @@ func (c *CLI) checkForExits() {
 
 	if !c.hasStdin() && !c.hasInfile() && !c.hasTarget() {
 		fmt.Println("")
-		log.Errorf("%s\n\n", "Missing target")
+		color.Redf("%s\n\n", "Missing Target")
 		c.usage()
 	}
 }
@@ -130,13 +120,13 @@ func (c *CLI) getTargets() (targets []string) {
 func (c *CLI) appendToFile(lines []string) {
 	file, err := os.OpenFile(c.opts.CLI.Outfile, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644)
 	if err != nil {
-		log.Errorf("could not open file: %v", err)
+		runner.Log.Fatalf("Could not open file: %v", err)
 	}
 	defer file.Close()
 
 	for i := range lines {
 		if _, err := file.WriteString(lines[i] + "\n"); err != nil {
-			log.Errorf("could not write line to file: %v", err)
+			runner.Log.Fatalf("Could not write line to file: %v", err)
 		}
 	}
 }

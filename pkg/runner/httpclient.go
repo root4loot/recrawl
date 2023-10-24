@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/root4loot/goutils/httputil"
-	"github.com/root4loot/recrawl/pkg/log"
 	"github.com/root4loot/recrawl/pkg/options"
 	"github.com/root4loot/recrawl/pkg/util"
 )
@@ -41,7 +40,7 @@ func NewHTTPClient(options *options.Options) *HTTPClient {
 		}
 		proxy, err := url.Parse(options.Proxy)
 		if err != nil {
-			log.Fatalf("Error parsing proxy URL: %s", err)
+			Log.Fatalf("Error parsing proxy URL: %s", err)
 		}
 
 		client = &http.Client{

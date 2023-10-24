@@ -29,12 +29,12 @@ docker run -it recrawl -h
 
 ## Usage
 ```
-Usage: ./recrawl [options] (-t <target>|-i targets.txt)
+Usage: ./recrawl [options] (-t <target> | -i <targets.txt>)
 
 TARGETING:
    -t,    --target         target host                         (comma-separated)
    -i,    --infile         file containing targets             (one per line)
-   -ih,   --include-host   also crawl this host (if found)     (comma-separated)
+   -ih,   --include-host   also crawls this host (if found)    (comma-separated)
    -eh,   --exclude-host   do not crawl this host (if found)   (comma-separated)
 
 CONFIGURATIONS:
@@ -51,8 +51,9 @@ OUTPUT:
    -hs,   --hide-status     hide status code from output
    -hw,   --hide-warning    hide warnings from output
    -s,    --silence         silence results from output
-   -fs,   --filter-status   filter by status code               (comma-separated)
-   -v,    --version         display version
+   -v,    --verbose         silence results from output
+   -fs,   --filter-status   filter by status code              (comma-separated)
+   ,      --version         display version
    -h,    --help            display help
 ```
 

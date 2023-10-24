@@ -19,10 +19,12 @@ import (
 	"github.com/PuerkitoBio/purell"
 	"github.com/jpillora/go-tld"
 	"github.com/root4loot/goscope"
-	"github.com/root4loot/recrawl/pkg/log"
 	"github.com/root4loot/recrawl/pkg/options"
 	"github.com/root4loot/recrawl/pkg/util"
+	"github.com/root4loot/relog"
 )
+
+var Log = relog.NewLogger("recrawl")
 
 var (
 	mainTarget *tld.URL
@@ -57,6 +59,7 @@ func NewRunner(o *options.Options) (runner *Runner) {
 	runner = &Runner{}
 	runner.Results = make(chan Result)
 	runner.Options = o
+	SetLogLevel(runner.Options)
 	runner.Scope = goscope.NewScope()
 	runner.client = NewHTTPClient(o).client
 
@@ -166,6 +169,8 @@ func (r *Runner) worker(c_urls <-chan *tld.URL, c_queue chan<- *tld.URL, c_wait 
 		if c_url == nil || c_url.Host == "" {
 			c_wait <- -1
 			continue
+		} else {
+			Log.Debugf("Processing %s", c_url)
 		}
 
 		// Check if robots.txt is present for the host and add it to the queue
@@ -179,14 +184,14 @@ func (r *Runner) worker(c_urls <-chan *tld.URL, c_queue chan<- *tld.URL, c_wait 
 
 		// avoid example.com/foo/bar/foo/bar/foo/bar
 		if r.isTrapped(c_url.Path) {
-			// log.Debugf("Trapped in a loop %s", c_url.String())
+			Log.Infof("Trapped in a loop %s", c_url.String())
 			c_wait <- -1
 			continue
 		}
 
 		// avoid URLs that only differ in parameter values
 		if r.isSimilarToVisitedURL(c_url.String()) {
-			// log.Debugf("Found similar for %s", c_url.String())
+			Log.Infof("Found similar for %s", c_url.String())
 			c_wait <- -1
 			continue
 		}
@@ -200,7 +205,7 @@ func (r *Runner) worker(c_urls <-chan *tld.URL, c_queue chan<- *tld.URL, c_wait 
 
 		if err != nil {
 			if !strings.Contains(err.Error(), "already visited") {
-				log.Warningf("%v", err.Error())
+				Log.Infof("%v", err.Error())
 				r.Results <- Result{RequestURL: c_url.String(), StatusCode: 0, Error: err}
 			}
 			c_wait <- -1
@@ -218,7 +223,7 @@ func (r *Runner) worker(c_urls <-chan *tld.URL, c_queue chan<- *tld.URL, c_wait 
 		paths, err := r.scrape(resp)
 
 		if err != nil {
-			log.Warningf("Timeout exceeded for %v", landingURL)
+			Log.Warningf("Timeout exceeded for %v", landingURL)
 			c_wait <- len(rawURLs) - 1
 			continue
 		}
@@ -226,7 +231,7 @@ func (r *Runner) worker(c_urls <-chan *tld.URL, c_queue chan<- *tld.URL, c_wait 
 		rawURLs, err = r.setURL(landingURL, paths)
 
 		if err != nil {
-			log.Warningf("%v", err)
+			Log.Warningf("%v", err)
 			c_wait <- len(rawURLs) - 1
 			continue
 		}
@@ -236,7 +241,7 @@ func (r *Runner) worker(c_urls <-chan *tld.URL, c_queue chan<- *tld.URL, c_wait 
 		for i := range rawURLs {
 			var u *tld.URL
 			if u, err = tld.Parse(rawURLs[i]); err != nil {
-				log.Warningf("%v", err)
+				Log.Warningf("%v", err)
 				c_wait <- len(rawURLs) - 1
 				continue
 			}
@@ -249,6 +254,7 @@ func (r *Runner) worker(c_urls <-chan *tld.URL, c_queue chan<- *tld.URL, c_wait 
 
 // request makes a request to a URL
 func (r *Runner) request(u *tld.URL) (req *http.Request, resp *http.Response, err error) {
+	Log.Debugf("Requesting %s", u.String())
 
 	// Check if URL has already been visited
 	if r.isVisitedURL(u.String()) {
@@ -299,6 +305,8 @@ func (r *Runner) request(u *tld.URL) (req *http.Request, resp *http.Response, er
 
 // setURL sets the URL for a request
 func (r *Runner) setURL(rawURL string, paths []string) (rawURLs []string, err error) {
+	Log.Debugf("Setting URL for %s", rawURL)
+
 	var line string
 
 	u, err := url.Parse(rawURL)
@@ -348,6 +356,7 @@ func (r *Runner) setURL(rawURL string, paths []string) (rawURLs []string, err er
 
 // scrape scrapes a response for paths
 func (r *Runner) scrape(resp *http.Response) (res []string, err error) {
+	Log.Debugf("Scraping %s", resp.Request.URL.String())
 	body, err := io.ReadAll(resp.Body)
 	var matches [][]string
 
@@ -582,4 +591,18 @@ func (r *Runner) removeQuotes(input string) string {
 		return input[1 : len(input)-1]
 	}
 	return input
+}
+
+func SetLogLevel(options *options.Options) {
+	Log.Debugln("Setting logger level...")
+
+	if options.Verbose {
+		Log.SetLevel(relog.DebugLevel)
+	} else if options.Silence {
+		Log.SetLevel(relog.FatalLevel)
+	} else if options.CLI.HideWarning {
+		Log.SetLevel(relog.ErrorLevel)
+	} else {
+		Log.SetLevel(relog.WarnLevel)
+	}
 }

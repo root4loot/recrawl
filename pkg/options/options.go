@@ -5,10 +5,9 @@ package options
 
 import (
 	"fmt"
+	"log"
 	"reflect"
 	"strings"
-
-	"github.com/root4loot/recrawl/pkg/log"
 
 	"github.com/gookit/color"
 )
@@ -22,6 +21,8 @@ type Options struct {
 	DelayJitter int      // maximum jitter to add to delay (in ms)
 	UserAgent   string   // custom user-agent
 	Proxy       string   // proxy to use for requests
+	Silence     bool     // suppress output from console
+	Verbose     bool     // verbose output
 	Resolvers   []string // resolvers to use for DNS resolution
 	CLI         CLI      // CLI options
 }
@@ -36,9 +37,9 @@ type CLI struct {
 	FilterStatusCode string // filter by status code (comma separated)
 	HideStatusCodes  bool   // show status code
 	HideWarning      bool   // hide warning
-	Silence          bool   // suppress output from console
-	Version          bool   // print version
-	Help             bool   // print help
+
+	Version bool // print version
+	Help    bool // print help
 }
 
 // Default returns the default options

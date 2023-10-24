@@ -18,13 +18,13 @@ func (c *CLI) usage() {
 	w := tabwriter.NewWriter(os.Stdout, 2, 0, 3, ' ', 0)
 
 	// print the usage header
-	fmt.Fprintln(w, "Usage:\t"+os.Args[0]+" [options] -t <target>")
+	fmt.Fprintln(w, "Usage:\t"+os.Args[0]+" [options] (-t <target> | -i <targets.txt>)")
 
 	// print the targeting section
 	fmt.Fprintln(w, "\nTARGETING:")
 	fmt.Fprintf(w, "\t%s,\t%s\t%s\t(%s)\n", "-t", "--target", "target host", "comma-separated")
 	fmt.Fprintf(w, "\t%s,\t%s\t%s\t(%s)\n", "-i", "--infile", "file containing targets", "one per line")
-	fmt.Fprintf(w, "\t%s,\t%s\t%s\t(%s)\n", "-ih", "--include-host", "also crawl this host (if found)", "comma-separated")
+	fmt.Fprintf(w, "\t%s,\t%s\t%s\t(%s)\n", "-ih", "--include-host", "also crawls this host (if found)", "comma-separated")
 	fmt.Fprintf(w, "\t%s,\t%s\t%s\t(%s)\n", "-eh", "--exclude-host", "do not crawl this host (if found)", "comma-separated")
 
 	// print the configurations section
@@ -43,8 +43,9 @@ func (c *CLI) usage() {
 	fmt.Fprintf(w, "\t%s,\t%s\t%s\n", "-hs", "--hide-status", "hide status code from output")
 	fmt.Fprintf(w, "\t%s,\t%s\t%s\n", "-hw", "--hide-warning", "hide warnings from output")
 	fmt.Fprintf(w, "\t%s,\t%s\t%s\n", "-s", "--silence", "silence results from output")
+	fmt.Fprintf(w, "\t%s,\t%s\t%s\n", "-v", "--verbose", "silence results from output")
 	fmt.Fprintf(w, "\t%s,\t%s\t%s\t\t\t\t  (%s)\n", "-fs", "--filter-status", "filter by status code", "comma-separated")
-	fmt.Fprintf(w, "\t%s,\t%s\t%s\n", "-v", "--version", "display version")
+	fmt.Fprintf(w, "\t%s,\t%s\t%s\n", "", "--version", "display version")
 	fmt.Fprintf(w, "\t%s,\t%s\t%s\n", "-h", "--help", "display help")
 
 	// flush the tabwriter
@@ -83,8 +84,10 @@ func (c *CLI) parseFlags() {
 	flag.StringVar(&opts.CLI.ResolversFile, "r", "", "")
 
 	// OUTPUT
-	flag.BoolVar(&opts.CLI.Silence, "s", false, "")
-	flag.BoolVar(&opts.CLI.Silence, "silence", false, "")
+	flag.BoolVar(&opts.Silence, "s", false, "")
+	flag.BoolVar(&opts.Silence, "silence", false, "")
+	flag.BoolVar(&opts.Verbose, "v", false, "")
+	flag.BoolVar(&opts.Verbose, "verbose", false, "")
 	flag.StringVar(&opts.CLI.Outfile, "o", "", "")
 	flag.StringVar(&opts.CLI.Outfile, "outfile", "", "")
 	flag.StringVar(&opts.CLI.FilterStatusCode, "filter-status", "", "")
