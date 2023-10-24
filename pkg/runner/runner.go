@@ -6,7 +6,7 @@ package runner
 import (
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"math/rand"
 	"net"
 	"net/http"
@@ -348,7 +348,7 @@ func (r *Runner) setURL(rawURL string, paths []string) (rawURLs []string, err er
 
 // scrape scrapes a response for paths
 func (r *Runner) scrape(resp *http.Response) (res []string, err error) {
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	var matches [][]string
 
 	if err == nil {
