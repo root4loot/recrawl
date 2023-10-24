@@ -61,7 +61,7 @@ OUTPUT:
    -s,    --silence         silence results from output
    -v,    --verbose         silence results from output
    -fs,   --filter-status   filter by status code              (comma-separated)
-   ,      --version         display version
+          --version         display version
    -h,    --help            display help
 ```
 
