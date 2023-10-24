@@ -1,17 +1,25 @@
-![Go version](https://img.shields.io/badge/Go-v1.19-blue.svg) [![Contribute](https://img.shields.io/badge/Contribute-Welcome-green.svg)](CONTRIBUTING.md)
-# recrawl
+<br>
+<div align="center">
+  <br>
+  <img src="assets/logo.png" alt="recrawl logo" width="350">
+</div>
 
-recrawl is a Go library and command-line interface tool for recursively crawling websites and extracting URLs. It provides a simple yet flexible API for developers to integrate URL discovery into their projects. It's particularly useful for security professionals, web developers, and anyone who needs to extract and analyze URLs from websites.
+<br>
 
-### Key Features
+<div align="center">
+ <strong>recrawl</strong> is a Go library and command-line interface tool for crawling and extracting URLs from websites.
+</div>
 
-- Discover hidden endpoints with recrawl's versatile, regex-based approach.
-- Avoid duplicate URLs and crawl traps for more accurate results.
-- Customize your crawl with scoping capabilities for greater control.
-- Target IPv4 addresses in addition to hostnames.
-- Use recrawl's easy-to-use CLI with piped input support.
-- Integrate endpoint discovery into your own tools with recrawl's library.
-- Optimized for performance with the use of standard HTTP library and concurrent crawling.
+<br>
+
+### Features
+
+- Finds hidden links using pattern matching.
+- Skips repeated URLs and traps to give cleaner results.
+- Allows fine-tuned control over what to search for.
+- Works with both web addresses and IP addresses.
+- Simple command-line interface that supports chained commands.
+- Easily add recrawl's features to your own projects.
 
 ## Installation
 
@@ -59,39 +67,31 @@ OUTPUT:
 
 ## Example
 
-Target `*.example.com`
-```
+
+```sh
+# Crawl *.example.com
 ➜ recrawl -t example.com
-``` 
 
-Target `*.example.com` and `103.196.38.38`
-```
+# Crawl *.example.com and IP address
 ➜ recrawl -t example.com,103.196.38.38
-```
 
-Target all hosts in given file
-```
+# Crawl all hosts in given file
 ➜ recrawl -i targets.txt
-```
 
-Target `*.example.com` and `*.andme.com` (if found)
-```
-➜ recrawl -t example.com -ih andme.com
-```
+# Crawl *.example.com and also include *.example2.com if found
+➜ recrawl -t example.com -ih example2.com
 
-Target all domains that contain `example`
-```
+# Crawl all domains in target that contain the word example
 ➜ recrawl -t example.com -ih example
-```
 
-Target `*.example.com` but avoid `me.example.com`  
-```
-➜ recrawl -t example.com -eh me.example.com
+# Crawl *.example.com but avoid foo.example.com
+➜ recrawl -t example.com -eh foo.example.com
 ```
 
 ### Example running
 
-Extract URL's that end in `js`
+Crawl hackerone.com, hide status code and grep for lines ending in .js
+
 ```
 ➜ recrawl -t hackerone.com -hs | grep 'js$'
 
@@ -156,9 +156,4 @@ func main() {
 
 ## Contributing
 
-Contributions are welcome and greatly appreciated. To contribute to the project, please follow these steps:
-
-1. Create an issue to discuss the change you would like to make.
-2. Fork the repository and create a new branch for your feature or bug fix.
-3. Make your changes and ensure that your code passes any existing tests.
-4. Submit a pull request and explain your changes. Please reference the issue number that you created in step 1.
+Contributions are very welcome. See [CONTRIBUTING.md](CONTRIBUTING.md)
