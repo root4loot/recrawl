@@ -23,25 +23,46 @@ type CLI struct {
 const author = "@danielantonsen"
 
 func main() {
-	var targets []string
-	var err error
 	cli := newCLI()
 	cli.initialize()
 	r := runner.NewRunner(&cli.opts)
 
+	// Check if there is stdin input
 	if cli.hasStdin() {
-		scanner := bufio.NewScanner(os.Stdin)
-		for scanner.Scan() {
-			cli.processResults(r)
-			r.Run(scanner.Text())
-		}
-	} else if cli.hasInfile() {
-		if targets, err = util.ReadFileLines(cli.opts.CLI.Infile); err != nil {
-			runner.Log.Fatalf("Error reading file: %v", err)
-		}
-	} else if cli.hasTarget() {
-		targets = cli.getTargets()
+		processStdinInput(cli, r)
+	} else if cli.hasInfile() { // Check if there is an input file
+		processInfile(cli, r)
+	} else if cli.hasTarget() { // Check if there is a target
+		processTargets(cli, r)
 	}
+}
+
+// processStdinInput processes the STDIN targets provided by the user
+func processStdinInput(cli *CLI, r *runner.Runner) {
+	scanner := bufio.NewScanner(os.Stdin)
+	for scanner.Scan() {
+		cli.processResults(r)
+		r.Run(scanner.Text())
+	}
+}
+
+// processInfile processes the infile targets provided by the user
+func processInfile(cli *CLI, r *runner.Runner) {
+	targets, err := util.ReadFileLines(cli.opts.CLI.Infile)
+	if err != nil {
+		runner.Log.Fatalf("Error reading file: %v", err)
+	}
+
+	for _, target := range targets {
+		cli.processResults(r)
+		r.Run(target)
+	}
+}
+
+// processTargets processes the CLI targets provided by the user
+func processTargets(cli *CLI, r *runner.Runner) {
+	targets := cli.getTargets()
+
 	for _, target := range targets {
 		cli.processResults(r)
 		r.Run(target)
@@ -65,9 +86,13 @@ func (c *CLI) initialize() {
 func (c *CLI) processResults(runner *runner.Runner) {
 	go func() {
 		for result := range runner.Results {
+			// Check if HideStatusCodes is false
 			if !runner.Options.CLI.HideStatusCodes {
+				// Check if hasStatusCodeFilter is true
 				if c.hasStatusCodeFilter() {
+					// Split the FilterStatusCode into an array of codeFilters
 					codeFilters := strings.Split(c.opts.CLI.FilterStatusCode, ",")
+					// Check if codeFilters contains the string representation of result.StatusCode
 					if filterStatusContains(codeFilters, strconv.Itoa(result.StatusCode)) {
 						fmt.Printf("%d %s\n", result.StatusCode, result.RequestURL)
 					}
@@ -77,6 +102,8 @@ func (c *CLI) processResults(runner *runner.Runner) {
 			} else {
 				fmt.Printf("%s\n", result.RequestURL)
 			}
+
+			// Check if Outfile is not empty
 			if runner.Options.CLI.Outfile != "" {
 				c.appendToFile([]string{strconv.Itoa(result.StatusCode) + " " + result.RequestURL})
 			}
