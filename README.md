@@ -55,14 +55,14 @@ CONFIGURATIONS:
    -r,    --resolvers      file containing list of resolvers   (Default: System DNS)
 
 OUTPUT:
-   -o,    --outfile         output results to given file
    -hs,   --hide-status     hide status code from output
    -hw,   --hide-warning    hide warnings from output
+   -fs,   --filter-status   filter by status code              (comma-separated)
+   -o,    --outfile         output results to given file
    -s,    --silence         silence results from output
    -v,    --verbose         silence results from output
-   -fs,   --filter-status   filter by status code              (comma-separated)
-          --version         display version
    -h,    --help            display help
+          --version         display version
 ```
 
 ## Example

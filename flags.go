@@ -39,14 +39,14 @@ func (c *CLI) usage() {
 
 	// print the output section
 	fmt.Fprintln(w, "\nOUTPUT:")
-	fmt.Fprintf(w, "\t%s,\t%s\t%s\n", "-o", "--outfile", "output results to given file")
 	fmt.Fprintf(w, "\t%s,\t%s\t%s\n", "-hs", "--hide-status", "hide status code from output")
 	fmt.Fprintf(w, "\t%s,\t%s\t%s\n", "-hw", "--hide-warning", "hide warnings from output")
+	fmt.Fprintf(w, "\t%s,\t%s\t%s\t\t\t\t  (%s)\n", "-fs", "--filter-status", "filter by status code", "comma-separated")
+	fmt.Fprintf(w, "\t%s,\t%s\t%s\n", "-o", "--outfile", "output results to given file")
 	fmt.Fprintf(w, "\t%s,\t%s\t%s\n", "-s", "--silence", "silence results from output")
 	fmt.Fprintf(w, "\t%s,\t%s\t%s\n", "-v", "--verbose", "silence results from output")
-	fmt.Fprintf(w, "\t%s,\t%s\t%s\t\t\t\t  (%s)\n", "-fs", "--filter-status", "filter by status code", "comma-separated")
-	fmt.Fprintf(w, "\t\t%s\t%s\n", "--version", "display version")
 	fmt.Fprintf(w, "\t%s,\t%s\t%s\n", "-h", "--help", "display help")
+	fmt.Fprintf(w, "\t\t%s\t%s\n", "--version", "display version")
 
 	// flush the tabwriter
 	w.Flush()
