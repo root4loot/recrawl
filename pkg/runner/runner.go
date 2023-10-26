@@ -130,6 +130,9 @@ func (r *Runner) initializeWorkerPool() (chan<- *tld.URL, <-chan *tld.URL, chan<
 	c_queue := make(chan *tld.URL)
 	queueCount := 0
 
+	// Initialize timeout duration
+	timeoutDuration := time.Second * 10 // gracefully close after 10 seconds of inactivity
+
 	go func() {
 		for delta := range c_wait {
 			queueCount += delta
@@ -141,16 +144,33 @@ func (r *Runner) initializeWorkerPool() (chan<- *tld.URL, <-chan *tld.URL, chan<
 	}()
 
 	go func() {
-		for q := range c_queue {
-			if q != nil {
-				if r.Scope.InScope(q.Host) && !r.isVisitedURL(q.String()) {
-					c_urls <- q
-				} else {
-					c_wait <- -1
+		timeoutTimer := time.NewTimer(timeoutDuration) // Create a new timer
+		defer timeoutTimer.Stop()
+
+		for {
+			// Reset the timer
+			if !timeoutTimer.Stop() {
+				<-timeoutTimer.C
+			}
+			timeoutTimer.Reset(timeoutDuration)
+
+			select {
+			case q := <-c_queue:
+				if q != nil {
+					if r.Scope.InScope(q.Host) && !r.isVisitedURL(q.String()) {
+						c_urls <- q
+					} else {
+						c_wait <- -1
+					}
 				}
+			case <-timeoutTimer.C: // Time's up!
+				// fmt.Println("Timeout reached, closing channels.")
+				close(c_queue)
+				close(c_wait)
+				close(c_urls)
+				return
 			}
 		}
-		close(c_urls)
 	}()
 
 	return c_queue, c_urls, c_wait
