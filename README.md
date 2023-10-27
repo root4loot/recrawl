@@ -12,6 +12,8 @@
 
 <br>
 
+⚠️ **NOTE**: This project is currently under development. It may not work as expected and is likely to contain bugs. Use with caution.
+
 ### Features
 
 - Finds hidden links using pattern matching.
