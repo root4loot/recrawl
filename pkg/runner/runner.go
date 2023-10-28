@@ -98,7 +98,7 @@ func (r *Runner) Run(targets ...string) {
 		}
 
 		// log info to prepare target for crawling
-		Log.Info("Preparing target for crawling: ", target)
+		logInfo("Preparing target for crawling: ", target)
 		go r.queueURL(c_queue, mainTarget)
 		c_wait <- 1
 	}
@@ -703,4 +703,11 @@ func (r *Runner) setLogLevel() {
 		Log.SetLevel(relog.ErrorLevel) // Default to Error level logging
 	}
 }
+
+// temporarily sets the log level to Info and logs the Info message
+func logInfo(str1 string, str2 string) {
+	originalLevel := Log.GetLevel() // Store the original log level
+	Log.SetLevel(relog.InfoLevel)   // Temporarily set level to Info
+	Log.Info(str1, str2)            // Log the Info message
+	Log.SetLevel(originalLevel)     // Restore original log level
 }
