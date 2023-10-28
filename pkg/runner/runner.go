@@ -57,35 +57,27 @@ var (
 )
 
 // NewRunnerWithDefaults creates a new runner with default options
-func NewRunner() (runner *Runner) {
-	runner = &Runner{}
-	runner.Results = make(chan Result)
-	runner.Options = options.Default()
-	runner.setLogLevel()
-
-	// Initialize scope
-	runner.initializeScope()
-
-	// Initialize HTTP client
-	runner.client = NewHTTPClient(runner.Options).client
-
-	return
+func NewRunnerWithDefaults() *Runner {
+	return newRunner(options.Default())
 }
 
 // NewRunnerWithOptions creates a new runner with options
-func NewRunnerWithOptions(o *options.Options) (runner *Runner) {
-	runner = &Runner{}
-	runner.Results = make(chan Result)
-	runner.Options = o
+func NewRunnerWithOptions(o *options.Options) *Runner {
+	return newRunner(o)
+}
+
+// newRunner creates a new runner with given options
+func newRunner(o *options.Options) *Runner {
+	runner := &Runner{
+		Results: make(chan Result),
+		Options: o,
+	}
+
 	runner.setLogLevel()
-
-	// Initialize scope
 	runner.initializeScope()
-
-	// Initialize HTTP client
 	runner.client = NewHTTPClient(o).client
 
-	return
+	return runner
 }
 
 // Run handles single or multiple targets based on the number of targets provided
