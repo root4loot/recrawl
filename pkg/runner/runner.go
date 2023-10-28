@@ -62,18 +62,12 @@ func NewRunner(o *options.Options) (runner *Runner) {
 	runner.Results = make(chan Result)
 	runner.Options = o
 	SetLogLevel(runner.Options)
-	runner.Scope = goscope.NewScope()
+
+	// Initialize scope
+	runner.initializeScope()
+
+	// Initialize HTTP client
 	runner.client = NewHTTPClient(o).client
-
-	// add includes
-	for _, include := range o.Include {
-		runner.Scope.AddInclude(include)
-	}
-
-	// add excludes
-	for _, exclude := range o.Exclude {
-		runner.Scope.AddExclude(exclude)
-	}
 
 	return runner
 }
@@ -174,6 +168,23 @@ func (r *Runner) prepareTarget(target string) (*tld.URL, error) {
 	r.Scope.AddInclude(target)
 	r.Scope.AddInclude("*."+mainTarget.Host, mainTarget.Host)
 	return mainTarget, nil
+}
+
+// initializeScope initializes the scope
+func (r *Runner) initializeScope() {
+	if r.Scope == nil {
+		r.Scope = goscope.NewScope()
+	}
+
+	// add includes
+	for _, include := range r.Options.Include {
+		r.Scope.AddInclude(include)
+	}
+
+	// add excludes
+	for _, exclude := range r.Options.Exclude {
+		r.Scope.AddExclude(exclude)
+	}
 }
 
 // startWorkers starts the workers
