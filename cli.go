@@ -27,12 +27,11 @@ func main() {
 	cli.initialize()
 	r := runner.NewRunner(&cli.opts)
 
-	// Check if there is stdin input
 	if cli.hasStdin() {
 		processStdinInput(cli, r)
-	} else if cli.hasInfile() { // Check if there is an input file
+	} else if cli.hasInfile() {
 		processInfile(cli, r)
-	} else if cli.hasTarget() { // Check if there is a target
+	} else if cli.hasTarget() {
 		processTargets(cli, r)
 	}
 }
@@ -52,20 +51,19 @@ func processInfile(cli *CLI, r *runner.Runner) {
 	if err != nil {
 		runner.Log.Fatalf("Error reading file: %v", err)
 	}
-
-	for _, target := range targets {
-		cli.processResults(r)
-		r.Run(target)
-	}
+	cli.processResults(r)
+	r.Run(targets...)
 }
 
 // processTargets processes the CLI targets provided by the user
 func processTargets(cli *CLI, r *runner.Runner) {
 	targets := cli.getTargets()
+	cli.processResults(r)
 
-	for _, target := range targets {
-		cli.processResults(r)
-		r.Run(target)
+	if len(targets) > 1 {
+		r.Run(targets...)
+	} else {
+		r.Run(targets[0])
 	}
 }
 

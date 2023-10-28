@@ -18,6 +18,7 @@ import (
 
 	"github.com/PuerkitoBio/purell"
 	"github.com/jpillora/go-tld"
+	"github.com/root4loot/godns"
 	"github.com/root4loot/goscope"
 	"github.com/root4loot/recrawl/pkg/options"
 	"github.com/root4loot/recrawl/pkg/util"
@@ -27,9 +28,10 @@ import (
 var Log = relog.NewLogger("recrawl")
 
 var (
-	mainTarget *tld.URL
-	re_path    = regexp.MustCompile(`(?:"|')(?:(((?:[a-zA-Z]{1,10}://|//)[^"'/]{1,}\.[a-zA-Z]{2,}[^"']*)|((?:/|\.\./|\./)[^"'><,;|*()(%%$^/\\\[\]][^"'><,;|()]*[^"'><,;|()]*))|([a-zA-Z0-9_\-/]{1,}/[a-zA-Z0-9_\-/]{1,}\.(?:[a-zA-Z]{1,4}|action)(?:[\?|#][^"|']*)?)|([a-zA-Z0-9_\-/]{1,}/[a-zA-Z0-9_\-/]{3,}(?:[\?|#][^"|']*)?)|([a-zA-Z0-9_\-]+(?:\.[a-zA-Z]{1,4})+))(?:"|')`)
-	re_robots  = regexp.MustCompile(`(?:Allow|Disallow):\s*([a-zA-Z0-9_\-/]+\.[a-zA-Z0-9]{1,4}(?:\?[^\s]*)?|[a-zA-Z0-9_\-/]+(?:/[a-zA-Z0-9_\-/]+)*(?:\?[^\s]*)?|[a-zA-Z0-9_\-/]+(?:\?[^\s]*|$))`)
+	mainTarget           *tld.URL
+	re_path              = regexp.MustCompile(`(?:"|')(?:(((?:[a-zA-Z]{1,10}://|//)[^"'/]{1,}\.[a-zA-Z]{2,}[^"']*)|((?:/|\.\./|\./)[^"'><,;|*()(%%$^/\\\[\]][^"'><,;|()]*[^"'><,;|()]*))|([a-zA-Z0-9_\-/]{1,}/[a-zA-Z0-9_\-/]{1,}\.(?:[a-zA-Z]{1,4}|action)(?:[\?|#][^"|']*)?)|([a-zA-Z0-9_\-/]{1,}/[a-zA-Z0-9_\-/]{3,}(?:[\?|#][^"|']*)?)|([a-zA-Z0-9_\-]+(?:\.[a-zA-Z]{1,4})+))(?:"|')`)
+	re_robots            = regexp.MustCompile(`(?:Allow|Disallow):\s*([a-zA-Z0-9_\-/]+\.[a-zA-Z0-9]{1,4}(?:\?[^\s]*)?|[a-zA-Z0-9_\-/]+(?:/[a-zA-Z0-9_\-/]+)*(?:\?[^\s]*)?|[a-zA-Z0-9_\-/]+(?:\?[^\s]*|$))`)
+	dnsResolutionTimeout = 5 * time.Second
 )
 
 type Runner struct {
@@ -76,62 +78,47 @@ func NewRunner(o *options.Options) (runner *Runner) {
 	return runner
 }
 
-// Run starts the runner
+// Run handles single or multiple targets based on the number of targets provided
 func (r *Runner) Run(targets ...string) {
+	Log.Debug("Run() called!") // Debug log
+
 	r.Options.ValidateOptions()
 	r.Options.SetDefaultsMissing()
-	c_queue, c_urls, c_wait := r.initializeWorkerPool()
+	c_queue, c_urls, c_wait := r.InitializeWorkerPool()
 
-	var allURLs []*tld.URL
+	Log.Debug("number of targets: ", len(targets))
+
 	for _, target := range targets {
-		target = util.EnsureScheme(target)
-		mainTarget, _ := tld.Parse(target)
-
-		// check if domain can be resolved
-		_, err := net.LookupHost(mainTarget.String())
+		mainTarget, err := r.prepareTarget(target)
 		if err != nil {
-			r.Scope.AddInclude(target)
-			r.Scope.AddInclude("*."+mainTarget.Host, mainTarget.Host) // assume all subdomains are in scope
-
-			allURLs = append(allURLs, mainTarget)
-			c_wait <- 1
+			Log.Debug("Error preparing target:", err)
+			continue
 		}
+
+		// log info to prepare target for crawling
+		Log.Info("Preparing target for crawling: ", target)
+		go r.queueURL(c_queue, mainTarget)
+		c_wait <- 1
 	}
 
-	var wg sync.WaitGroup
-	for i := 0; i < r.Options.Concurrency; i++ {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			r.worker(c_urls, c_queue, c_wait, r.Results)
-		}()
+	// If only one target is provided, set concurrency to 1
+	if len(targets) == 1 {
+		r.Options.Concurrency = 1
 	}
 
-	for _, u := range allURLs {
-		r.queueURL(c_queue, u)
-	}
-
-	wg.Wait()
-
-	// Close the r.Results channel only if it's open
-	select {
-	case _, ok := <-r.Results:
-		if ok {
-			close(r.Results)
-		}
-	default:
-	}
+	Log.Debug("starting workers")
+	r.startWorkers(c_urls, c_queue, c_wait)
 }
 
-// initializeWorkerPool creates a queue of URLs to be processed by workers
-func (r *Runner) initializeWorkerPool() (chan<- *tld.URL, <-chan *tld.URL, chan<- int) {
+// InitializeWorkerPool creates a queue of URLs to be processed by workers
+func (r *Runner) InitializeWorkerPool() (chan<- *tld.URL, <-chan *tld.URL, chan<- int) {
 	c_wait := make(chan int)
 	c_urls := make(chan *tld.URL)
 	c_queue := make(chan *tld.URL)
 	queueCount := 0
 
 	// Initialize timeout duration
-	timeoutDuration := time.Second * 10 // gracefully close after 10 seconds of inactivity
+	timeoutDuration := time.Second * 7 // gracefully close after 10 seconds of inactivity
 
 	go func() {
 		for delta := range c_wait {
@@ -148,12 +135,6 @@ func (r *Runner) initializeWorkerPool() (chan<- *tld.URL, <-chan *tld.URL, chan<
 		defer timeoutTimer.Stop()
 
 		for {
-			// Reset the timer
-			if !timeoutTimer.Stop() {
-				<-timeoutTimer.C
-			}
-			timeoutTimer.Reset(timeoutDuration)
-
 			select {
 			case q := <-c_queue:
 				if q != nil {
@@ -162,11 +143,16 @@ func (r *Runner) initializeWorkerPool() (chan<- *tld.URL, <-chan *tld.URL, chan<
 					} else {
 						c_wait <- -1
 					}
+					// Only reset the timer if there's activity on c_queue
+					if !timeoutTimer.Stop() {
+						<-timeoutTimer.C
+					}
+					timeoutTimer.Reset(timeoutDuration)
 				}
-			case <-timeoutTimer.C: // Time's up!
-				// fmt.Println("Timeout reached, closing channels.")
-				close(c_queue)
-				close(c_wait)
+			case <-c_urls:
+				// No timer reset here
+			case <-timeoutTimer.C:
+				Log.Debug("Timeout reached, closing channels.")
 				close(c_urls)
 				return
 			}
@@ -176,6 +162,34 @@ func (r *Runner) initializeWorkerPool() (chan<- *tld.URL, <-chan *tld.URL, chan<
 	return c_queue, c_urls, c_wait
 }
 
+// prepareTarget prepares a target for processing
+func (r *Runner) prepareTarget(target string) (*tld.URL, error) {
+	target = util.EnsureScheme(target)
+	mainTarget, _ := tld.Parse(target)
+	err := isReachable(target, dnsResolutionTimeout)
+	if err != nil {
+		Log.Warning(err)
+		return nil, err
+	}
+	r.Scope.AddInclude(target)
+	r.Scope.AddInclude("*."+mainTarget.Host, mainTarget.Host)
+	return mainTarget, nil
+}
+
+// startWorkers starts the workers
+func (r *Runner) startWorkers(c_urls <-chan *tld.URL, c_queue chan<- *tld.URL, c_wait chan<- int) {
+
+	var wg sync.WaitGroup
+	for i := 0; i < r.Options.Concurrency; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			r.Worker(c_urls, c_queue, c_wait, r.Results)
+		}()
+	}
+	wg.Wait()
+}
+
 // queueURL adds a URL to the queue
 func (r *Runner) queueURL(c_queue chan<- *tld.URL, url *tld.URL) {
 	url, _ = tld.Parse(r.cleanDomain(url.String()))
@@ -183,7 +197,7 @@ func (r *Runner) queueURL(c_queue chan<- *tld.URL, url *tld.URL) {
 }
 
 // worker is a worker that processes URLs from the queue
-func (r *Runner) worker(c_urls <-chan *tld.URL, c_queue chan<- *tld.URL, c_wait chan<- int, c_result chan<- Result) {
+func (r *Runner) Worker(c_urls <-chan *tld.URL, c_queue chan<- *tld.URL, c_wait chan<- int, c_result chan<- Result) {
 	for c_url := range c_urls {
 		var rawURLs []string
 		if c_url == nil || c_url.Host == "" {
@@ -372,6 +386,49 @@ func (r *Runner) setURL(rawURL string, paths []string) (rawURLs []string, err er
 		rawURLs = append(rawURLs, normalized)
 	}
 	return
+}
+
+// isReachable checks if a URL is reachable
+func isReachable(target string, timeout time.Duration) error {
+	// Parse the URL to get the hostname
+	u, err := url.Parse(target)
+	if err != nil {
+		return fmt.Errorf("URL parsing failed: %w", err)
+	}
+
+	// Setup Godns options
+	options := godns.DefaultOptions()
+	options.Timeout = int(timeout.Seconds())
+
+	r := godns.NewRunnerWithOptions(*options)
+
+	// Perform DNS check
+	results := r.Multiple([]string{u.Hostname()})
+	for _, result := range results {
+		if len(result.IPv4) == 0 && len(result.IPv6) == 0 {
+			return fmt.Errorf("DNS resolution failed for %s", u.Hostname())
+		}
+	}
+
+	// Use the port if specified, otherwise default to 80 or 443
+	host := u.Host
+	if u.Port() == "" {
+		if u.Scheme == "https" {
+			host = u.Hostname() + ":443"
+		} else {
+			host = u.Hostname() + ":80"
+		}
+	}
+
+	// Check reachability with a separate timeout
+	d := net.Dialer{Timeout: timeout}
+	conn, err := d.Dial("tcp", host)
+	if err != nil {
+		return fmt.Errorf("dial failed: %w", err)
+	}
+	conn.Close()
+
+	return nil
 }
 
 // scrape scrapes a response for paths
@@ -623,6 +680,6 @@ func SetLogLevel(options *options.Options) {
 	} else if options.CLI.HideWarning {
 		Log.SetLevel(relog.ErrorLevel)
 	} else {
-		Log.SetLevel(relog.WarnLevel)
+		Log.SetLevel(relog.InfoLevel)
 	}
 }
