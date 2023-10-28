@@ -25,7 +25,7 @@ const author = "@danielantonsen"
 func main() {
 	cli := newCLI()
 	cli.initialize()
-	r := runner.NewRunner(&cli.opts)
+	r := runner.NewRunnerWithOptions(&cli.opts)
 
 	if cli.hasStdin() {
 		processStdinInput(cli, r)

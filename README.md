@@ -134,7 +134,7 @@ func main() {
 		UserAgent:   "recrawl",
 	}
 
-	runner := runner.NewRunner(&options)
+	runner := runner.NewRunnerWithOptions(&options)
 
 	// create a separate goroutine to process the results as they come in
 	go func() {

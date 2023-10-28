@@ -56,8 +56,24 @@ var (
 	visitedHost sync.Map
 )
 
-// NewRunner creates a new runner
-func NewRunner(o *options.Options) (runner *Runner) {
+// NewRunnerWithDefaults creates a new runner with default options
+func NewRunner() (runner *Runner) {
+	runner = &Runner{}
+	runner.Results = make(chan Result)
+	runner.Options = options.Default()
+	SetLogLevel(runner.Options)
+
+	// Initialize scope
+	runner.initializeScope()
+
+	// Initialize HTTP client
+	runner.client = NewHTTPClient(runner.Options).client
+
+	return
+}
+
+// NewRunnerWithOptions creates a new runner with options
+func NewRunnerWithOptions(o *options.Options) (runner *Runner) {
 	runner = &Runner{}
 	runner.Results = make(chan Result)
 	runner.Options = o
@@ -69,7 +85,7 @@ func NewRunner(o *options.Options) (runner *Runner) {
 	// Initialize HTTP client
 	runner.client = NewHTTPClient(o).client
 
-	return runner
+	return
 }
 
 // Run handles single or multiple targets based on the number of targets provided
