@@ -61,7 +61,7 @@ func NewRunner() (runner *Runner) {
 	runner = &Runner{}
 	runner.Results = make(chan Result)
 	runner.Options = options.Default()
-	SetLogLevel(runner.Options)
+	runner.setLogLevel()
 
 	// Initialize scope
 	runner.initializeScope()
@@ -77,7 +77,7 @@ func NewRunnerWithOptions(o *options.Options) (runner *Runner) {
 	runner = &Runner{}
 	runner.Results = make(chan Result)
 	runner.Options = o
-	SetLogLevel(runner.Options)
+	runner.setLogLevel()
 
 	// Initialize scope
 	runner.initializeScope()
@@ -697,14 +697,15 @@ func (r *Runner) removeQuotes(input string) string {
 	return input
 }
 
-func SetLogLevel(options *options.Options) {
+// setLogLevel sets the log level
+func (r *Runner) setLogLevel() {
 	Log.Debugln("Setting logger level...")
 
-	if options.Verbose {
+	if r.Options.Verbose {
 		Log.SetLevel(relog.DebugLevel)
-	} else if options.Silence {
+	} else if r.Options.Silence {
 		Log.SetLevel(relog.FatalLevel)
-	} else if options.CLI.HideWarning {
+	} else if r.Options.CLI.HideWarning {
 		Log.SetLevel(relog.ErrorLevel)
 	} else {
 		Log.SetLevel(relog.InfoLevel)
