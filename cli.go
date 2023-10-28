@@ -92,10 +92,10 @@ func (c *CLI) processResults(runner *runner.Runner) {
 					codeFilters := strings.Split(c.opts.CLI.FilterStatusCode, ",")
 					// Check if codeFilters contains the string representation of result.StatusCode
 					if filterStatusContains(codeFilters, strconv.Itoa(result.StatusCode)) {
-						fmt.Printf("%d %s\n", result.StatusCode, result.RequestURL)
+						printWithColor(result.StatusCode, result.RequestURL)
 					}
 				} else {
-					fmt.Printf("%d %s\n", result.StatusCode, result.RequestURL)
+					printWithColor(result.StatusCode, result.RequestURL)
 				}
 			} else {
 				fmt.Printf("%s\n", result.RequestURL)
@@ -107,6 +107,18 @@ func (c *CLI) processResults(runner *runner.Runner) {
 			}
 		}
 	}()
+}
+
+// print with color
+func printWithColor(statusCode int, url string) {
+	switch statusCode {
+	case 200:
+		color.Greenf("%d %s\n", statusCode, url)
+	case 404:
+		color.Redf("%d %s\n", statusCode, url)
+	default:
+		color.Yellowf("%d %s\n", statusCode, url)
+	}
 }
 
 // checkForExits checks for the presence of the -h|--help and -v|--version flags
