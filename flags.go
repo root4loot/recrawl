@@ -4,10 +4,13 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"strings"
 	"text/tabwriter"
 
 	"github.com/root4loot/recrawl/pkg/options"
 )
+
+type verboseCount int
 
 func (c *CLI) banner() {
 	fmt.Println("\nrecrawl", version, "by", author)
@@ -39,12 +42,12 @@ func (c *CLI) usage() {
 
 	// print the output section
 	fmt.Fprintln(w, "\nOUTPUT:")
+	fmt.Fprintf(w, "\t%s,\t%s\t%s\n", "-o", "--outfile", "output results to given file")
 	fmt.Fprintf(w, "\t%s,\t%s\t%s\n", "-hs", "--hide-status", "hide status code from output")
 	fmt.Fprintf(w, "\t%s,\t%s\t%s\n", "-hw", "--hide-warning", "hide warnings from output")
 	fmt.Fprintf(w, "\t%s,\t%s\t%s\t\t\t\t  (%s)\n", "-fs", "--filter-status", "filter by status code", "comma-separated")
-	fmt.Fprintf(w, "\t%s,\t%s\t%s\n", "-o", "--outfile", "output results to given file")
+	fmt.Fprintf(w, "\t%s,\t%s\t%s\t\t\t\t  (%s)\n", "-v", "--verbose", "verbose output", "can be set multiple times for more verbosity")
 	fmt.Fprintf(w, "\t%s,\t%s\t%s\n", "-s", "--silence", "silence results from output")
-	fmt.Fprintf(w, "\t%s,\t%s\t%s\n", "-v", "--verbose", "silence results from output")
 	fmt.Fprintf(w, "\t%s,\t%s\t%s\n", "-h", "--help", "display help")
 	fmt.Fprintf(w, "\t\t%s\t%s\n", "--version", "display version")
 
@@ -54,6 +57,8 @@ func (c *CLI) usage() {
 
 func (c *CLI) parseFlags() {
 	opts := new(options.Options)
+
+	var verbose bool
 
 	// TARGET
 	flag.StringVar(&opts.CLI.Target, "target", "", "")
@@ -86,8 +91,9 @@ func (c *CLI) parseFlags() {
 	// OUTPUT
 	flag.BoolVar(&opts.Silence, "s", false, "")
 	flag.BoolVar(&opts.Silence, "silence", false, "")
-	flag.BoolVar(&opts.Verbose, "v", false, "")
-	flag.BoolVar(&opts.Verbose, "verbose", false, "")
+	flag.BoolVar(&verbose, "v", false, "")
+	flag.BoolVar(&verbose, "vv", false, "")
+	flag.IntVar(&opts.Verbose, "verbose", 0, "")
 	flag.StringVar(&opts.CLI.Outfile, "o", "", "")
 	flag.StringVar(&opts.CLI.Outfile, "outfile", "", "")
 	flag.StringVar(&opts.CLI.FilterStatusCode, "filter-status", "", "")
@@ -107,4 +113,11 @@ func (c *CLI) parseFlags() {
 
 	flag.Parse()
 	c.opts = *opts
+
+	// Manually check for verbose flags
+	for _, arg := range os.Args {
+		if strings.HasPrefix(arg, "-v") {
+			c.opts.Verbose = len(strings.TrimPrefix(arg, "-"))
+		}
+	}
 }

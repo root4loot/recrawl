@@ -55,18 +55,17 @@ CONFIGURATIONS:
    -r,    --resolvers      file containing list of resolvers   (Default: System DNS)
 
 OUTPUT:
+   -o,    --outfile         output results to given file
    -hs,   --hide-status     hide status code from output
    -hw,   --hide-warning    hide warnings from output
    -fs,   --filter-status   filter by status code              (comma-separated)
-   -o,    --outfile         output results to given file
+   -v,    --verbose         verbose output                     (can be set multiple times for more verbosity)
    -s,    --silence         silence results from output
-   -v,    --verbose         silence results from output
    -h,    --help            display help
           --version         display version
 ```
 
 ## Example
-
 
 ```sh
 # Crawl *.example.com

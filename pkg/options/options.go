@@ -22,7 +22,7 @@ type Options struct {
 	UserAgent   string   // custom user-agent
 	Proxy       string   // proxy to use for requests
 	Silence     bool     // suppress output from console
-	Verbose     bool     // verbose output
+	Verbose     int      // verbosity level
 	Resolvers   []string // resolvers to use for DNS resolution
 	CLI         CLI      // CLI options
 }

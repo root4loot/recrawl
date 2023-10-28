@@ -689,17 +689,18 @@ func (r *Runner) removeQuotes(input string) string {
 	return input
 }
 
-// setLogLevel sets the log level
+// setLogLevel sets the log level based on user-defined flags
 func (r *Runner) setLogLevel() {
-	Log.Debugln("Setting logger level...")
+	Log.Debugln("Setting logger level...") // Log a debug message to indicate setting of log level
 
-	if r.Options.Verbose {
-		Log.SetLevel(relog.DebugLevel)
+	if r.Options.Verbose == 1 {
+		Log.SetLevel(relog.InfoLevel) // Set log level to Info if Verbose is set to 1
+	} else if r.Options.Verbose == 2 {
+		Log.SetLevel(relog.DebugLevel) // Set log level to Debug if Verbose is set to 2
 	} else if r.Options.Silence {
-		Log.SetLevel(relog.FatalLevel)
-	} else if r.Options.CLI.HideWarning {
-		Log.SetLevel(relog.ErrorLevel)
+		Log.SetLevel(relog.FatalLevel) // Set log level to Fatal if Silence flag is set; only fatal errors will be logged
 	} else {
-		Log.SetLevel(relog.InfoLevel)
+		Log.SetLevel(relog.ErrorLevel) // Default to Error level logging
 	}
+}
 }
