@@ -4,6 +4,9 @@
 package runner
 
 import (
+	"bytes"
+	"crypto/sha256"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"io"
@@ -32,6 +35,7 @@ var (
 	re_path              = regexp.MustCompile(`(?:"|')(?:(((?:[a-zA-Z]{1,10}://|//)[^"'/]{1,}\.[a-zA-Z]{2,}[^"']*)|((?:/|\.\./|\./)[^"'><,;|*()(%%$^/\\\[\]][^"'><,;|()]*[^"'><,;|()]*))|([a-zA-Z0-9_\-/]{1,}/[a-zA-Z0-9_\-/]{1,}\.(?:[a-zA-Z]{1,4}|action)(?:[\?|#][^"|']*)?)|([a-zA-Z0-9_\-/]{1,}/[a-zA-Z0-9_\-/]{3,}(?:[\?|#][^"|']*)?)|([a-zA-Z0-9_\-]+(?:\.[a-zA-Z]{1,4})+))(?:"|')`)
 	re_robots            = regexp.MustCompile(`(?:Allow|Disallow):\s*([a-zA-Z0-9_\-/]+\.[a-zA-Z0-9]{1,4}(?:\?[^\s]*)?|[a-zA-Z0-9_\-/]+(?:/[a-zA-Z0-9_\-/]+)*(?:\?[^\s]*)?|[a-zA-Z0-9_\-/]+(?:\?[^\s]*|$))`)
 	dnsResolutionTimeout = 5 * time.Second
+	domainHashes         = make(map[string]map[string]bool) // map of domain/IP to map of response body hashes
 )
 
 type Runner struct {
@@ -265,6 +269,12 @@ func (r *Runner) Worker(c_urls <-chan *tld.URL, c_queue chan<- *tld.URL, c_wait 
 			continue
 		}
 
+		// Check if the url should be processed based on the response body hash
+		if !shouldProcessPage(c_url.Host, resp) {
+			c_wait <- -1
+			continue
+		}
+
 		// landingURL, _ := tld.Parse(resp.Request.URL.String())
 		landingURL := resp.Request.URL.String()
 
@@ -305,16 +315,49 @@ func (r *Runner) Worker(c_urls <-chan *tld.URL, c_queue chan<- *tld.URL, c_wait 
 	}
 }
 
+// shouldProcessPage checks if a page should be processed (based on the hash of the response body)
+func shouldProcessPage(domainOrIP string, resp *http.Response) bool {
+	// Read the response body
+	bodyBytes, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return false // or handle the error as you see fit
+	}
+
+	// Convert it back to io.ReadCloser
+	resp.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
+
+	// Hash of responseBody
+	hasher := sha256.New()
+	hasher.Write(bodyBytes)
+	hash := hex.EncodeToString(hasher.Sum(nil))
+
+	// Initialize the nested map if not already done
+	if domainHashes[domainOrIP] == nil {
+		domainHashes[domainOrIP] = make(map[string]bool)
+	}
+
+	// Check whether the hash already exists for the given domain or IP
+	_, exists := domainHashes[domainOrIP][hash]
+	if exists {
+		Log.Debug("Skipping page as it has already been processed")
+		return false
+	}
+
+	// If it doesn't exist, store it and return true
+	domainHashes[domainOrIP][hash] = true
+	return true
+}
+
 // request makes a request to a URL
 func (r *Runner) request(u *tld.URL) (req *http.Request, resp *http.Response, err error) {
-	Log.Debugf("Requesting %s", u.String())
+	Log.Debug("Requesting ", u.String())
 
 	// Check if URL has already been visited
 	if r.isVisitedURL(u.String()) {
 		return nil, nil, nil
 	}
 
-	// addd visited
+	// add visited
 	r.addVisitedURL(u.String())
 
 	req, err = http.NewRequest("GET", u.String(), nil)
