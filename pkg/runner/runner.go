@@ -144,7 +144,7 @@ func (r *Runner) InitializeWorkerPool() (chan<- *tld.URL, <-chan *tld.URL, chan<
 			select {
 			case q := <-c_queue:
 				if q != nil {
-					if r.Scope.InScope(q.Host) && !r.isVisitedURL(q.String()) {
+					if r.Scope.IsTargetInScope(q.Host) && !r.isVisitedURL(q.String()) {
 						c_urls <- q
 					} else {
 						c_wait <- -1
