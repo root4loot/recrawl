@@ -7,8 +7,8 @@ require (
 	github.com/gookit/color v1.5.4
 	github.com/jpillora/go-tld v1.2.1
 	github.com/root4loot/godns v0.0.0-20231013124015-01574368b079
-	github.com/root4loot/goscope v0.0.0-20231020152155-62ac840bfe58
-	github.com/root4loot/goutils v0.0.0-20231020125334-e9ac4875ef8c
+	github.com/root4loot/goscope v0.0.0-20231109114831-df0317d2e7e6
+	github.com/root4loot/goutils v0.0.0-20231107142324-5da47c8e4acd
 	github.com/root4loot/relog v0.0.0-20231028174855-efc3b4a0e7bf
 )
 
@@ -30,6 +30,7 @@ require (
 	github.com/ulikunitz/xz v0.5.11 // indirect
 	github.com/xi2/xz v0.0.0-20171230120015-48954b6210f8 // indirect
 	github.com/xo/terminfo v0.0.0-20220910002029-abceb7e1c41e // indirect
+	github.com/yl2chen/cidranger v1.0.2 // indirect
 	golang.org/x/mod v0.9.0 // indirect
 	golang.org/x/net v0.17.0 // indirect
 	golang.org/x/sys v0.13.0 // indirect

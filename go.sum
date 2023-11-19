@@ -56,6 +56,8 @@ github.com/root4loot/goscope v0.0.0-20231109114831-df0317d2e7e6 h1:CSnEWCPzl++YP
 github.com/root4loot/goscope v0.0.0-20231109114831-df0317d2e7e6/go.mod h1:+lH9u5tgGBzWoRUVy7enGx7V5iHukKFqNGptY9HRjAo=
 github.com/root4loot/goutils v0.0.0-20231020125334-e9ac4875ef8c h1:Fqe2gvX0kWkb5W6JY2RY+AybJiH9Kow2Ps884MiLnHA=
 github.com/root4loot/goutils v0.0.0-20231020125334-e9ac4875ef8c/go.mod h1:/8q9ygQEj1HroI01Psv0+DmJN9QIqbhJI5CmKpXqoo0=
+github.com/root4loot/goutils v0.0.0-20231107142324-5da47c8e4acd h1:m+R7v/85kWIYVl866IH9jxydKtzjoidEMP29q8ED2po=
+github.com/root4loot/goutils v0.0.0-20231107142324-5da47c8e4acd/go.mod h1:fzkXNfRTB5hZxMsl9zU3Tw4QqplVxsdfEcyc5fhMdwU=
 github.com/root4loot/goutils v0.0.0-20231107145640-a7e8996ce41c h1:bo3VjPLCO94NGQqf6q3uM3ibprklaAE6BxZSRNEJgTE=
 github.com/root4loot/goutils v0.0.0-20231107145640-a7e8996ce41c/go.mod h1:fzkXNfRTB5hZxMsl9zU3Tw4QqplVxsdfEcyc5fhMdwU=
 github.com/root4loot/publicresolvers v0.0.0-20230803103850-be159fde208d h1:zkA0meK9aQvZZjkUrjx4DPC/TH2AR7l1eYOeyqb6bXA=
