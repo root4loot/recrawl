@@ -6,9 +6,9 @@ require (
 	github.com/PuerkitoBio/purell v1.2.1
 	github.com/gookit/color v1.5.4
 	github.com/jpillora/go-tld v1.2.1
-	github.com/root4loot/godns v0.0.0-20231013124015-01574368b079
-	github.com/root4loot/goscope v0.0.0-20231109114831-df0317d2e7e6
-	github.com/root4loot/goutils v0.0.0-20231107142324-5da47c8e4acd
+	github.com/root4loot/godns v0.0.0-20231128201552-32c2ae19bd22
+	github.com/root4loot/goscope v0.0.0-20231127125616-3dafa1adb318
+	github.com/root4loot/goutils v0.0.0-20231203145534-1b14117051d4
 	github.com/root4loot/relog v0.0.0-20231028174855-efc3b4a0e7bf
 )
 
@@ -33,8 +33,8 @@ require (
 	github.com/yl2chen/cidranger v1.0.2 // indirect
 	golang.org/x/mod v0.9.0 // indirect
 	golang.org/x/net v0.17.0 // indirect
-	golang.org/x/sys v0.13.0 // indirect
-	golang.org/x/term v0.13.0 // indirect
+	golang.org/x/sys v0.14.0 // indirect
+	golang.org/x/term v0.14.0 // indirect
 	golang.org/x/text v0.13.0 // indirect
 	golang.org/x/tools v0.6.0 // indirect
 	gopkg.in/djherbis/times.v1 v1.3.0 // indirect

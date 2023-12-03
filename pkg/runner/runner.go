@@ -23,6 +23,7 @@ import (
 	"github.com/jpillora/go-tld"
 	"github.com/root4loot/godns"
 	"github.com/root4loot/goscope"
+	"github.com/root4loot/goutils/iputil"
 	"github.com/root4loot/recrawl/pkg/options"
 	"github.com/root4loot/recrawl/pkg/util"
 	"github.com/root4loot/relog"
@@ -172,10 +173,12 @@ func (r *Runner) InitializeWorkerPool() (chan<- *tld.URL, <-chan *tld.URL, chan<
 func (r *Runner) prepareTarget(target string) (*tld.URL, error) {
 	target = util.EnsureScheme(target)
 	mainTarget, _ := tld.Parse(target)
-	err := isReachable(target, dnsResolutionTimeout)
-	if err != nil {
-		Log.Warning(err)
-		return nil, err
+	if !iputil.IsURLIP(target) { // if target is not an IP address
+		err := isReachable(target, dnsResolutionTimeout)
+		if err != nil {
+			Log.Warning(err)
+			return nil, err
+		}
 	}
 	r.Scope.AddInclude(target)
 	r.Scope.AddInclude("*."+mainTarget.Host, mainTarget.Host)
