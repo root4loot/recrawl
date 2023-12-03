@@ -24,12 +24,10 @@ import (
 	"github.com/root4loot/godns"
 	"github.com/root4loot/goscope"
 	"github.com/root4loot/goutils/iputil"
+	"github.com/root4loot/goutils/log"
 	"github.com/root4loot/recrawl/pkg/options"
 	"github.com/root4loot/recrawl/pkg/util"
-	"github.com/root4loot/relog"
 )
-
-var Log = relog.NewLogger("recrawl")
 
 var (
 	mainTarget           *tld.URL
@@ -61,6 +59,10 @@ var (
 	visitedHost sync.Map
 )
 
+func init() {
+	log.NewLogger("recrawl")
+}
+
 // NewRunnerWithDefaults creates a new runner with default options
 func NewRunnerWithDefaults() *Runner {
 	return newRunner(options.Default())
@@ -87,18 +89,18 @@ func newRunner(o *options.Options) *Runner {
 
 // Run handles single or multiple targets based on the number of targets provided
 func (r *Runner) Run(targets ...string) {
-	Log.Debug("Run() called!") // Debug log
+	log.Debug("Run() called!") // Debug log
 
 	r.Options.ValidateOptions()
 	r.Options.SetDefaultsMissing()
 	c_queue, c_urls, c_wait := r.InitializeWorkerPool()
 
-	Log.Debug("number of targets: ", len(targets))
+	log.Debug("number of targets: ", len(targets))
 
 	for _, target := range targets {
 		mainTarget, err := r.prepareTarget(target)
 		if err != nil {
-			Log.Debug("Error preparing target:", err)
+			log.Debug("Error preparing target:", err)
 			continue
 		}
 
@@ -113,7 +115,7 @@ func (r *Runner) Run(targets ...string) {
 		r.Options.Concurrency = 1
 	}
 
-	Log.Debug("starting workers")
+	log.Debug("starting workers")
 	r.startWorkers(c_urls, c_queue, c_wait)
 }
 
@@ -159,7 +161,7 @@ func (r *Runner) InitializeWorkerPool() (chan<- *tld.URL, <-chan *tld.URL, chan<
 			case <-c_urls:
 				// No timer reset here
 			case <-timeoutTimer.C:
-				Log.Debug("Timeout reached, closing channels.")
+				log.Debug("Timeout reached, closing channels.")
 				close(c_urls)
 				return
 			}
@@ -176,7 +178,7 @@ func (r *Runner) prepareTarget(target string) (*tld.URL, error) {
 	if !iputil.IsURLIP(target) { // if target is not an IP address
 		err := isReachable(target, dnsResolutionTimeout)
 		if err != nil {
-			Log.Warning(err)
+			log.Warn(err)
 			return nil, err
 		}
 	}
@@ -230,7 +232,7 @@ func (r *Runner) Worker(c_urls <-chan *tld.URL, c_queue chan<- *tld.URL, c_wait 
 			c_wait <- -1
 			continue
 		} else {
-			Log.Debugf("Processing %s", c_url)
+			log.Debugf("Processing %s", c_url)
 		}
 
 		// Check if robots.txt is present for the host and add it to the queue
@@ -244,14 +246,14 @@ func (r *Runner) Worker(c_urls <-chan *tld.URL, c_queue chan<- *tld.URL, c_wait 
 
 		// avoid example.com/foo/bar/foo/bar/foo/bar
 		if r.isTrapped(c_url.Path) {
-			Log.Infof("Trapped in a loop %s", c_url.String())
+			log.Infof("Trapped in a loop %s", c_url.String())
 			c_wait <- -1
 			continue
 		}
 
 		// avoid URLs that only differ in parameter values
 		if r.isSimilarToVisitedURL(c_url.String()) {
-			Log.Infof("Found similar for %s", c_url.String())
+			log.Infof("Found similar for %s", c_url.String())
 			c_wait <- -1
 			continue
 		}
@@ -265,7 +267,7 @@ func (r *Runner) Worker(c_urls <-chan *tld.URL, c_queue chan<- *tld.URL, c_wait 
 
 		if err != nil {
 			if !strings.Contains(err.Error(), "already visited") {
-				Log.Infof("%v", err.Error())
+				log.Infof("%v", err.Error())
 				r.Results <- Result{RequestURL: c_url.String(), StatusCode: 0, Error: err}
 			}
 			c_wait <- -1
@@ -289,7 +291,7 @@ func (r *Runner) Worker(c_urls <-chan *tld.URL, c_queue chan<- *tld.URL, c_wait 
 		paths, err := r.scrape(resp)
 
 		if err != nil {
-			Log.Warningf("Timeout exceeded for %v", landingURL)
+			log.Warnf("Timeout exceeded for %v", landingURL)
 			c_wait <- len(rawURLs) - 1
 			continue
 		}
@@ -297,7 +299,7 @@ func (r *Runner) Worker(c_urls <-chan *tld.URL, c_queue chan<- *tld.URL, c_wait 
 		rawURLs, err = r.setURL(landingURL, paths)
 
 		if err != nil {
-			Log.Warningf("%v", err)
+			log.Warnf("%v", err)
 			c_wait <- len(rawURLs) - 1
 			continue
 		}
@@ -307,7 +309,7 @@ func (r *Runner) Worker(c_urls <-chan *tld.URL, c_queue chan<- *tld.URL, c_wait 
 		for i := range rawURLs {
 			var u *tld.URL
 			if u, err = tld.Parse(rawURLs[i]); err != nil {
-				Log.Warningf("%v", err)
+				log.Warnf("%v", err)
 				c_wait <- len(rawURLs) - 1
 				continue
 			}
@@ -342,7 +344,7 @@ func shouldProcessPage(domainOrIP string, resp *http.Response) bool {
 	// Check whether the hash already exists for the given domain or IP
 	_, exists := domainHashes[domainOrIP][hash]
 	if exists {
-		Log.Debug("Skipping page as it has already been processed")
+		log.Debug("Skipping page as it has already been processed")
 		return false
 	}
 
@@ -353,7 +355,7 @@ func shouldProcessPage(domainOrIP string, resp *http.Response) bool {
 
 // request makes a request to a URL
 func (r *Runner) request(u *tld.URL) (req *http.Request, resp *http.Response, err error) {
-	Log.Debug("Requesting ", u.String())
+	log.Debug("Requesting ", u.String())
 
 	// Check if URL has already been visited
 	if r.isVisitedURL(u.String()) {
@@ -404,7 +406,7 @@ func (r *Runner) request(u *tld.URL) (req *http.Request, resp *http.Response, er
 
 // setURL sets the URL for a request
 func (r *Runner) setURL(rawURL string, paths []string) (rawURLs []string, err error) {
-	Log.Debugf("Setting URL for %s", rawURL)
+	log.Debugf("Setting URL for %s", rawURL)
 
 	var line string
 
@@ -498,7 +500,7 @@ func isReachable(target string, timeout time.Duration) error {
 
 // scrape scrapes a response for paths
 func (r *Runner) scrape(resp *http.Response) (res []string, err error) {
-	Log.Debugf("Scraping %s", resp.Request.URL.String())
+	log.Debugf("Scraping %s", resp.Request.URL.String())
 	body, err := io.ReadAll(resp.Body)
 	var matches [][]string
 
@@ -737,23 +739,23 @@ func (r *Runner) removeQuotes(input string) string {
 
 // setLogLevel sets the log level based on user-defined flags
 func (r *Runner) setLogLevel() {
-	Log.Debugln("Setting logger level...") // Log a debug message to indicate setting of log level
+	log.Debug("Setting logger level...") // Log a debug message to indicate setting of log level
 
 	if r.Options.Verbose == 1 {
-		Log.SetLevel(relog.InfoLevel) // Set log level to Info if Verbose is set to 1
+		log.SetLevel(log.InfoLevel) // Set log level to Info if Verbose is set to 1
 	} else if r.Options.Verbose == 2 {
-		Log.SetLevel(relog.DebugLevel) // Set log level to Debug if Verbose is set to 2
+		log.SetLevel(log.DebugLevel) // Set log level to Debug if Verbose is set to 2
 	} else if r.Options.Silence {
-		Log.SetLevel(relog.FatalLevel) // Set log level to Fatal if Silence flag is set; only fatal errors will be logged
+		log.SetLevel(log.FatalLevel) // Set log level to Fatal if Silence flag is set; only fatal errors will be logged
 	} else {
-		Log.SetLevel(relog.ErrorLevel) // Default to Error level logging
+		log.SetLevel(log.ErrorLevel) // Default to Error level logging
 	}
 }
 
 // temporarily sets the log level to Info and logs the Info message
 func logInfo(str1 string, str2 string) {
-	originalLevel := Log.GetLevel() // Store the original log level
-	Log.SetLevel(relog.InfoLevel)   // Temporarily set level to Info
-	Log.Info(str1, str2)            // Log the Info message
-	Log.SetLevel(originalLevel)     // Restore original log level
+	originalLevel := log.GetLevel() // Store the original log level
+	log.SetLevel(log.InfoLevel)     // Temporarily set level to Info
+	log.Info(str1, str2)            // Log the Info message
+	log.SetLevel(originalLevel)     // Restore original log level
 }

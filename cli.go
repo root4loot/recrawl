@@ -6,6 +6,7 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"log"
 	"os"
 	"strconv"
 	"strings"
@@ -49,7 +50,7 @@ func processStdinInput(cli *CLI, r *runner.Runner) {
 func processInfile(cli *CLI, r *runner.Runner) {
 	targets, err := util.ReadFileLines(cli.opts.CLI.Infile)
 	if err != nil {
-		runner.Log.Fatalf("Error reading file: %v", err)
+		log.Fatalf("Error reading file: %v", err)
 	}
 	cli.processResults(r)
 	r.Run(targets...)
@@ -157,13 +158,13 @@ func (c *CLI) getTargets() (targets []string) {
 func (c *CLI) appendToFile(lines []string) {
 	file, err := os.OpenFile(c.opts.CLI.Outfile, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644)
 	if err != nil {
-		runner.Log.Fatalf("Could not open file: %v", err)
+		log.Fatalf("Could not open file: %v", err)
 	}
 	defer file.Close()
 
 	for i := range lines {
 		if _, err := file.WriteString(lines[i] + "\n"); err != nil {
-			runner.Log.Fatalf("Could not write line to file: %v", err)
+			log.Fatalf("Could not write line to file: %v", err)
 		}
 	}
 }

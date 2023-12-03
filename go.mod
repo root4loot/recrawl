@@ -9,7 +9,6 @@ require (
 	github.com/root4loot/godns v0.0.0-20231128201552-32c2ae19bd22
 	github.com/root4loot/goscope v0.0.0-20231127125616-3dafa1adb318
 	github.com/root4loot/goutils v0.0.0-20231203145534-1b14117051d4
-	github.com/root4loot/relog v0.0.0-20231028174855-efc3b4a0e7bf
 )
 
 require (

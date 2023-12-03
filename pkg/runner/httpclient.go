@@ -2,6 +2,7 @@ package runner
 
 import (
 	"crypto/tls"
+	"log"
 	"net/http"
 	"net/url"
 	"time"
@@ -40,7 +41,7 @@ func NewHTTPClient(options *options.Options) *HTTPClient {
 		}
 		proxy, err := url.Parse(options.Proxy)
 		if err != nil {
-			Log.Fatalf("Error parsing proxy URL: %s", err)
+			log.Fatalf("Error parsing proxy URL: %s", err)
 		}
 
 		client = &http.Client{
