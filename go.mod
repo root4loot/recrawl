@@ -6,7 +6,7 @@ require (
 	github.com/PuerkitoBio/purell v1.2.1
 	github.com/gookit/color v1.5.4
 	github.com/jpillora/go-tld v1.2.1
-	github.com/root4loot/godns v0.0.0-20231128201552-32c2ae19bd22
+	github.com/root4loot/godns v0.0.0-20231205131712-3458f1e29cf6
 	github.com/root4loot/goscope v0.0.0-20231127125616-3dafa1adb318
 	github.com/root4loot/goutils v0.0.0-20231203145534-1b14117051d4
 )
