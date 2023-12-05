@@ -176,7 +176,7 @@ func (r *Runner) prepareTarget(target string) (*tld.URL, error) {
 	target = util.EnsureScheme(target)
 	mainTarget, _ := tld.Parse(target)
 	if !iputil.IsURLIP(target) { // if target is not an IP address
-		err := isReachable(target, dnsResolutionTimeout)
+		err := r.isReachable(target, dnsResolutionTimeout)
 		if err != nil {
 			log.Warn(err)
 			return nil, err
@@ -456,7 +456,7 @@ func (r *Runner) setURL(rawURL string, paths []string) (rawURLs []string, err er
 }
 
 // isReachable checks if a URL is reachable
-func isReachable(target string, timeout time.Duration) error {
+func (runner *Runner) isReachable(target string, timeout time.Duration) error {
 	// Parse the URL to get the hostname
 	u, err := url.Parse(target)
 	if err != nil {
@@ -466,6 +466,7 @@ func isReachable(target string, timeout time.Duration) error {
 	// Setup Godns options
 	options := godns.DefaultOptions()
 	options.Timeout = int(timeout.Seconds())
+	options.Resolvers = runner.Options.Resolvers
 
 	r := godns.NewRunnerWithOptions(*options)
 
