@@ -175,6 +175,7 @@ func (r *Runner) InitializeWorkerPool() (chan<- *tld.URL, <-chan *tld.URL, chan<
 func (r *Runner) prepareTarget(target string) (*tld.URL, error) {
 	target = util.EnsureScheme(target)
 	mainTarget, _ := tld.Parse(target)
+
 	if !iputil.IsURLIP(target) { // if target is not an IP address
 		err := r.isReachable(target, dnsResolutionTimeout)
 		if err != nil {
@@ -182,6 +183,7 @@ func (r *Runner) prepareTarget(target string) (*tld.URL, error) {
 			return nil, err
 		}
 	}
+
 	r.Scope.AddInclude(target)
 	r.Scope.AddInclude("*."+mainTarget.Host, mainTarget.Host)
 	return mainTarget, nil
@@ -408,51 +410,58 @@ func (r *Runner) request(u *tld.URL) (req *http.Request, resp *http.Response, er
 func (r *Runner) setURL(rawURL string, paths []string) (rawURLs []string, err error) {
 	log.Debugf("Setting URL for %s", rawURL)
 
-	var line string
-
 	u, err := url.Parse(rawURL)
 	if err != nil {
 		return nil, err
 	}
 
-	for i := range paths {
-		if paths[i] == u.Host || r.isMime(paths[i]) || paths[i] == "" || strings.HasSuffix(u.Host, paths[i]) {
+	for _, path := range paths {
+		if shouldSkipPath(u, path, r) {
 			continue
 		}
 
-		// add leading slash on single words (likely files) if missing
-		if !strings.HasPrefix(paths[i], "/") && !strings.HasPrefix(paths[i], "http") {
-			paths[i] = "/" + paths[i]
-		}
-
-		if util.HasFile(u.Host) {
-			if u.Path == "/robots.txt" {
-				line = u.Scheme + "://" + u.Host + "/" + paths[i]
-			} else {
-				line = u.Host
-			}
-		} else if util.HasScheme(paths[i]) {
-			line = paths[i]
-		} else if util.IsDomain(paths[i]) {
-			line = paths[i]
-		} else if strings.HasPrefix(paths[i], "//") {
-			line = strings.TrimLeft(paths[i], "/")
-		} else if strings.HasPrefix(paths[i], "/") && strings.ContainsAny(paths[i], ".") {
-			line = u.Scheme + "://" + u.Host + "/" + paths[i]
-		} else if strings.HasPrefix(paths[i], "/") {
-			line = u.Scheme + "://" + u.Host + "/" + paths[i] + "/"
-		} else {
-			if util.HasFile(paths[i]) || util.HasParam(paths[i]) {
-				line = u.Scheme + "://" + u.Host + "/" + u.Path + "/" + paths[i]
-			} else {
-				line = u.Scheme + "://" + u.Host + "/" + u.Path + "/" + paths[i] + "/"
-			}
-		}
-
-		normalized, _ := r.normalizeURLString(line)
+		newPath := formatPath(u, path)
+		normalized, _ := r.normalizeURLString(newPath)
 		rawURLs = append(rawURLs, normalized)
 	}
+
 	return
+}
+
+func shouldSkipPath(u *url.URL, path string, r *Runner) bool {
+	return path == u.Host || r.isMime(path) || path == "" || strings.HasSuffix(u.Host, path)
+}
+
+func formatPath(u *url.URL, path string) string {
+	// Add leading slash on single words (likely files) if missing
+	if !strings.HasPrefix(path, "/") && !strings.HasPrefix(path, "http") {
+		path = "/" + path
+	}
+
+	if util.HasFile(u.Host) {
+		if u.Path == "/robots.txt" {
+			return u.Scheme + "://" + u.Host + "/" + path
+		}
+		return u.Host
+	}
+
+	if util.HasScheme(path) || util.IsDomain(path) || strings.HasPrefix(path, "//") {
+		return path
+	}
+
+	if strings.HasPrefix(path, "/") && strings.ContainsAny(path, ".") {
+		return u.Scheme + "://" + u.Host + path
+	}
+
+	if strings.HasPrefix(path, "/") {
+		return u.Scheme + "://" + u.Host + path + "/"
+	}
+
+	if util.HasFile(path) || util.HasParam(path) {
+		return u.Scheme + "://" + u.Host + u.Path + "/" + path
+	}
+
+	return u.Scheme + "://" + u.Host + u.Path + "/" + path + "/"
 }
 
 // isReachable checks if a URL is reachable
@@ -465,6 +474,7 @@ func (runner *Runner) isReachable(target string, timeout time.Duration) error {
 
 	// Setup Godns options
 	options := godns.DefaultOptions()
+
 	options.Timeout = int(timeout.Seconds())
 	options.Resolvers = runner.Options.Resolvers
 
