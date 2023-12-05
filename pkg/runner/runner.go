@@ -104,8 +104,7 @@ func (r *Runner) Run(targets ...string) {
 			continue
 		}
 
-		// log info to prepare target for crawling
-		logInfo("Preparing target for crawling: ", target)
+		logInfo("Crawling target:", target)
 		go r.queueURL(c_queue, mainTarget)
 		c_wait <- 1
 	}
