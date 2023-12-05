@@ -60,7 +60,7 @@ var (
 )
 
 func init() {
-	log.NewLogger("recrawl")
+	log.Init("recrawl")
 }
 
 // NewRunnerWithDefaults creates a new runner with default options
