@@ -177,15 +177,14 @@ func (r *Runner) prepareTarget(target string) (*tld.URL, error) {
 	mainTarget, _ := tld.Parse(target)
 
 	if !iputil.IsURLIP(target) { // if target is not an IP address
-		err := r.isReachable(target, dnsResolutionTimeout)
-		if err != nil {
-			log.Warn(err)
-			return nil, err
+		if r.canReachURL(target, dnsResolutionTimeout) {
+			r.Scope.AddInclude(target)
+			r.Scope.AddInclude("*."+mainTarget.Host, mainTarget.Host)
+		} else {
+			return nil, fmt.Errorf("target %s could not be reached", target)
 		}
 	}
 
-	r.Scope.AddInclude(target)
-	r.Scope.AddInclude("*."+mainTarget.Host, mainTarget.Host)
 	return mainTarget, nil
 }
 
@@ -464,49 +463,81 @@ func formatPath(u *url.URL, path string) string {
 	return u.Scheme + "://" + u.Host + u.Path + "/" + path + "/"
 }
 
-// isReachable checks if a URL is reachable
-func (runner *Runner) isReachable(target string, timeout time.Duration) error {
-	// Parse the URL to get the hostname
-	u, err := url.Parse(target)
-	if err != nil {
-		return fmt.Errorf("URL parsing failed: %w", err)
-	}
-
-	// Setup Godns options
+func (r *Runner) resolveDomain(domain string, timeout time.Duration) (string, error) {
 	options := godns.DefaultOptions()
-
 	options.Timeout = int(timeout.Seconds())
-	options.Resolvers = runner.Options.Resolvers
+	options.Resolvers = r.Options.Resolvers
 
-	r := godns.NewRunnerWithOptions(*options)
+	godnsRunner := godns.NewRunnerWithOptions(*options)
 
-	// Perform DNS check
-	results := r.Multiple([]string{u.Hostname()})
+	// resolve the domain
+	results := godnsRunner.Multiple([]string{domain})
 	for _, result := range results {
-		if len(result.IPv4) == 0 && len(result.IPv6) == 0 {
-			return fmt.Errorf("DNS resolution failed for %s", u.Hostname())
+		if len(result.IPv4) > 0 {
+			return result.IPv4[0], nil
+		} else if len(result.IPv6) > 0 {
+			return result.IPv6[0], nil
 		}
 	}
+	return "", fmt.Errorf("DNS resolution failed for %s", domain)
+}
 
-	// Use the port if specified, otherwise default to 80 or 443
-	host := u.Host
-	if u.Port() == "" {
-		if u.Scheme == "https" {
-			host = u.Hostname() + ":443"
-		} else {
-			host = u.Hostname() + ":80"
-		}
-	}
-
-	// Check reachability with a separate timeout
-	d := net.Dialer{Timeout: timeout}
-	conn, err := d.Dial("tcp", host)
+// canDial checks if a port can be dialed
+func (r *Runner) canDial(ip string, port string, timeout time.Duration) bool {
+	conn, err := net.DialTimeout("tcp", ip+":"+port, timeout)
 	if err != nil {
-		return fmt.Errorf("dial failed: %w", err)
+		return false // Return false as the dial was not successful
 	}
-	conn.Close()
+	if conn != nil {
+		conn.Close() // Close the connection only if it's not nil
+	}
+	return true
+}
 
-	return nil
+// canReachURL checks if a URL can be connected to
+func (r *Runner) canReachURL(rawURL string, timeout time.Duration) bool {
+	u, err := url.Parse(rawURL)
+	if err != nil {
+		log.Warn("URL parsing failed:", err)
+	}
+
+	// has been reached before
+	if r.isVisitedHost(u.Host) {
+		return true
+	}
+
+	// ensure port is set
+	if u.Port() == "" {
+		if u.Scheme == "http" {
+			u.Host = u.Hostname() + ":80"
+		} else if u.Scheme == "https" {
+			u.Host = u.Hostname() + ":443"
+		}
+	}
+
+	// check if URL is an IP address
+	// if so, check if it can be dialed
+	if iputil.IsURLIP(rawURL) {
+		if r.canDial(u.Hostname(), u.Port(), timeout) {
+			r.addVisitedHost(u.Host)
+			return true
+		}
+	}
+
+	// resolve the domain
+	ip, err := r.resolveDomain(u.Hostname(), timeout)
+	if err != nil {
+		log.Warn("DNS resolution failed:", err)
+		return false
+	}
+
+	// check if the port can be dialed
+	if r.canDial(ip, u.Port(), timeout) {
+		r.addVisitedHost(u.Host)
+		return true
+	}
+
+	return false
 }
 
 // scrape scrapes a response for paths
