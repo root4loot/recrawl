@@ -98,7 +98,7 @@ func (r *Runner) Run(targets ...string) {
 	log.Debug("number of targets: ", len(targets))
 
 	for _, target := range targets {
-		mainTarget, err := r.prepareTarget(target)
+		mainTarget, err := r.initializeTargetProcessing(target)
 		if err != nil {
 			log.Debug("Error preparing target:", err)
 			continue
@@ -171,20 +171,28 @@ func (r *Runner) InitializeWorkerPool() (chan<- *tld.URL, <-chan *tld.URL, chan<
 	return c_queue, c_urls, c_wait
 }
 
-// prepareTarget prepares a target for processing
-func (r *Runner) prepareTarget(target string) (*tld.URL, error) {
+// initializeTargetProcessing initializes the target processing
+// ensures the target is reachable and adds it to the processing scope
+func (r *Runner) initializeTargetProcessing(target string) (*tld.URL, error) {
+	// Ensure the target URL has a scheme (http or https)
 	target = util.EnsureScheme(target)
+
+	// Parse the target URL
 	mainTarget, _ := tld.Parse(target)
 
-	if !iputil.IsURLIP(target) { // if target is not an IP address
+	// If the target is not an IP address, check its reachability
+	if !iputil.IsURLIP(target) {
 		if r.canReachURL(target, dnsResolutionTimeout) {
+			// Add the target to the processing scope
 			r.Scope.AddInclude(target)
 			r.Scope.AddInclude("*."+mainTarget.Host, mainTarget.Host)
 		} else {
+			// Target is not reachable, return an error
 			return nil, fmt.Errorf("target %s could not be reached", target)
 		}
 	}
 
+	// Return the parsed URL object
 	return mainTarget, nil
 }
 
