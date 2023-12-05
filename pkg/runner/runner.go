@@ -254,7 +254,7 @@ func (r *Runner) Worker(c_urls <-chan *tld.URL, c_queue chan<- *tld.URL, c_wait 
 		}
 
 		// avoid URLs that only differ in parameter values
-		if r.isSimilarToVisitedURL(c_url.String()) {
+		if r.isRedundantURL(c_url.String()) {
 			log.Infof("Found similar for %s", c_url.String())
 			c_wait <- -1
 			continue
@@ -625,8 +625,15 @@ func (r *Runner) cleanDomain(domain string) string {
 	return domain
 }
 
-// isSimilarToVisitedURL checks if a URL is similar to a visited URL
-func (r *Runner) isSimilarToVisitedURL(urlStr string) bool {
+// isRedundantURL determines if a given URL has already been encountered with only query parameter differences.
+// It checks for two scenarios:
+//  1. If the URL has no query parameters, it verifies if the path has been visited.
+//  2. If the URL has query parameters, it compares the base URL (excluding parameters) and parameter names
+//     with previously visited URLs to determine if it's essentially the same page that has been visited.
+//
+// This helps in avoiding re-processing of pages that have already been parsed but might have different
+// parameter values in the URL.
+func (r *Runner) isRedundantURL(urlStr string) bool {
 	u, err := url.Parse(urlStr)
 	if err != nil {
 		return false
