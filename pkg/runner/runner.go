@@ -795,8 +795,6 @@ func (r *Runner) removeQuotes(input string) string {
 
 // setLogLevel sets the log level based on user-defined flags
 func (r *Runner) setLogLevel() {
-	log.Debug("Setting logger level...") // Log a debug message to indicate setting of log level
-
 	if r.Options.Verbose == 1 {
 		log.SetLevel(log.InfoLevel) // Set log level to Info if Verbose is set to 1
 	} else if r.Options.Verbose == 2 {
