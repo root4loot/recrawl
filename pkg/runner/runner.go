@@ -181,15 +181,14 @@ func (r *Runner) initializeTargetProcessing(target string) (*tld.URL, error) {
 
 	// If the target is not an IP address, check its reachability
 	if !iputil.IsURLIP(target) {
-		if r.canReachURL(target, dnsResolutionTimeout) {
-			// Add the target to the processing scope
-			r.Scope.AddInclude(target)
-			r.Scope.AddInclude("*."+mainTarget.Host, mainTarget.Host)
-		} else {
+		if !r.canReachURL(target, dnsResolutionTimeout) {
 			// Target is not reachable, return an error
 			return nil, fmt.Errorf("target %s could not be reached", target)
 		}
 	}
+
+	r.Scope.AddInclude(target)
+	r.Scope.AddInclude("*."+mainTarget.Host, mainTarget.Host)
 
 	// Return the parsed URL object
 	return mainTarget, nil
