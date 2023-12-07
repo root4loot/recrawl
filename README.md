@@ -125,7 +125,7 @@ func main() {
 	options := options.Options{
 		Include:     []string{"example.com"},
 		Exclude:     []string{"support.hackerone.com"},
-		Concurrency: 20,
+		Concurrency: 2,
 		Timeout:     10,
 		Delay:       0,
 		DelayJitter: 0,
@@ -149,6 +149,7 @@ func main() {
 	targets := []string{"hackerone.com", "bugcrowd.com"}
 	runner.Run(targets...)
 }
+
 ```
 
 ---
