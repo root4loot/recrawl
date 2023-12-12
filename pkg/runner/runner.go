@@ -11,7 +11,6 @@ import (
 	"fmt"
 	"io"
 	"math/rand"
-	"net"
 	"net/http"
 	"net/url"
 	"regexp"
@@ -21,8 +20,8 @@ import (
 
 	"github.com/PuerkitoBio/purell"
 	"github.com/jpillora/go-tld"
-	"github.com/root4loot/godns"
 	"github.com/root4loot/goscope"
+	"github.com/root4loot/goutils/domainutil"
 	"github.com/root4loot/goutils/iputil"
 	"github.com/root4loot/goutils/log"
 	"github.com/root4loot/recrawl/pkg/options"
@@ -30,7 +29,6 @@ import (
 )
 
 var (
-	mainTarget           *tld.URL
 	re_path              = regexp.MustCompile(`(?:"|')(?:(((?:[a-zA-Z]{1,10}://|//)[^"'/]{1,}\.[a-zA-Z]{2,}[^"']*)|((?:/|\.\./|\./)[^"'><,;|*()(%%$^/\\\[\]][^"'><,;|()]*[^"'><,;|()]*))|([a-zA-Z0-9_\-/]{1,}/[a-zA-Z0-9_\-/]{1,}\.(?:[a-zA-Z]{1,4}|action)(?:[\?|#][^"|']*)?)|([a-zA-Z0-9_\-/]{1,}/[a-zA-Z0-9_\-/]{3,}(?:[\?|#][^"|']*)?)|([a-zA-Z0-9_\-]+(?:\.[a-zA-Z]{1,4})+))(?:"|')`)
 	re_robots            = regexp.MustCompile(`(?:Allow|Disallow):\s*([a-zA-Z0-9_\-/]+\.[a-zA-Z0-9]{1,4}(?:\?[^\s]*)?|[a-zA-Z0-9_\-/]+(?:/[a-zA-Z0-9_\-/]+)*(?:\?[^\s]*)?|[a-zA-Z0-9_\-/]+(?:\?[^\s]*|$))`)
 	dnsResolutionTimeout = 3 * time.Second
@@ -173,25 +171,33 @@ func (r *Runner) InitializeWorkerPool() (chan<- *tld.URL, <-chan *tld.URL, chan<
 // initializeTargetProcessing initializes the target processing
 // ensures the target is reachable and adds it to the processing scope
 func (r *Runner) initializeTargetProcessing(target string) (*tld.URL, error) {
+
 	// Ensure the target URL has a scheme (http or https)
 	target = util.EnsureScheme(target)
 
 	// Parse the target URL
-	mainTarget, _ := tld.Parse(target)
+	u, _ := tld.Parse(target)
+
+	if util.HasScheme(u.Host) {
+		r.Scope.AddInclude(u.Host)
+	} else {
+		r.Scope.AddInclude("*."+u.Host, u.Host)
+	}
 
 	// If the target is not an IP address, check its reachability
 	if !iputil.IsURLIP(target) {
-		if !r.canReachURL(target, dnsResolutionTimeout) {
-			// Target is not reachable, return an error
-			return nil, fmt.Errorf("target %s could not be reached", target)
+		// has been reached before
+		if r.isVisitedHost(u.Host) {
+			err := domainutil.CanReachURLWithTimeout(target, dnsResolutionTimeout)
+			if err != nil {
+				return nil, fmt.Errorf("target %s could not be reached", target)
+			}
 		}
+		r.addVisitedHost(u.Host) // add to visited
 	}
 
-	r.Scope.AddInclude(target)
-	r.Scope.AddInclude("*."+mainTarget.Host, mainTarget.Host)
-
 	// Return the parsed URL object
-	return mainTarget, nil
+	return u, nil
 }
 
 // initializeScope initializes the scope
@@ -467,83 +473,6 @@ func formatPath(u *url.URL, path string) string {
 	}
 
 	return u.Scheme + "://" + u.Host + u.Path + "/" + path + "/"
-}
-
-func (r *Runner) resolveDomain(domain string, timeout time.Duration) (string, error) {
-	options := godns.DefaultOptions()
-	options.Timeout = int(timeout.Seconds())
-	options.Resolvers = r.Options.Resolvers
-
-	godnsRunner := godns.NewRunnerWithOptions(*options)
-
-	// resolve the domain
-	results := godnsRunner.Multiple([]string{domain})
-	for _, result := range results {
-		if len(result.IPv4) > 0 {
-			return result.IPv4[0], nil
-		} else if len(result.IPv6) > 0 {
-			return result.IPv6[0], nil
-		}
-	}
-	return "", fmt.Errorf("DNS resolution failed for %s", domain)
-}
-
-// canDial checks if a port can be dialed
-func (r *Runner) canDial(ip string, port string, timeout time.Duration) bool {
-	conn, err := net.DialTimeout("tcp", ip+":"+port, timeout)
-	if err != nil {
-		return false // Return false as the dial was not successful
-	}
-	if conn != nil {
-		conn.Close() // Close the connection only if it's not nil
-	}
-	return true
-}
-
-// canReachURL checks if a URL can be connected to
-func (r *Runner) canReachURL(rawURL string, timeout time.Duration) bool {
-	u, err := url.Parse(rawURL)
-	if err != nil {
-		log.Warn("URL parsing failed:", err)
-	}
-
-	// has been reached before
-	if r.isVisitedHost(u.Host) {
-		return true
-	}
-
-	// ensure port is set
-	if u.Port() == "" {
-		if u.Scheme == "http" {
-			u.Host = u.Hostname() + ":80"
-		} else if u.Scheme == "https" {
-			u.Host = u.Hostname() + ":443"
-		}
-	}
-
-	// check if URL is an IP address
-	// if so, check if it can be dialed
-	if iputil.IsURLIP(rawURL) {
-		if r.canDial(u.Hostname(), u.Port(), timeout) {
-			r.addVisitedHost(u.Host)
-			return true
-		}
-	}
-
-	// resolve the domain
-	ip, err := r.resolveDomain(u.Hostname(), timeout)
-	if err != nil {
-		log.Warn("DNS resolution failed:", err)
-		return false
-	}
-
-	// check if the port can be dialed
-	if r.canDial(ip, u.Port(), timeout) {
-		r.addVisitedHost(u.Host)
-		return true
-	}
-
-	return false
 }
 
 // scrape scrapes a response for paths

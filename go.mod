@@ -8,7 +8,7 @@ require (
 	github.com/jpillora/go-tld v1.2.1
 	github.com/root4loot/godns v0.0.0-20231205131712-3458f1e29cf6
 	github.com/root4loot/goscope v0.0.0-20231212113300-e6b38b908437
-	github.com/root4loot/goutils v0.0.0-20231203145534-1b14117051d4
+	github.com/root4loot/goutils v0.0.0-20231212122938-583dabad759f
 )
 
 require (

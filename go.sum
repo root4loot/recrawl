@@ -19,6 +19,10 @@ github.com/root4loot/goscope v0.0.0-20231212113300-e6b38b908437 h1:vjItbp5voKzNc
 github.com/root4loot/goscope v0.0.0-20231212113300-e6b38b908437/go.mod h1:+lH9u5tgGBzWoRUVy7enGx7V5iHukKFqNGptY9HRjAo=
 github.com/root4loot/goutils v0.0.0-20231203145534-1b14117051d4 h1:votrIroLQOZ0S4QS5kaJcApvZerNIVqJKZDGue+2QPc=
 github.com/root4loot/goutils v0.0.0-20231203145534-1b14117051d4/go.mod h1:tj7NJxGySm5Ld1VtfkbjH/1N/wr/9LNHlCxRu9prktA=
+github.com/root4loot/goutils v0.0.0-20231212122313-a588739f3c17 h1:BLdhwqwDgpmE0hztsWSWJiiR7DH6ACkZPpkyzIiSdFA=
+github.com/root4loot/goutils v0.0.0-20231212122313-a588739f3c17/go.mod h1:tj7NJxGySm5Ld1VtfkbjH/1N/wr/9LNHlCxRu9prktA=
+github.com/root4loot/goutils v0.0.0-20231212122938-583dabad759f h1:l15eFDY/M/1aFao6EbuKmmwtioyw8Zd0m92LjHkCfNU=
+github.com/root4loot/goutils v0.0.0-20231212122938-583dabad759f/go.mod h1:tj7NJxGySm5Ld1VtfkbjH/1N/wr/9LNHlCxRu9prktA=
 github.com/root4loot/publicresolvers v0.0.0-20230803103850-be159fde208d h1:zkA0meK9aQvZZjkUrjx4DPC/TH2AR7l1eYOeyqb6bXA=
 github.com/root4loot/publicresolvers v0.0.0-20230803103850-be159fde208d/go.mod h1:AIPuzk/pw2hqjeO0hkGF52HgM40k69Mp4A+7El/kSGE=
 github.com/sirupsen/logrus v1.9.3 h1:dueUQJ1C2q9oE3F7wvmSGAaVtTmUizReu6fjN8uqzbQ=
