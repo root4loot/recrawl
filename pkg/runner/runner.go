@@ -443,7 +443,7 @@ func formatPath(u *url.URL, path string) string {
 		path = "/" + path
 	}
 
-	if util.HasFile(u.Host) {
+	if util.HasFile(u.String()) {
 		if u.Path == "/robots.txt" {
 			return u.Scheme + "://" + u.Host + "/" + path
 		}
