@@ -7,7 +7,7 @@ require (
 	github.com/gookit/color v1.5.4
 	github.com/jpillora/go-tld v1.2.1
 	github.com/root4loot/godns v0.0.0-20231205131712-3458f1e29cf6
-	github.com/root4loot/goscope v0.0.0-20231127125616-3dafa1adb318
+	github.com/root4loot/goscope v0.0.0-20231212113300-e6b38b908437
 	github.com/root4loot/goutils v0.0.0-20231203145534-1b14117051d4
 )
 
