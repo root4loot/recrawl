@@ -29,7 +29,7 @@ import (
 )
 
 var (
-	re_path              = regexp.MustCompile(`(?:"|')(?:(((?:[a-zA-Z]{1,10}://|//)[^"'/]{1,}\.[a-zA-Z]{2,}[^"']*)|((?:/|\.\./|\./)[^"'><,;|*()(%%$^/\\\[\]][^"'><,;|()]*[^"'><,;|()]*))|([a-zA-Z0-9_\-/]{1,}/[a-zA-Z0-9_\-/]{1,}\.(?:[a-zA-Z]{1,4}|action)(?:[\?|#][^"|']*)?)|([a-zA-Z0-9_\-/]{1,}/[a-zA-Z0-9_\-/]{3,}(?:[\?|#][^"|']*)?)|([a-zA-Z0-9_\-]+(?:\.[a-zA-Z]{1,4})+))(?:"|')`)
+	re_path              = regexp.MustCompile(`(?:"|')(?:(((?:[a-zA-Z]{1,10}://|//)[^"'/]{1,}\.[a-zA-Z]{2,}[^"']*)|((?:/|\.\./|\./)[^"'><,;|*()(%%$^/\\\[\]][^"'><,;|()]*[^"'><,;|()]*))|([a-zA-Z0-9_\-/]{1,}/[a-zA-Z0-9_\-/]*\.[a-zA-Z0-9_]+(?:[\?|#][^"|']*)?)|([a-zA-Z0-9_\-/]{1,}/[a-zA-Z0-9_\-/]{3,}(?:[\?|#][^"|']*)?)|([a-zA-Z0-9_\-]+(?:\.[a-zA-Z0-9_]{1,})+)|([a-zA-Z0-9_\-/]+/))(?:"|')`)
 	re_robots            = regexp.MustCompile(`(?:Allow|Disallow):\s*([a-zA-Z0-9_\-/]+\.[a-zA-Z0-9]{1,4}(?:\?[^\s]*)?|[a-zA-Z0-9_\-/]+(?:/[a-zA-Z0-9_\-/]+)*(?:\?[^\s]*)?|[a-zA-Z0-9_\-/]+(?:\?[^\s]*|$))`)
 	dnsResolutionTimeout = 3 * time.Second
 	domainHashes         = make(map[string]map[string]bool) // map of domain/IP to map of response body hashes
@@ -249,12 +249,14 @@ func (r *Runner) Worker(c_urls <-chan *tld.URL, c_queue chan<- *tld.URL, c_wait 
 		}
 
 		// Check if robots.txt is present for the host and add it to the queue
-		robotsURL := fmt.Sprintf("%s://%s/robots.txt", c_url.Scheme, c_url.Host)
-		robotsParsedURL, err := tld.Parse(robotsURL)
-		if err == nil && !r.isVisitedURL(robotsParsedURL.String()) {
-			time.Sleep(r.getDelay() * time.Millisecond)
-			c_wait <- 1
-			go r.queueURL(c_queue, robotsParsedURL)
+		if c_url.Path == "" || c_url.Path == "/" && !strings.HasSuffix("/robots.txt", c_url.Path) && !r.isVisitedURL(c_url.String()+"/robots.txt") {
+			robotsURL := fmt.Sprintf("%s://%s/robots.txt", c_url.Scheme, c_url.Host)
+			robotsParsedURL, err := tld.Parse(robotsURL)
+			if err == nil {
+				time.Sleep(r.getDelay() * time.Millisecond)
+				c_wait <- 1
+				go r.queueURL(c_queue, robotsParsedURL)
+			}
 		}
 
 		// avoid example.com/foo/bar/foo/bar/foo/bar
@@ -431,9 +433,13 @@ func (r *Runner) setURL(rawURL string, paths []string) (rawURLs []string, err er
 			continue
 		}
 
-		newPath := formatPath(u, path)
-		normalized, _ := r.normalizeURLString(newPath)
-		rawURLs = append(rawURLs, normalized)
+		if util.IsFile(path) {
+			rawURLs = append(rawURLs, rawURL+"/"+path)
+		}
+
+		formattedURL := formatURL(u, path)
+		normaizedURL, _ := r.normalizeURLString(formattedURL)
+		rawURLs = append(rawURLs, normaizedURL)
 	}
 
 	return
@@ -443,21 +449,25 @@ func shouldSkipPath(u *url.URL, path string, r *Runner) bool {
 	return path == u.Host || r.isMime(path) || path == "" || strings.HasSuffix(u.Host, path)
 }
 
-func formatPath(u *url.URL, path string) string {
-	// Add leading slash on single words (likely files) if missing
-	if !strings.HasPrefix(path, "/") && !strings.HasPrefix(path, "http") {
+func formatURL(u *url.URL, path string) string {
+	if !strings.HasPrefix(path, "/") && !strings.HasPrefix(path, "http") && strings.Contains(path, ".") {
 		path = "/" + path
 	}
 
-	if util.HasFile(u.String()) {
-		if u.Path == "/robots.txt" {
-			return u.Scheme + "://" + u.Host + "/" + path
-		}
-		return u.Host
+	if util.HasFile(u.String()) && u.Path == "/robots.txt" {
+		return u.String()
 	}
 
-	if util.HasScheme(path) || util.IsDomain(path) || strings.HasPrefix(path, "//") {
+	if util.HasScheme(path) || domainutil.IsValidDomain(path) || strings.HasPrefix(path, "//") {
 		return path
+	}
+
+	if strings.ContainsAny(path, ".") {
+		if strings.HasPrefix(path, "/") {
+			return u.Scheme + "://" + u.Host + path
+		} else {
+			return u.String() + "/" + path
+		}
 	}
 
 	if strings.HasPrefix(path, "/") && strings.ContainsAny(path, ".") {
@@ -476,30 +486,46 @@ func formatPath(u *url.URL, path string) string {
 }
 
 // scrape scrapes a response for paths
-func (r *Runner) scrape(resp *http.Response) (res []string, err error) {
+func (r *Runner) scrape(resp *http.Response) ([]string, error) {
 	log.Debugf("Scraping %s", resp.Request.URL.String())
-	body, err := io.ReadAll(resp.Body)
-	var matches [][]string
 
-	if err == nil {
-		if strings.HasSuffix(resp.Request.URL.String(), "robots.txt") {
-			matches = re_robots.FindAllStringSubmatch(string(body), -1)
-		} else {
-			matches = re_path.FindAllStringSubmatch(string(body), -1)
-		}
-	} else {
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
 		return nil, err
 	}
 
+	if strings.HasSuffix(resp.Request.URL.String(), "robots.txt") {
+		return r.scrapeRobotsTxt(body), nil
+	}
+
+	return r.scrapePaths(body), nil
+}
+
+// scrapeRobotsTxt handles the scraping of robots.txt files
+func (r *Runner) scrapeRobotsTxt(body []byte) []string {
+	var res []string
+	matches := re_robots.FindAllStringSubmatch(string(body), -1)
 	for _, match := range matches {
 		if len(match) > 1 {
-			// Extract the path after "Disallow:" or "Allow:" from the second capturing group
 			path := strings.TrimSpace(match[1])
 			res = append(res, path)
 		}
 	}
+	return util.Unique(res)
+}
 
-	return util.Unique(res), err
+// scrapePaths handles the scraping of general paths
+func (r *Runner) scrapePaths(body []byte) []string {
+	var res []string
+	matches := re_path.FindAllStringSubmatch(string(body), -1)
+	for _, match := range matches {
+		for _, path := range match {
+			if path != "" {
+				res = append(res, r.removeQuotes(path))
+			}
+		}
+	}
+	return util.Unique(res)
 }
 
 // URL normalization flag rules

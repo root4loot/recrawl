@@ -89,8 +89,8 @@ func TrimDoubleSlashes(target string) string {
 	return target
 }
 
-// IsDomain checks if string looks like a domain
-func IsDomain(str string) bool {
+// IsFile checks if string looks like a domain
+func IsFile(str string) bool {
 	re := regexp.MustCompile(`^\w+\.\w+.*`)
 	return re.MatchString(str)
 }
@@ -221,4 +221,14 @@ func IPv4(domain string) ([]string, error) {
 		return nil, fmt.Errorf("no A records found for domain: %s", domain)
 	}
 	return aRecords, nil
+}
+
+// IsAlphanumeric checks if a string contains only letters and numbers.
+func IsAlphanumeric(s string) bool {
+	for _, r := range s {
+		if !unicode.IsLetter(r) && !unicode.IsNumber(r) {
+			return false
+		}
+	}
+	return true
 }
