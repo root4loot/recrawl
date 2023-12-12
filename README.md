@@ -36,33 +36,34 @@ docker run -it recrawl -h
 ```
 
 ## Usage
-```
+```sh
 Usage: ./recrawl [options] (-t <target> | -i <targets.txt>)
 
 TARGETING:
-   -t,    --target         target host                         (comma-separated)
-   -i,    --infile         file containing targets             (one per line)
-   -ih,   --include-host   also crawls this host (if found)    (comma-separated)
-   -eh,   --exclude-host   do not crawl this host (if found)   (comma-separated)
+   -t,    --target           target domain/url                                    (comma-separated)
+   -i,    --infile           file containing targets                              (one per line)
+   -ih,   --include-host     also crawls this host (if found)                     (comma-separated)
+   -eh,   --exclude-host     do not crawl this host (if found)                    (comma-separated)
 
 CONFIGURATIONS:
-   -c,    --concurrency    number of concurrent requests       (Default: 20)
-   -to,   --timeout        max request timeout                 (Default: 10 seconds)
-   -d,    --delay          delay between requests              (Default: 0 milliseconds)
-   -dj,   --delay-jitter   max jitter between requests         (Default: 0 milliseconds)
-   -ua,   --user-agent     set user agent                      (Default: recrawl)
-   -p,    --proxy          set proxy                           (Default: none)
-   -r,    --resolvers      file containing list of resolvers   (Default: System DNS)
+   -c,    --concurrency      number of concurrent requests                        (Default: 20)
+   -to,   --timeout          max request timeout                                  (Default: 10 seconds)
+   -d,    --delay            delay between requests                               (Default: 0 milliseconds)
+   -dj,   --delay-jitter     max jitter between requests                          (Default: 0 milliseconds)
+   -sr,   --skip-redundant   skip requests that only differ in parameter values   (Default: true)
+   -ua,   --user-agent       set user agent                                       (Default: recrawl)
+   -p,    --proxy            set proxy                                            (Default: none)
+   -r,    --resolvers        file containing list of resolvers                    (Default: System DNS)
 
 OUTPUT:
-   -o,    --outfile         output results to given file
-   -hs,   --hide-status     hide status code from output
-   -hw,   --hide-warning    hide warnings from output
-   -fs,   --filter-status   filter by status code              (comma-separated)
-   -v,    --verbose         verbose output                     (can be set multiple times for more verbosity)
-   -s,    --silence         silence results from output
-   -h,    --help            display help
-          --version         display version
+   -fs,   --filter-status    filter by status code                                (comma-separated)
+   -v,    --verbose          verbose output                                       (can be set multiple times for more verbosity)
+   -o,    --outfile          output results to given file
+   -hs,   --hide-status      hide status code from output
+   -hw,   --hide-warning     hide warnings from output
+   -s,    --silence          silence results from output
+   -h,    --help             display help
+          --version          display version
 ```
 
 ## Example

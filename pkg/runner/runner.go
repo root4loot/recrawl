@@ -266,8 +266,8 @@ func (r *Runner) Worker(c_urls <-chan *tld.URL, c_queue chan<- *tld.URL, c_wait 
 			continue
 		}
 
-		// avoid URLs that only differ in parameter values
-		if r.isRedundantURL(c_url.String()) {
+		// skip URLs that only differ in parameter values
+		if r.Options.SkipRedundant && r.isRedundantURL(c_url.String()) {
 			log.Infof("Skipping redundant URL: %s", c_url.String())
 			c_wait <- -1
 			continue
