@@ -434,7 +434,7 @@ func (r *Runner) setURL(rawURL string, paths []string) (rawURLs []string, err er
 	}
 
 	for _, path := range paths {
-		if shouldSkipPath(u, path, r) {
+		if r.shouldSkipPath(u, path) {
 			continue
 		}
 
@@ -450,8 +450,8 @@ func (r *Runner) setURL(rawURL string, paths []string) (rawURLs []string, err er
 	return
 }
 
-func shouldSkipPath(u *url.URL, path string, r *Runner) bool {
-	return path == u.Host || r.isMime(path) || path == "" || strings.HasSuffix(u.Host, path)
+func (r *Runner) shouldSkipPath(u *url.URL, path string) bool {
+	return path == u.Host || r.isMedia(path) || path == "" || strings.HasSuffix(u.Host, path)
 }
 
 func formatURL(u *url.URL, path string) string {
@@ -557,11 +557,10 @@ func (r *Runner) normalizeURLString(rawURL string) (normalizedURL string, err er
 	return normalizedURL, err
 }
 
-// isMime checks if a URL is a mime type
-func (r *Runner) isMime(rawURL string) bool {
-	mimes := []string{"audio", "application", "font", "image", "multipart", "text", "video"}
+func (r *Runner) isMedia(path string) bool {
+	mimes := []string{"audio/", "application/", "font/", "image/", "multipart/", "text/", "video/"}
 	for _, mime := range mimes {
-		if strings.HasPrefix(rawURL, mime) {
+		if strings.HasPrefix(path, mime) {
 			return true
 		}
 	}
