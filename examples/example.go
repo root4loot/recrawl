@@ -32,6 +32,6 @@ func main() {
 	runner.Run("google.com")
 
 	// multiple targets
-	targets := []string{"hackerone.com", "bugcrowd.com"}
-	runner.Run(targets...)
+	// targets := []string{"hackerone.com", "bugcrowd.com"}
+	// runner.Run(targets...)
 }

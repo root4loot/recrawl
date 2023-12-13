@@ -12,7 +12,7 @@ import (
 	"strings"
 	"unicode"
 
-	"github.com/root4loot/goutils/domainutil"
+	"github.com/root4loot/goutils/urlutil"
 )
 
 // HasFile checks if a URL has a file extension
@@ -36,7 +36,7 @@ func HasParam(str string) bool {
 
 // Ensure ensures a URL has a scheme
 func EnsureScheme(target string) string {
-	if target != "" && !domainutil.HasScheme(target) {
+	if target != "" && !urlutil.HasScheme(target) {
 		return "http://" + target
 	}
 	return target

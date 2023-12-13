@@ -7,8 +7,8 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/root4loot/goutils/domainutil"
 	"github.com/root4loot/goutils/httputil"
+	"github.com/root4loot/goutils/urlutil"
 	"github.com/root4loot/recrawl/pkg/options"
 )
 
@@ -36,7 +36,7 @@ func NewHTTPClient(options *options.Options) *HTTPClient {
 	client.Timeout = time.Duration(options.Timeout) * time.Second
 
 	if options.Proxy != "" {
-		if !domainutil.HasScheme(options.Proxy) {
+		if !urlutil.HasScheme(options.Proxy) {
 			options.Proxy = "http://" + options.Proxy
 		}
 		proxy, err := url.Parse(options.Proxy)

@@ -25,6 +25,7 @@ import (
 	"github.com/root4loot/goutils/iputil"
 	"github.com/root4loot/goutils/log"
 	"github.com/root4loot/goutils/sliceutil"
+	"github.com/root4loot/goutils/urlutil"
 	"github.com/root4loot/recrawl/pkg/options"
 	"github.com/root4loot/recrawl/pkg/util"
 )
@@ -182,7 +183,7 @@ func (r *Runner) initializeTargetProcessing(target string) (*url.URL, error) {
 		return nil, err
 	}
 
-	if domainutil.HasScheme(u.Host) {
+	if urlutil.HasScheme(u.Host) {
 		r.Scope.AddInclude(u.Host)
 	} else {
 		r.Scope.AddInclude("*."+u.Host, u.Host)
@@ -192,7 +193,7 @@ func (r *Runner) initializeTargetProcessing(target string) (*url.URL, error) {
 	if !iputil.IsURLIP(target) {
 		// has been reached before
 		if r.isVisitedHost(u.Host) {
-			err := domainutil.CanReachURLWithTimeout(target, dnsResolutionTimeout)
+			err := urlutil.CanReachURLWithTimeout(target, dnsResolutionTimeout)
 			if err != nil {
 				return nil, fmt.Errorf("target %s could not be reached", target)
 			}
@@ -463,7 +464,7 @@ func formatURL(u *url.URL, path string) string {
 		return u.String()
 	}
 
-	if domainutil.HasScheme(path) || domainutil.IsValidDomain(path) || strings.HasPrefix(path, "//") {
+	if urlutil.HasScheme(path) || domainutil.IsValidDomain(path) || strings.HasPrefix(path, "//") {
 		return path
 	}
 
