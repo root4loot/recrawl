@@ -304,11 +304,6 @@ func (r *Runner) Worker(c_urls <-chan *url.URL, c_queue chan<- *url.URL, c_wait 
 
 		landingURL := resp.Request.URL.String()
 
-		if util.IsTextContentType(resp.Header.Get("Content-Type")) {
-			c_wait <- len(rawURLs) - 1
-			continue
-		}
-
 		paths, err := r.scrape(resp)
 
 		if err != nil {
@@ -435,7 +430,7 @@ func (r *Runner) setURL(rawURL string, paths []string) (rawURLs []string, err er
 	}
 
 	for _, path := range paths {
-		if r.shouldSkipPath(u, path) {
+		if r.shouldSkipPath(u, path) && util.IsBinaryString(path) && !util.IsPrintable(path) {
 			continue
 		}
 
