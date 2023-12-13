@@ -19,7 +19,6 @@ import (
 	"time"
 
 	"github.com/PuerkitoBio/purell"
-	"github.com/jpillora/go-tld"
 	"github.com/root4loot/goscope"
 	"github.com/root4loot/goutils/domainutil"
 	"github.com/root4loot/goutils/iputil"
@@ -98,11 +97,11 @@ func (r *Runner) Run(targets ...string) {
 	for _, target := range targets {
 		mainTarget, err := r.initializeTargetProcessing(target)
 		if err != nil {
-			log.Debug("Error preparing target:", err)
+			log.Warn("Error preparing target:", err)
 			continue
 		}
 
-		logInfo("Crawling target:", target)
+		logInfo("Crawling target:", mainTarget.String())
 		go r.queueURL(c_queue, mainTarget)
 		c_wait <- 1
 	}
@@ -117,10 +116,10 @@ func (r *Runner) Run(targets ...string) {
 }
 
 // InitializeWorkerPool creates a queue of URLs to be processed by workers
-func (r *Runner) InitializeWorkerPool() (chan<- *tld.URL, <-chan *tld.URL, chan<- int) {
+func (r *Runner) InitializeWorkerPool() (chan<- *url.URL, <-chan *url.URL, chan<- int) {
 	c_wait := make(chan int)
-	c_urls := make(chan *tld.URL)
-	c_queue := make(chan *tld.URL)
+	c_urls := make(chan *url.URL)
+	c_queue := make(chan *url.URL)
 	queueCount := 0
 
 	// Initialize timeout duration
@@ -170,13 +169,16 @@ func (r *Runner) InitializeWorkerPool() (chan<- *tld.URL, <-chan *tld.URL, chan<
 
 // initializeTargetProcessing initializes the target processing
 // ensures the target is reachable and adds it to the processing scope
-func (r *Runner) initializeTargetProcessing(target string) (*tld.URL, error) {
+func (r *Runner) initializeTargetProcessing(target string) (*url.URL, error) {
 
 	// Ensure the target URL has a scheme (http or https)
 	target = util.EnsureScheme(target)
 
 	// Parse the target URL
-	u, _ := tld.Parse(target)
+	u, err := url.Parse(target)
+	if err != nil {
+		return nil, err
+	}
 
 	if util.HasScheme(u.Host) {
 		r.Scope.AddInclude(u.Host)
@@ -197,7 +199,7 @@ func (r *Runner) initializeTargetProcessing(target string) (*tld.URL, error) {
 	}
 
 	// Return the parsed URL object
-	return u, nil
+	return u, err
 }
 
 // initializeScope initializes the scope
@@ -218,7 +220,7 @@ func (r *Runner) initializeScope() {
 }
 
 // startWorkers starts the workers
-func (r *Runner) startWorkers(c_urls <-chan *tld.URL, c_queue chan<- *tld.URL, c_wait chan<- int) {
+func (r *Runner) startWorkers(c_urls <-chan *url.URL, c_queue chan<- *url.URL, c_wait chan<- int) {
 
 	var wg sync.WaitGroup
 	for i := 0; i < r.Options.Concurrency; i++ {
@@ -232,13 +234,15 @@ func (r *Runner) startWorkers(c_urls <-chan *tld.URL, c_queue chan<- *tld.URL, c
 }
 
 // queueURL adds a URL to the queue
-func (r *Runner) queueURL(c_queue chan<- *tld.URL, url *tld.URL) {
-	url, _ = tld.Parse(r.cleanDomain(url.String()))
-	c_queue <- url
+func (r *Runner) queueURL(c_queue chan<- *url.URL, url *url.URL) {
+	url, err := url.Parse(r.cleanDomain(url.String()))
+	if err == nil {
+		c_queue <- url
+	}
 }
 
 // worker is a worker that processes URLs from the queue
-func (r *Runner) Worker(c_urls <-chan *tld.URL, c_queue chan<- *tld.URL, c_wait chan<- int, c_result chan<- Result) {
+func (r *Runner) Worker(c_urls <-chan *url.URL, c_queue chan<- *url.URL, c_wait chan<- int, c_result chan<- Result) {
 	for c_url := range c_urls {
 		var rawURLs []string
 		if c_url == nil || c_url.Host == "" {
@@ -251,7 +255,7 @@ func (r *Runner) Worker(c_urls <-chan *tld.URL, c_queue chan<- *tld.URL, c_wait 
 		// Check if robots.txt is present for the host and add it to the queue
 		if c_url.Path == "" || c_url.Path == "/" && !strings.HasSuffix("/robots.txt", c_url.Path) && !r.isVisitedURL(c_url.String()+"/robots.txt") {
 			robotsURL := fmt.Sprintf("%s://%s/robots.txt", c_url.Scheme, c_url.Host)
-			robotsParsedURL, err := tld.Parse(robotsURL)
+			robotsParsedURL, err := url.Parse(robotsURL)
 			if err == nil {
 				time.Sleep(r.getDelay() * time.Millisecond)
 				c_wait <- 1
@@ -322,8 +326,8 @@ func (r *Runner) Worker(c_urls <-chan *tld.URL, c_queue chan<- *tld.URL, c_wait 
 		c_wait <- len(rawURLs) - 1
 
 		for i := range rawURLs {
-			var u *tld.URL
-			if u, err = tld.Parse(rawURLs[i]); err != nil {
+			var u *url.URL
+			if u, err = url.Parse(rawURLs[i]); err != nil {
 				log.Warnf("%v", err)
 				c_wait <- len(rawURLs) - 1
 				continue
@@ -369,7 +373,7 @@ func shouldProcessPage(domainOrIP string, resp *http.Response) bool {
 }
 
 // request makes a request to a URL
-func (r *Runner) request(u *tld.URL) (req *http.Request, resp *http.Response, err error) {
+func (r *Runner) request(u *url.URL) (req *http.Request, resp *http.Response, err error) {
 	log.Debug("Requesting ", u.String())
 
 	// Check if URL has already been visited
