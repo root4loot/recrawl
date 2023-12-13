@@ -21,6 +21,7 @@ import (
 	"github.com/PuerkitoBio/purell"
 	"github.com/root4loot/goscope"
 	"github.com/root4loot/goutils/domainutil"
+	"github.com/root4loot/goutils/httputil"
 	"github.com/root4loot/goutils/iputil"
 	"github.com/root4loot/goutils/log"
 	"github.com/root4loot/recrawl/pkg/options"
@@ -279,7 +280,7 @@ func (r *Runner) Worker(c_urls <-chan *url.URL, c_queue chan<- *url.URL, c_wait 
 
 		_, resp, err := r.request(c_url)
 
-		if resp == nil {
+		if resp == nil || httputil.IsBinaryResponse(resp) {
 			c_wait <- -1
 			continue
 		}
