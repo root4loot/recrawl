@@ -24,6 +24,7 @@ import (
 	"github.com/root4loot/goutils/httputil"
 	"github.com/root4loot/goutils/iputil"
 	"github.com/root4loot/goutils/log"
+	"github.com/root4loot/goutils/sliceutil"
 	"github.com/root4loot/recrawl/pkg/options"
 	"github.com/root4loot/recrawl/pkg/util"
 )
@@ -181,7 +182,7 @@ func (r *Runner) initializeTargetProcessing(target string) (*url.URL, error) {
 		return nil, err
 	}
 
-	if util.HasScheme(u.Host) {
+	if domainutil.HasScheme(u.Host) {
 		r.Scope.AddInclude(u.Host)
 	} else {
 		r.Scope.AddInclude("*."+u.Host, u.Host)
@@ -462,7 +463,7 @@ func formatURL(u *url.URL, path string) string {
 		return u.String()
 	}
 
-	if util.HasScheme(path) || domainutil.IsValidDomain(path) || strings.HasPrefix(path, "//") {
+	if domainutil.HasScheme(path) || domainutil.IsValidDomain(path) || strings.HasPrefix(path, "//") {
 		return path
 	}
 
@@ -515,7 +516,7 @@ func (r *Runner) scrapeRobotsTxt(body []byte) []string {
 			res = append(res, path)
 		}
 	}
-	return util.Unique(res)
+	return sliceutil.Unique(res)
 }
 
 // scrapePaths handles the scraping of general paths
@@ -529,7 +530,7 @@ func (r *Runner) scrapePaths(body []byte) []string {
 			}
 		}
 	}
-	return util.Unique(res)
+	return sliceutil.Unique(res)
 }
 
 // URL normalization flag rules

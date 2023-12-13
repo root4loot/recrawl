@@ -5,17 +5,16 @@ package util
 
 import (
 	"bufio"
-	"fmt"
-	"net"
 	"os"
 	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
 	"unicode"
+
+	"github.com/root4loot/goutils/domainutil"
 )
 
-// HasFile checks if a URL has a file extension
 // HasFile checks if a URL has a file extension
 func HasFile(url string) bool {
 	url = strings.TrimPrefix(url, "http://")
@@ -29,12 +28,6 @@ func HasFile(url string) bool {
 	return false
 }
 
-// HasScheme checks if a URL has a scheme
-func HasScheme(url string) bool {
-	re := regexp.MustCompile(`^\w+?:\/\/\w+`)
-	return re.MatchString(url)
-}
-
 // HasParam checks if a URL has a parameter
 func HasParam(str string) bool {
 	re := regexp.MustCompile(`\?.*`)
@@ -43,7 +36,7 @@ func HasParam(str string) bool {
 
 // Ensure ensures a URL has a scheme
 func EnsureScheme(target string) string {
-	if target != "" && !HasScheme(target) {
+	if target != "" && !domainutil.HasScheme(target) {
 		return "http://" + target
 	}
 	return target
@@ -97,30 +90,6 @@ func IsFile(str string) bool {
 	return re.MatchString(str)
 }
 
-// IsIP checks if a string is an IP
-func IsIP(str string) bool {
-	re := regexp.MustCompile(`^\d+\.\d+\.\d+\.\d+$`)
-	return re.MatchString(str)
-}
-
-// IsURL checks if a string is a URL
-func IsURL(str string) bool {
-	re := regexp.MustCompile(`^(https?:\/\/).*[a-zA-Z]$`)
-	return re.MatchString(str)
-}
-
-// HasURL checks if a string has URL
-func HasURL(str string) bool {
-	re := regexp.MustCompile(`(https?:\/\/).*[a-zA-Z]$`)
-	return re.MatchString(str)
-}
-
-// GetURL gets a URL from a string
-func GetURL(host string) string {
-	re := regexp.MustCompile(`(https?:\/\/).*[a-zA-Z]$`)
-	return re.FindString(host)
-}
-
 // isTextContentType checks if a string is a certain content-type
 func IsTextContentType(str string) bool {
 	var nonTextContentTypes = []string{
@@ -145,31 +114,6 @@ func IsTextContentType(str string) bool {
 		}
 	}
 	return true
-}
-
-// Remove removes a string from a slice
-func Remove(s []string, r string) []string {
-	for i, v := range s {
-		if v == r {
-			return append(s[:i], s[i+1:]...)
-		}
-	}
-	return s
-}
-
-// Unique removes duplicates from a slice
-func Unique(str []string) []string {
-	keys := make(map[string]bool)
-	list := []string{}
-	for _, entry := range str {
-		if _, value := keys[entry]; !value {
-			keys[entry] = true
-			if entry != "" {
-				list = append(list, entry)
-			}
-		}
-	}
-	return list
 }
 
 // IsPrintable checks if a string is printable
@@ -205,32 +149,4 @@ func ReadFileLines(filepath string) (lines []string, err error) {
 		lines = append(lines, scanner.Text())
 	}
 	return
-}
-
-// IPv4 returns the IPv4 address of a domain
-func IPv4(domain string) ([]string, error) {
-	addrs, err := net.LookupIP(domain)
-	if err != nil {
-		return nil, err
-	}
-	var aRecords []string
-	for _, addr := range addrs {
-		if addr.To4() != nil {
-			aRecords = append(aRecords, addr.String())
-		}
-	}
-	if len(aRecords) == 0 {
-		return nil, fmt.Errorf("no A records found for domain: %s", domain)
-	}
-	return aRecords, nil
-}
-
-// IsAlphanumeric checks if a string contains only letters and numbers.
-func IsAlphanumeric(s string) bool {
-	for _, r := range s {
-		if !unicode.IsLetter(r) && !unicode.IsNumber(r) {
-			return false
-		}
-	}
-	return true
 }
