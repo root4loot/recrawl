@@ -300,7 +300,6 @@ func (r *Runner) Worker(c_urls <-chan *url.URL, c_queue chan<- *url.URL, c_wait 
 			continue
 		}
 
-		// landingURL, _ := tld.Parse(resp.Request.URL.String())
 		landingURL := resp.Request.URL.String()
 
 		if util.IsTextContentType(resp.Header.Get("Content-Type")) {
@@ -553,7 +552,9 @@ const normalizationFlags purell.NormalizationFlags = purell.FlagRemoveDefaultPor
 
 // normalizeURLString normalizes a URL string
 func (r *Runner) normalizeURLString(rawURL string) (normalizedURL string, err error) {
-	normalizedURL, err = purell.NormalizeURLString(rawURL, normalizationFlags)
+	// Replace backslashes with their percent-encoded form
+	normalizedURL = strings.ReplaceAll(rawURL, `\`, `%5C`)
+	normalizedURL, err = purell.NormalizeURLString(normalizedURL, normalizationFlags)
 	return normalizedURL, err
 }
 
