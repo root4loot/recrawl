@@ -307,8 +307,8 @@ func (r *Runner) Worker(c_urls <-chan *url.URL, c_queue chan<- *url.URL, c_wait 
 		paths, err := r.scrape(resp)
 
 		if err != nil {
-			log.Warnf("Timeout exceeded for %v", landingURL)
-			c_wait <- len(rawURLs) - 1
+			log.Warnf("Failed to scrape %s: %v", landingURL, err)
+			c_wait <- -1
 			continue
 		}
 
