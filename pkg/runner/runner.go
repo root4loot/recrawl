@@ -34,7 +34,7 @@ var (
 	re_path              = regexp.MustCompile(`(?:"|')(?:(((?:[a-zA-Z]{1,10}://|//)[^"'/]{1,}\.[a-zA-Z]{2,}[^"']*)|((?:/|\.\./|\./)[^"'><,;|*()(%%$^/\\\[\]][^"'><,;|()]*[^"'><,;|()]*))|([a-zA-Z0-9_\-/]{1,}/[a-zA-Z0-9_\-/]*\.[a-zA-Z0-9_]+(?:[\?|#][^"|']*)?)|([a-zA-Z0-9_\-/]{1,}/[a-zA-Z0-9_\-/]{3,}(?:[\?|#][^"|']*)?)|([a-zA-Z0-9_\-]+(?:\.[a-zA-Z0-9_]{1,})+)|([a-zA-Z0-9_\-/]+/))(?:"|')`)
 	re_robots            = regexp.MustCompile(`(?:Allow|Disallow):\s*([a-zA-Z0-9_\-/]+\.[a-zA-Z0-9]{1,4}(?:\?[^\s]*)?|[a-zA-Z0-9_\-/]+(?:/[a-zA-Z0-9_\-/]+)*(?:\?[^\s]*)?|[a-zA-Z0-9_\-/]+(?:\?[^\s]*|$))`)
 	dnsResolutionTimeout = 3 * time.Second
-	domainHashes         = make(map[string]map[string]bool) // map of domain/IP to map of response body hashes
+	hostHashes           = make(map[string]map[string]bool) // map of domain/IP to map of response body hashes
 )
 
 type Runner struct {
@@ -297,7 +297,7 @@ func (r *Runner) Worker(c_urls <-chan *url.URL, c_queue chan<- *url.URL, c_wait 
 		}
 
 		// Check if the url should be processed based on the response body hash
-		if !shouldProcessPage(c_url.Host, resp) {
+		if r.Options.SkipSameBody && !shouldProcessPage(c_url.Host, resp) {
 			c_wait <- -1
 			continue
 		}
@@ -337,7 +337,7 @@ func (r *Runner) Worker(c_urls <-chan *url.URL, c_queue chan<- *url.URL, c_wait 
 }
 
 // shouldProcessPage checks if a page should be processed (based on the hash of the response body)
-func shouldProcessPage(domainOrIP string, resp *http.Response) bool {
+func shouldProcessPage(host string, resp *http.Response) bool {
 	// Read the response body
 	bodyBytes, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -353,19 +353,19 @@ func shouldProcessPage(domainOrIP string, resp *http.Response) bool {
 	hash := hex.EncodeToString(hasher.Sum(nil))
 
 	// Initialize the nested map if not already done
-	if domainHashes[domainOrIP] == nil {
-		domainHashes[domainOrIP] = make(map[string]bool)
+	if hostHashes[host] == nil {
+		hostHashes[host] = make(map[string]bool)
 	}
 
 	// Check whether the hash already exists for the given domain or IP
-	_, exists := domainHashes[domainOrIP][hash]
+	_, exists := hostHashes[host][hash]
 	if exists {
-		log.Debug("Skipping page as it has already been processed")
+		log.Debugf("Skipping %s page as it has already been processed", resp.Request.URL.String())
 		return false
 	}
 
 	// If it doesn't exist, store it and return true
-	domainHashes[domainOrIP][hash] = true
+	hostHashes[host][hash] = true
 	return true
 }
 

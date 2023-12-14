@@ -40,24 +40,25 @@ docker run -it recrawl -h
 Usage: ./recrawl [options] (-t <target> | -i <targets.txt>)
 
 TARGETING:
-   -t,    --target           target domain/url                                    (comma-separated)
-   -i,    --infile           file containing targets                              (one per line)
-   -ih,   --include-host     also crawls this host (if found)                     (comma-separated)
-   -eh,   --exclude-host     do not crawl this host (if found)                    (comma-separated)
+   -t,    --target           target domain/url                                          (comma-separated)
+   -i,    --infile           file containing targets                                    (one per line)
+   -ih,   --include-host     also crawls this host (if found)                           (comma-separated)
+   -eh,   --exclude-host     do not crawl this host (if found)                          (comma-separated)
 
 CONFIGURATIONS:
-   -c,    --concurrency      number of concurrent requests                        (Default: 20)
-   -to,   --timeout          max request timeout                                  (Default: 10 seconds)
-   -d,    --delay            delay between requests                               (Default: 0 milliseconds)
-   -dj,   --delay-jitter     max jitter between requests                          (Default: 0 milliseconds)
-   -sr,   --skip-redundant   skip requests that only differ in parameter values   (Default: true)
-   -ua,   --user-agent       set user agent                                       (Default: recrawl)
-   -p,    --proxy            set proxy                                            (Default: none)
-   -r,    --resolvers        file containing list of resolvers                    (Default: System DNS)
+   -c,    --concurrency      number of concurrent requests                              (Default: 20)
+   -to,   --timeout          max request timeout                                        (Default: 10 seconds)
+   -d,    --delay            delay between requests                                     (Default: 0 milliseconds)
+   -dj,   --delay-jitter     max jitter between requests                                (Default: 0 milliseconds)
+   -sr,   --skip-redundant   skip requests that only differ in parameter values         (Default: true)
+   -ss,   --skip-same        skip crawling responses that have the same response body   (Default: false)
+   -ua,   --user-agent       set user agent                                             (Default: recrawl)
+   -p,    --proxy            set proxy                                                  (Default: none)
+   -r,    --resolvers        file containing list of resolvers                          (Default: System DNS)
 
 OUTPUT:
-   -fs,   --filter-status    filter by status code                                (comma-separated)
-   -v,    --verbose          verbose output                                       (can be set multiple times for more verbosity)
+   -fs,   --filter-status    filter by status code                                      (comma-separated)
+   -v,    --verbose          verbose output (can be set multiple times)
    -o,    --outfile          output results to given file
    -hs,   --hide-status      hide status code from output
    -hw,   --hide-warning     hide warnings from output
@@ -93,7 +94,7 @@ OUTPUT:
 Crawl hackerone.com, hide status code and grep for lines ending in .js
 
 ```
-➜ recrawl -t hackerone.com -hs | grep 'js$'
+➜ recrawl -t hackerone.com --hide-status | grep 'js$'
 
 https://www.hackerone.com/sites/default/files/js/js_Ikd9nsZ0AFAesOLgcgjc7F6CRoODbeqOn7SVbsXgALQ.js
 https://www.hackerone.com/sites/default/files/js/js_hg8lQy2HP5Rw6yIz03HhGKfvnyySwjoFdqpvXgRJD6I.js

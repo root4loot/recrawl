@@ -25,6 +25,7 @@ type Options struct {
 	Verbose       int      // verbosity level
 	Resolvers     []string // resolvers to use for DNS resolution
 	SkipRedundant bool     // skip requests that only differ parameter values
+	SkipSameBody  bool     // skip crawling responses that have the same response body
 	CLI           CLI      // CLI options
 }
 
@@ -51,6 +52,7 @@ func Default() *Options {
 		Delay:         0,
 		DelayJitter:   0,
 		SkipRedundant: true,
+		SkipSameBody:  false,
 		UserAgent:     "recrawl",
 	}
 }
