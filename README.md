@@ -91,17 +91,20 @@ Running recrawl against hackerone.com to filter JavaScript files:
 ➜ recrawl -t hackerone.com --filter-ext js
 ```
 
-<details>
-<summary>Other ways to set target</summary>
+<details open style="background-color: #f0f0f0;">
+<summary style="font-weight: bold; color: #333; background-color: #ddd; padding: 5px;">Other ways to set target</summary>
 
+Pipe the target URL
 ```sh
 ➜ echo hackerone.com | recrawl
 ```
 
+Pipe a file containing targets 
 ```sh
 ➜ echo targets.txt | recrawl
 ```
 
+Use the -i option to provide a file with targets
 ```sh
 ➜ recrawl -i targets.txt
 ```
