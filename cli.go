@@ -31,6 +31,10 @@ func main() {
 
 	cli.logActiveOptions()
 
+	if log.IsOutputPiped() {
+		log.Notify(log.PipedOutputNotification)
+	}
+
 	if cli.hasStdin() {
 		processStdinInput(cli, r)
 	} else if cli.hasInfile() {
@@ -130,7 +134,7 @@ func (c *CLI) processStatusCode(result runner.Result) {
 			c.printWithColor(result.StatusCode, result.RequestURL)
 		}
 	} else {
-		fmt.Printf("%s\n", result.RequestURL)
+		log.Result(result.RequestURL)
 	}
 }
 
@@ -144,13 +148,13 @@ func (c *CLI) handleOutput(runner *runner.Runner, result runner.Result) {
 func (c *CLI) printWithColor(statusCode int, url string) {
 	switch statusCode {
 	case 200:
-		fmt.Println(color.Colorize(color.Green, statusCode, url))
+		log.Result(color.Colorize(color.Green, statusCode, url))
 	case 404:
 		if c.opts.Verbose > 1 {
-			fmt.Println(color.Colorize(color.Red, statusCode, url))
+			log.Result(color.Colorize(color.Red, statusCode, url))
 		}
 	default:
-		fmt.Println(color.Colorize(color.Yellow, statusCode, url))
+		log.Result(color.Colorize(color.Yellow, statusCode, url))
 	}
 }
 
@@ -237,9 +241,6 @@ func (c *CLI) logActiveOptions() {
 	}
 	if c.hasHideMedia() {
 		tag.Logf("Hiding media: %v", getMediaExtensions())
-	}
-	if c.hasHideStatus() {
-		tag.Logf("Hiding status codes: %t", c.opts.CLI.HideStatusCodes)
 	}
 	if c.hasInfile() {
 		tag.Logf("Input file: %s", c.opts.CLI.Infile)
