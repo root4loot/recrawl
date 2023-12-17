@@ -267,7 +267,7 @@ func (c *CLI) logActiveOptions() {
 		tag.Logf("Concurrency: %d", c.opts.Concurrency)
 	}
 	if c.hasTimeout() {
-		tag.Logf("Timeout: %d", c.opts.Timeout)
+		tag.Logf("Timeout: %d seconds", c.opts.Timeout)
 	}
 }
 

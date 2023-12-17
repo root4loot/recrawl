@@ -1,25 +1,16 @@
 <br>
 <div align="center">
   <br>
-  <img src="assets/logo.png" alt="recrawl logo" width="350">
+  <img src="assets/logo.png" alt="recrawl logo" width="310">
 </div>
 
 <br>
 
 <div align="center">
- <strong>recrawl</strong> is a Go library and command-line interface tool for crawling and extracting URLs from websites.
+   <strong>recrawl</strong>: A Web URL crawler written in Go
 </div>
 
 <br>
-
-### Features
-
-- Finds hidden links using pattern matching.
-- Skips repeated URLs and traps to give cleaner results.
-- Allows fine-tuned control over what to search for.
-- Works with both web addresses and IP addresses.
-- Simple command-line interface that supports chained commands.
-- Easily add recrawl's features to your own projects.
 
 ## Installation
 
@@ -57,22 +48,23 @@ CONFIGURATIONS:
    -r,    --resolvers        file containing list of resolvers                          (Default: System DNS)
 
 OUTPUT:
-   -fs,   --filter-status        filter by status code                                  (comma-separated)   
-   -fe,   --filter-extensions    filter by extension                                    (comma-separated)   
-   -v,    --verbose              verbose output (can be set multiple times)                                 
-   -o,    --outfile              output results to given file
-   -hs,   --hide-status          hide status code from output
-   -hw,   --hide-warning         hide warnings from output
-   -hm,   --hide-media           hide media from output (images, fonts, etc.)
-   -s,    --silence              silence results from output
-   -h,    --help                 display help
-          --version              display version
+   -fs,   --filter-status    filter by status code                                      (comma-separated)   
+   -fe,   --filter-ext       filter by extension                                        (comma-separated)   
+   -v,    --verbose          verbose output (use -vv for added verbosity)                                   
+   -o,    --outfile          output results to given file
+   -hs,   --hide-status      hide status code from output
+   -hw,   --hide-warning     hide warnings from output
+   -hm,   --hide-media       hide media from output (images, fonts, etc.)
+   -s,    --silence          silence results from output
+   -h,    --help             display help
+          --version          display version
 ```
 
 ## Example
 
 ```sh
 # Crawl *.example.com
+➜ recrawl -t example.com
 ➜ recrawl -t example.com
 
 # Crawl *.example.com and IP address
@@ -93,26 +85,64 @@ OUTPUT:
 
 ### Example running
 
-Crawl hackerone.com, hide status code and grep for lines ending in .js
+Running recrawl against hackerone.com to filter JavaScript files:
 
+```sh
+➜ recrawl -t hackerone.com --filter-ext js
 ```
-➜ recrawl -t hackerone.com --hide-status | grep 'js$'
 
-https://www.hackerone.com/sites/default/files/js/js_Ikd9nsZ0AFAesOLgcgjc7F6CRoODbeqOn7SVbsXgALQ.js
-https://www.hackerone.com/sites/default/files/js/js_hg8lQy2HP5Rw6yIz03HhGKfvnyySwjoFdqpvXgRJD6I.js
-https://www.hackerone.com/sites/default/files/js/js_4FuDbOJrjJz7g2Uu2GQ6ZFtnbdPymNgBpNtoRkgooH8.js
-https://www.hackerone.com/sites/default/files/js/js_zApVJ5sm-YHSWP4O5K9MqZ_6q4nDR3MciTUC3Pr1ogA.js
-https://www.hackerone.com/sites/default/files/js/js_edjgXnk09wjvbZfyK_TkFKU4uhpo1LGgJBnFdeu6aH8.js
-https://www.hackerone.com/themes/hacker_one/arg-tool/dist/js/chunk-vendors.7c6c2794.js
-https://www.hackerone.com/themes/hacker_one/arg-tool/dist/js/app.ae1971c0.js
-https://www.hackerone.com/sites/default/files/js/js_uj-ULd1j2hO5xijovTKN3LjREthKCuw6pep7CFoH0vQ.js
+<details>
+<summary>Other ways to set target</summary>
 
+```sh
+➜ echo hackerone.com | recrawl
+```
+
+```sh
+➜ echo targets.txt | recrawl
+```
+
+```sh
+➜ recrawl -i targets.txt
+```
+</details>
+
+
+This will crawl hackerone.com and filter JavaScript files. Here's a sample output:
+
+```sh
+[recrawl] (INF) Included extensions: js
+[recrawl] (INF) Concurrency: 20
+[recrawl] (INF) Timeout: 10 seconds
+[recrawl] (INF) Crawling target: http://hackerone.com
+[recrawl] (RES) 200 https://www.hackerone.com/sites/default/files/js/js_EOrKavGmjAkpIaCW_cpGJ240OpVZev_5NI-WGIx5URg.js
+[recrawl] (RES) 200 https://www.hackerone.com/sites/default/files/js/js_5JbqBIuSpSQJk1bRx1jnlE-pARPyPPF5H07tKLzNC80.js
+[recrawl] (RES) 200 https://www.hackerone.com/sites/default/files/js/js_a7_tjanmGpd_aITZ38ofV8QT2o2axkGnWqPwKna1Wf0.js
+[recrawl] (RES) 200 https://www.hackerone.com/sites/default/files/js/js_xF9mKu6OVNysPMy7w3zYTWNPFBDlury_lEKDCfRuuHs.js
+[recrawl] (RES) 200 https://www.hackerone.com/sites/default/files/js/js_coYiv6lRieZN3l0IkRYgmvrMASvFk2BL-jdq5yjFbGs.js
+[recrawl] (RES) 200 https://www.hackerone.com/sites/default/files/js/js_Z1eePR_Hbt8TCXBt3JlFoTBdW2k9-IFI3f96O21Dwdw.js
+[recrawl] (RES) 200 https://www.hackerone.com/sites/default/files/js/js_LEbRIvnUToqIQrjG9YpPgaIHK6o77rKVGouOaWLGI5k.js
+[recrawl] (RES) 200 https://www.hackerone.com/sites/default/files/js/js_ol7H2KkxPxe7E03XeuZQO5qMcg0RpfSOgrm_Kg94rOs.js
+[recrawl] (RES) 200 https://www.hackerone.com/sites/default/files/js/js_p5BLPpvjnAGGBCPUsc4EmBUw9IUJ0jMj-QY_1ZpOKG4.js
+[recrawl] (RES) 200 https://www.hackerone.com/sites/default/files/js/js_V5P0-9GKw8QQe-7oWrMD44IbDva6o8GE-cZS7inJr-g.js
 ...
 ```
 
-## As lib
+Results can be piped to stdout:
+
+```sh
+➜ recrawl -t hackerone.com --hide-status --filter-ext js | cat
 ```
-go get github.com/root4loot/recrawl@master
+
+Or saved to specified file:
+
+```sh
+➜ recrawl -t hackerone.com --hide-status --filter-ext js -o results.txt
+```
+
+## As lib
+```sh
+go get -u github.com/root4loot/recrawl
 ```
 
 ```go
@@ -155,6 +185,15 @@ func main() {
 }
 
 ```
+
+## Todo
+
+- Clean up worker
+- Headless browsing
+- Output and filter by MIME
+- Option to perform dirbusting / custom wordlist
+- Dirbusting / custom wordlist
+- Respect robots.txt option
 
 ---
 
