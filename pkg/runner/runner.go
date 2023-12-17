@@ -283,9 +283,13 @@ func (r *Runner) Worker(c_urls <-chan *url.URL, c_queue chan<- *url.URL, c_wait 
 
 		_, resp, err := r.request(c_url)
 
-		if resp == nil || httputil.IsBinaryResponse(resp) {
+		if resp == nil {
 			c_wait <- -1
 			continue
+		}
+
+		if resp != nil && httputil.IsBinaryResponse(resp) {
+			r.Results <- Result{RequestURL: c_url.String(), StatusCode: resp.StatusCode, Error: nil}
 		}
 
 		if err != nil {
