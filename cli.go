@@ -88,7 +88,18 @@ func (c *CLI) initialize() {
 // processResults is a goroutine that processes the results as they come in
 func (c *CLI) processResults(runner *runner.Runner) {
 	go func() {
+		extensions := strings.Split(c.opts.CLI.FilterExtensions, ",")
 		for result := range runner.Results {
+			if c.opts.CLI.HideMedia && isMediaURL(result.RequestURL) {
+				log.Debugf("Excluding media URL from output: %s", result.RequestURL)
+				continue
+			}
+
+			if c.opts.CLI.FilterExtensions != "" && !filterUrlExtensionsContains(result.RequestURL, extensions) {
+				log.Debugf("Excluding URL from output: %s", result.RequestURL)
+				continue
+			}
+
 			// hideMedia
 			if c.opts.CLI.HideMedia && isMediaURL(result.RequestURL) {
 				log.Debugf("Excluding media URL from output: %s", result.RequestURL)
@@ -230,6 +241,16 @@ func (c *CLI) hasResolversFile() bool {
 func filterStatusContains(filterStatusCodes []string, statusCode string) bool {
 	for _, code := range filterStatusCodes {
 		if code == statusCode {
+			return true
+		}
+	}
+	return false
+}
+
+// filterUrlExtensionsContains determines if the given URL contains the given extension
+func filterUrlExtensionsContains(url string, filterUrlExtensions []string) bool {
+	for _, ext := range filterUrlExtensions {
+		if strings.HasSuffix(url, "."+ext) {
 			return true
 		}
 	}

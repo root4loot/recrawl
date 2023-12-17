@@ -57,15 +57,16 @@ CONFIGURATIONS:
    -r,    --resolvers        file containing list of resolvers                          (Default: System DNS)
 
 OUTPUT:
-   -fs,   --filter-status    filter by status code                                      (comma-separated)   
-   -v,    --verbose          verbose output (can be set multiple times)                                     
-   -o,    --outfile          output results to given file
-   -hs,   --hide-status      hide status code from output
-   -hw,   --hide-warning     hide warnings from output
-   -hm,   --hide-media       hide media from output (images, fonts, etc.)
-   -s,    --silence          silence results from output
-   -h,    --help             display help
-          --version          display version
+   -fs,   --filter-status        filter by status code                                  (comma-separated)   
+   -fe,   --filter-extensions    filter by extension                                    (comma-separated)   
+   -v,    --verbose              verbose output (can be set multiple times)                                 
+   -o,    --outfile              output results to given file
+   -hs,   --hide-status          hide status code from output
+   -hw,   --hide-warning         hide warnings from output
+   -hm,   --hide-media           hide media from output (images, fonts, etc.)
+   -s,    --silence              silence results from output
+   -h,    --help                 display help
+          --version              display version
 ```
 
 ## Example

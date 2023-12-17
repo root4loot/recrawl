@@ -37,6 +37,7 @@ type CLI struct {
 	ResolversFile    string // file containing resolvers (newline separated)
 	Outfile          string // file to write results
 	FilterStatusCode string // filter by status code (comma separated)
+	FilterExtensions string // filter by extension (comma separated)
 	HideStatusCodes  bool   // show status code
 	HideMedia        bool   // hide images and fonts from output
 	HideWarning      bool   // hide warnings
