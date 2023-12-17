@@ -38,7 +38,8 @@ type CLI struct {
 	Outfile          string // file to write results
 	FilterStatusCode string // filter by status code (comma separated)
 	HideStatusCodes  bool   // show status code
-	HideWarning      bool   // hide warning
+	HideMedia        bool   // hide images and fonts from output
+	HideWarning      bool   // hide warnings
 
 	Version bool // print version
 	Help    bool // print help

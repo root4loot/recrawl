@@ -6,12 +6,12 @@ package main
 import (
 	"bufio"
 	"fmt"
-	"log"
 	"os"
 	"strconv"
 	"strings"
 
 	"github.com/gookit/color"
+	"github.com/root4loot/goutils/log"
 	"github.com/root4loot/recrawl/pkg/options"
 	"github.com/root4loot/recrawl/pkg/runner"
 	"github.com/root4loot/recrawl/pkg/util"
@@ -22,6 +22,10 @@ type CLI struct {
 }
 
 const author = "@danielantonsen"
+
+func init() {
+	log.Init("recrawl")
+}
 
 func main() {
 	cli := newCLI()
@@ -85,9 +89,15 @@ func (c *CLI) initialize() {
 func (c *CLI) processResults(runner *runner.Runner) {
 	go func() {
 		for result := range runner.Results {
-			// Check if HideStatusCodes is false
+			// hideMedia
+			if c.opts.CLI.HideMedia && isMediaURL(result.RequestURL) {
+				log.Debugf("Excluding media URL from output: %s", result.RequestURL)
+				continue
+			}
+
+			// hideStatusCodes
 			if !runner.Options.CLI.HideStatusCodes {
-				// Check if hasStatusCodeFilter is true
+				// hasStatusCodeFilter
 				if c.hasStatusCodeFilter() {
 					// Split the FilterStatusCode into an array of codeFilters
 					codeFilters := strings.Split(c.opts.CLI.FilterStatusCode, ",")
@@ -220,6 +230,17 @@ func (c *CLI) hasResolversFile() bool {
 func filterStatusContains(filterStatusCodes []string, statusCode string) bool {
 	for _, code := range filterStatusCodes {
 		if code == statusCode {
+			return true
+		}
+	}
+	return false
+}
+
+// isMediaURL determines if the given URL is a media URL
+func isMediaURL(url string) bool {
+	mediaExtensions := []string{".png", ".jpg", ".jpeg", ".woff", ".woff2", ".ttf"}
+	for _, ext := range mediaExtensions {
+		if strings.HasSuffix(url, ext) {
 			return true
 		}
 	}

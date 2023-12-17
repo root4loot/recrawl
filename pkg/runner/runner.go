@@ -21,6 +21,7 @@ import (
 	"github.com/PuerkitoBio/purell"
 	"github.com/root4loot/goscope"
 	"github.com/root4loot/goutils/domainutil"
+	"github.com/root4loot/goutils/fileutil"
 	"github.com/root4loot/goutils/httputil"
 	"github.com/root4loot/goutils/iputil"
 	"github.com/root4loot/goutils/log"
@@ -311,6 +312,9 @@ func (r *Runner) Worker(c_urls <-chan *url.URL, c_queue chan<- *url.URL, c_wait 
 			c_wait <- -1
 			continue
 		}
+
+		writestring := fmt.Sprintf("c_url: %s\nlandingURL: %s\npaths: %s\n", c_url.String(), landingURL, strings.Join(paths, "\n"))
+		fileutil.WriteFileAppend(writestring, "debug.txt")
 
 		rawURLs, err = r.setURL(landingURL, paths)
 

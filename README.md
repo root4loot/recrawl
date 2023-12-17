@@ -40,10 +40,10 @@ docker run -it recrawl -h
 Usage: ./recrawl [options] (-t <target> | -i <targets.txt>)
 
 TARGETING:
-   -t,    --target           target domain/url                                          (comma-separated)
-   -i,    --infile           file containing targets                                    (one per line)
-   -ih,   --include-host     also crawls this host (if found)                           (comma-separated)
-   -eh,   --exclude-host     do not crawl this host (if found)                          (comma-separated)
+   -t,    --target           target domain/url                                          (comma-separated)   
+   -i,    --infile           file containing targets                                    (one per line)      
+   -ih,   --include-host     also crawls this host (if found)                           (comma-separated)   
+   -eh,   --exclude-host     do not crawl this host (if found)                          (comma-separated)   
 
 CONFIGURATIONS:
    -c,    --concurrency      number of concurrent requests                              (Default: 20)
@@ -57,11 +57,12 @@ CONFIGURATIONS:
    -r,    --resolvers        file containing list of resolvers                          (Default: System DNS)
 
 OUTPUT:
-   -fs,   --filter-status    filter by status code                                      (comma-separated)
-   -v,    --verbose          verbose output (can be set multiple times)
+   -fs,   --filter-status    filter by status code                                      (comma-separated)   
+   -v,    --verbose          verbose output (can be set multiple times)                                     
    -o,    --outfile          output results to given file
    -hs,   --hide-status      hide status code from output
    -hw,   --hide-warning     hide warnings from output
+   -hm,   --hide-media       hide media from output (images, fonts, etc.)
    -s,    --silence          silence results from output
    -h,    --help             display help
           --version          display version
