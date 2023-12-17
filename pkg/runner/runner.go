@@ -269,14 +269,14 @@ func (r *Runner) Worker(c_urls <-chan *url.URL, c_queue chan<- *url.URL, c_wait 
 
 		// avoid example.com/foo/bar/foo/bar/foo/bar
 		if r.isTrapped(c_url.Path) {
-			log.Infof("Trapped in a loop %s", c_url.String())
+			log.Infof("Skipping URL (trapped in loop): %s", c_url.String())
 			c_wait <- -1
 			continue
 		}
 
 		// skip URLs that only differ in parameter values
 		if r.Options.SkipRedundant && r.isRedundantURL(c_url.String()) {
-			log.Infof("Skipping redundant URL: %s", c_url.String())
+			log.Infof("Skipping URL (redundant): %s", c_url.String())
 			c_wait <- -1
 			continue
 		}
