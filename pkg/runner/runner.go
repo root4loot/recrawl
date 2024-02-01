@@ -331,12 +331,19 @@ func (r *Runner) Worker(c_urls <-chan *url.URL, c_queue chan<- *url.URL, c_wait 
 		c_wait <- len(rawURLs) - 1
 
 		for i := range rawURLs {
-			var u *url.URL
-			if u, err = url.Parse(rawURLs[i]); err != nil {
+			u, err := url.Parse(rawURLs[i])
+
+			if err != nil {
 				log.Warnf("%v", err)
 				c_wait <- len(rawURLs) - 1
 				continue
 			}
+
+			// Skip paths that have two or more dots
+			if strings.Count(u.Path, ".") >= 2 {
+				continue
+			}
+
 			time.Sleep(r.getDelay() * time.Millisecond)
 			go r.queueURL(c_queue, u)
 		}
@@ -444,6 +451,11 @@ func (r *Runner) setURL(rawURL string, paths []string) (rawURLs []string, err er
 
 		if util.IsFile(path) {
 			rawURLs = append(rawURLs, rawURL+"/"+path)
+		}
+
+		// Skip paths that have two or more dots
+		if strings.Count(u.Path, ".") >= 2 {
+			continue
 		}
 
 		formattedURL := formatURL(u, path)
