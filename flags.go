@@ -23,10 +23,10 @@ func (c *CLI) usage() {
 
 	// print the targeting section
 	fmt.Fprintln(w, "\nTARGETING:")
-	fmt.Fprintf(w, "\t%s,\t%s\t  %s\t                       (%s)\t\n", "-t", "--target", "target domain/url", "comma-separated")
-	fmt.Fprintf(w, "\t%s,\t%s\t  %s\t                       (%s)\t\n", "-i", "--infile", "file containing targets", "one per line")
-	fmt.Fprintf(w, "\t%s,\t%s\t  %s\t                       (%s)\t\n", "-ih", "--include-host", "also crawls this host (if found)", "comma-separated")
-	fmt.Fprintf(w, "\t%s,\t%s\t  %s\t                       (%s)\t\n", "-eh", "--exclude-host", "do not crawl this host (if found)", "comma-separated")
+	fmt.Fprintf(w, "\t%s,\t%s\t  %s\t                 (%s)\t\n", "-t", "--target", "target domain/url", "comma-separated")
+	fmt.Fprintf(w, "\t%s,\t%s\t  %s\t                 (%s)\t\n", "-i", "--infile", "file containing targets", "one per line")
+	fmt.Fprintf(w, "\t%s,\t%s\t  %s\t                 (%s)\t\n", "-ih", "--include-host", "also crawls this host (if found)", "comma-separated")
+	fmt.Fprintf(w, "\t%s,\t%s\t  %s\t                 (%s)\t\n", "-eh", "--exclude-host", "do not crawl this host (if found)", "comma-separated")
 
 	// print the configurations section
 	fmt.Fprintln(w, "\nCONFIGURATIONS:")
@@ -35,15 +35,15 @@ func (c *CLI) usage() {
 	fmt.Fprintf(w, "\t%s,\t%s\t%s\t(Default: %v milliseconds)\n", "-d", "--delay", "delay between requests", options.Default().Delay)
 	fmt.Fprintf(w, "\t%s,\t%s\t%s\t(Default: %v milliseconds)\n", "-dj", "--delay-jitter", "max jitter between requests", options.Default().DelayJitter)
 	fmt.Fprintf(w, "\t%s,\t%s\t%s\t(Default: %v)\n", "-sr", "--skip-redundant", "skip requests that only differ in parameter values", options.Default().SkipRedundant)
-	fmt.Fprintf(w, "\t%s,\t%s\t%s\t(Default: %v)\n", "-ss", "--skip-same", "skip crawling responses that have the same response body", options.Default().SkipSameBody)
+	// fmt.Fprintf(w, "\t%s,\t%s\t%s\t(Default: %v)\n", "-ss", "--skip-same", "skip crawling responses that have the same response body", options.Default().SkipSameBody)
 	fmt.Fprintf(w, "\t%s,\t%s\t%s\t(Default: %v)\n", "-ua", "--user-agent", "set user agent", "Mozilla/5.0")
 	fmt.Fprintf(w, "\t%s,\t%s\t%s\t(Default: %v)\n", "-p", "--proxy", "set proxy", "none")
 	fmt.Fprintf(w, "\t%s,\t%s\t%s\t(Default: %v)\n", "-r", "--resolvers", "file containing list of resolvers", "System DNS")
 
 	// print the output section
 	fmt.Fprintln(w, "\nOUTPUT:")
-	fmt.Fprintf(w, "\t%s,\t%s\t %s\t            (%s)\t\n", "-fs", "--filter-status", "filter by status code", "comma-separated")
-	fmt.Fprintf(w, "\t%s,\t%s\t %s\t            (%s)\t\n", "-fe", "--filter-ext", "filter by extension", "comma-separated")
+	fmt.Fprintf(w, "\t%s,\t%s\t %s\t      (%s)\t\n", "-fs", "--filter-status", "filter by status code", "comma-separated")
+	fmt.Fprintf(w, "\t%s,\t%s\t %s\t      (%s)\t\n", "-fe", "--filter-ext", "filter by extension", "comma-separated")
 	fmt.Fprintf(w, "\t%s,\t%s\t %s\t              \t\n", "-v", "--verbose", "verbose output (use -vv for added verbosity)")
 	fmt.Fprintf(w, "\t%s,\t%s\t %s\n", "-o", "--outfile", "output results to given file")
 	fmt.Fprintf(w, "\t%s,\t%s\t %s\n", "-hs", "--hide-status", "hide status code from output")
@@ -91,8 +91,8 @@ func (c *CLI) parseFlags() {
 	flag.StringVar(&opts.CLI.ResolversFile, "r", "", "")
 	flag.BoolVar(&opts.SkipRedundant, "skip-redundant", options.Default().SkipRedundant, "")
 	flag.BoolVar(&opts.SkipRedundant, "sr", options.Default().SkipRedundant, "")
-	flag.BoolVar(&opts.SkipSameBody, "skip-same", options.Default().SkipSameBody, "")
-	flag.BoolVar(&opts.SkipSameBody, "ss", options.Default().SkipSameBody, "")
+	// flag.BoolVar(&opts.SkipSameBody, "skip-same", options.Default().SkipSameBody, "")
+	// flag.BoolVar(&opts.SkipSameBody, "ss", options.Default().SkipSameBody, "")
 
 	// OUTPUT
 	flag.BoolVar(&opts.Silence, "s", false, "")
