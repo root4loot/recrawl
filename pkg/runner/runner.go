@@ -475,9 +475,9 @@ func formatURL(u *url.URL, path string) string {
 		path = "/" + path
 	}
 
-	if util.HasFile(u.String()) && u.Path == "/robots.txt" {
-		return u.String()
-	}
+	// if util.HasFile(u.String()) && u.Path == "/robots.txt" {
+	// 	return u.String()
+	// }
 
 	if urlutil.HasScheme(path) || domainutil.IsValidDomain(path) || strings.HasPrefix(path, "//") {
 		return path
