@@ -33,7 +33,7 @@ import (
 
 var (
 	re_path              = regexp.MustCompile(`(?:"|')(?:(((?:[a-zA-Z]{1,10}://|//)[^"'/]{1,}\.[a-zA-Z]{2,}[^"']*)|((?:/|\.\./|\./)[^"'><,;|*()(%%$^/\\\[\]][^"'><,;|()]*[^"'><,;|()]*))|([a-zA-Z0-9_\-/]{1,}/[a-zA-Z0-9_\-/]*\.[a-zA-Z0-9_]+(?:[\?|#][^"|']*)?)|([a-zA-Z0-9_\-/]{1,}/[a-zA-Z0-9_\-/]{3,}(?:[\?|#][^"|']*)?)|([a-zA-Z0-9_\-]+(?:\.[a-zA-Z0-9_]{1,})+)|([a-zA-Z0-9_\-/]+/))(?:"|')`)
-	re_robots            = regexp.MustCompile(`(?:Allow|Disallow):\s*([a-zA-Z0-9_\-/]+\.[a-zA-Z0-9]{1,4}(?:\?[^\s]*)?|[a-zA-Z0-9_\-/]+(?:/[a-zA-Z0-9_\-/]+)*(?:\?[^\s]*)?|[a-zA-Z0-9_\-/]+(?:\?[^\s]*|$))`)
+	re_robots            = regexp.MustCompile(`(?:Allow|Disallow): \s*(.*)`)
 	dnsResolutionTimeout = 3 * time.Second
 	hostHashes           = make(map[string]map[string]bool) // map of domain/IP to map of response body hashes
 )
@@ -525,10 +525,16 @@ func (r *Runner) scrape(resp *http.Response) ([]string, error) {
 // scrapeRobotsTxt handles the scraping of robots.txt files
 func (r *Runner) scrapeRobotsTxt(body []byte) []string {
 	var res []string
+	// Match a forward slash followed by a dot and an extension
+	reExtension := regexp.MustCompile(`/\.[a-z0-9]+$`)
+
 	matches := re_robots.FindAllStringSubmatch(string(body), -1)
 	for _, match := range matches {
-		if len(match) > 1 {
-			path := strings.TrimSpace(match[1])
+		path := strings.ReplaceAll(strings.ReplaceAll(strings.TrimSpace(match[1]), "*", ""), "$", "")
+		path = strings.TrimSuffix(path, "?")
+		path = reExtension.ReplaceAllString(path, "/")
+
+		if len(path) > 1 {
 			res = append(res, path)
 		}
 	}
