@@ -252,6 +252,7 @@ func (r *Runner) queueURL(c_queue chan<- *url.URL, url *url.URL) {
 // worker is a worker that processes URLs from the queue
 func (r *Runner) Worker(c_urls <-chan *url.URL, c_queue chan<- *url.URL, c_wait chan<- int, c_result chan<- Result) {
 	for c_url := range c_urls {
+
 		var rawURLs []string
 		if c_url == nil || c_url.Host == "" {
 			c_wait <- -1
@@ -449,7 +450,7 @@ func (r *Runner) setURL(rawURL string, paths []string) (rawURLs []string, err er
 	}
 
 	for _, path := range paths {
-		if r.shouldSkipPath(u, path) && util.IsBinaryString(path) && !util.IsPrintable(path) {
+		if r.shouldSkipPath(u, path) || util.IsBinaryString(path) || !util.IsPrintable(path) {
 			continue
 		}
 
