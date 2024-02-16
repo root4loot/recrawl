@@ -23,7 +23,6 @@ import (
 	"github.com/root4loot/goutils/domainutil"
 	"github.com/root4loot/goutils/fileutil"
 	"github.com/root4loot/goutils/httputil"
-	"github.com/root4loot/goutils/iputil"
 	"github.com/root4loot/goutils/log"
 	"github.com/root4loot/goutils/sliceutil"
 	"github.com/root4loot/goutils/urlutil"
@@ -174,36 +173,41 @@ func (r *Runner) InitializeWorkerPool() (chan<- *url.URL, <-chan *url.URL, chan<
 // initializeTargetProcessing initializes the target processing
 // ensures the target is reachable and adds it to the processing scope
 func (r *Runner) initializeTargetProcessing(target string) (*url.URL, error) {
+	// Check if the target already includes a scheme
+	if !strings.Contains(target, "://") {
+		// If no scheme is present, use FindScheme to determine and prepend it
+		scheme, _, err := httputil.FindScheme(target)
+		if err != nil {
+			return nil, err
+		}
+		target = scheme + "://" + target
+	}
 
-	// Ensure the target URL has a scheme (http or https)
-	target = util.EnsureScheme(target)
-
-	// Parse the target URL
+	// Now that the target has a scheme, parse it
 	u, err := url.Parse(target)
 	if err != nil {
 		return nil, err
 	}
 
-	if urlutil.HasScheme(u.Host) {
-		r.Scope.AddInclude(u.Host)
-	} else {
-		r.Scope.AddInclude("*."+u.Host, u.Host)
+	// Normalize the target by removing the default port if it's explicitly specified
+	if (u.Scheme == "https" && u.Port() == "443") || (u.Scheme == "http" && u.Port() == "80") {
+		// Reconstruct the target without the default port
+		target = u.Scheme + "://" + u.Hostname()
 	}
 
-	// If the target is not an IP address, check its reachability
-	if !iputil.IsURLIP(target) {
-		// has been reached before
-		if r.isVisitedHost(u.Host) {
-			err := urlutil.CanReachURLWithTimeout(target, dnsResolutionTimeout)
-			if err != nil {
-				return nil, fmt.Errorf("target %s could not be reached", target)
-			}
-		}
-		r.addVisitedHost(u.Host) // add to visited
+	// Add target to the scope if it hasn't been visited
+	if !r.isVisitedHost(u.Hostname()) {
+		r.Scope.AddInclude(u.Hostname())
+		r.addVisitedHost(u.Hostname()) // Mark as visited
 	}
 
-	// Return the parsed URL object
-	return u, err
+	// Parse the potentially modified target again to reflect any changes made
+	u, err = url.Parse(target)
+	if err != nil {
+		return nil, err
+	}
+
+	return u, nil
 }
 
 // initializeScope initializes the scope
