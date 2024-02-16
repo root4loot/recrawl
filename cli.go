@@ -373,5 +373,5 @@ func isMediaURL(url string) bool {
 
 // getMediaExtensions returns the media extensions
 func getMediaExtensions() []string {
-	return []string{".png", ".jpg", ".jpeg", ".woff", ".woff2", ".ttf"}
+	return []string{".png", ".jpg", ".jpeg", ".woff", ".woff2", ".ttf", ".eot", ".svg", ".gif", ".ico", ".webp", ".mp4", ".webm", ".mp3", ".wav", ".flac", ".aac", ".ogg", ".m4a", ".flv", ".avi", ".mov", ".wmv", ".swf", ".mkv", ".m4v", ".3gp", ".3g2"}
 }
