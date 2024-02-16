@@ -195,9 +195,14 @@ func (r *Runner) initializeTargetProcessing(target string) (*url.URL, error) {
 		target = u.Scheme + "://" + u.Hostname()
 	}
 
+	if urlutil.HasScheme(u.Host) {
+		r.Scope.AddInclude(u.Host)
+	} else {
+		r.Scope.AddInclude("*."+u.Host, u.Host)
+	}
+
 	// Add target to the scope if it hasn't been visited
 	if !r.isVisitedHost(u.Hostname()) {
-		r.Scope.AddInclude(u.Hostname())
 		r.addVisitedHost(u.Hostname()) // Mark as visited
 	}
 
