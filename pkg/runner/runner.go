@@ -106,7 +106,6 @@ func (r *Runner) Run(targets ...string) {
 
 		logInfo("Crawling target:", mainTarget.String())
 		go r.queueURL(c_queue, mainTarget)
-		c_wait <- 1
 	}
 
 	// If only one target is provided, set concurrency to 1
@@ -148,8 +147,6 @@ func (r *Runner) InitializeWorkerPool() (chan<- *url.URL, <-chan *url.URL, chan<
 				if q != nil {
 					if r.Scope.IsTargetInScope(q.Host) && !r.isVisitedURL(q.String()) {
 						c_urls <- q
-					} else {
-						c_wait <- -1
 					}
 					// Only reset the timer if there's activity on c_queue
 					if !timeoutTimer.Stop() {
@@ -260,7 +257,6 @@ func (r *Runner) Worker(c_urls <-chan *url.URL, c_queue chan<- *url.URL, c_wait 
 
 		var rawURLs []string
 		if c_url == nil || c_url.Host == "" {
-			c_wait <- -1
 			continue
 		} else {
 			log.Debugf("Processing %s", c_url)
@@ -280,21 +276,18 @@ func (r *Runner) Worker(c_urls <-chan *url.URL, c_queue chan<- *url.URL, c_wait 
 		// avoid example.com/foo/bar/foo/bar/foo/bar
 		if r.isTrapped(c_url.Path) {
 			log.Infof("Skipping URL (trapped in loop): %s", c_url.String())
-			c_wait <- -1
 			continue
 		}
 
 		// skip URLs that only differ in parameter values
 		if r.Options.SkipRedundant && r.isRedundantURL(c_url.String()) {
 			log.Infof("Skipping URL (redundant): %s", c_url.String())
-			c_wait <- -1
 			continue
 		}
 
 		_, resp, err := r.request(c_url)
 
 		if resp == nil {
-			c_wait <- -1
 			continue
 		}
 
@@ -307,13 +300,11 @@ func (r *Runner) Worker(c_urls <-chan *url.URL, c_queue chan<- *url.URL, c_wait 
 				log.Infof("%v", err.Error())
 				r.Results <- Result{RequestURL: c_url.String(), StatusCode: 0, Error: err}
 			}
-			c_wait <- -1
 			continue
 		}
 
 		// Check if the url should be processed based on the response body hash
 		if r.Options.SkipSameBody && !shouldProcessPage(c_url.Host, resp) {
-			c_wait <- -1
 			continue
 		}
 
@@ -323,7 +314,6 @@ func (r *Runner) Worker(c_urls <-chan *url.URL, c_queue chan<- *url.URL, c_wait 
 
 		if err != nil {
 			log.Warnf("Failed to scrape %s: %v", landingURL, err)
-			c_wait <- -1
 			continue
 		}
 
@@ -334,18 +324,14 @@ func (r *Runner) Worker(c_urls <-chan *url.URL, c_queue chan<- *url.URL, c_wait 
 
 		if err != nil {
 			log.Warnf("%v", err)
-			c_wait <- len(rawURLs) - 1
 			continue
 		}
-
-		c_wait <- len(rawURLs) - 1
 
 		for i := range rawURLs {
 			u, err := url.Parse(rawURLs[i])
 
 			if err != nil {
 				log.Warnf("%v", err)
-				c_wait <- len(rawURLs) - 1
 				continue
 			}
 
