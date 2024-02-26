@@ -13,7 +13,10 @@ import (
 	"math/rand"
 	"net/http"
 	"net/url"
+	"path"
+	"reflect"
 	"regexp"
+	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -655,99 +658,66 @@ func (r *Runner) isRedundantURL(urlStr string) bool {
 		return false
 	}
 
-	if u.RawQuery == "" {
-		// Check if the canonical URL is already visited
-		if r.isVisitedURL(u.Path) {
-			return true
-		}
-	} else {
-		// extract query parameters
-		params, err := url.ParseQuery(u.RawQuery)
-		if err != nil {
-			return false
-		}
+	// Normalize the URL path
+	u.Path = path.Clean(u.Path)
 
-		// create the canonical URL without query parameters
+	if u.RawQuery == "" {
+		// Check if the URL without query parameters is already visited
+		return r.isVisitedURL(u.String())
+	} else {
+		// Extract and sort query parameter names
+		params := u.Query()
+		var paramNames []string
+		for name := range params {
+			paramNames = append(paramNames, name)
+		}
+		sort.Strings(paramNames)
+
+		// Create the canonical URL without query parameters
 		u.RawQuery = ""
 		canonicalURL := u.String()
 
-		// check if the canonical URL is already visited
-		if r.isVisitedURL(canonicalURL) {
-			return true
-		}
-
-		// check if the alias URL only differs in the query parameter values
-		aliasValues := make(map[string]string)
-		for name, paramValues := range params {
-			if len(paramValues) > 0 {
-				aliasValues[name] = paramValues[0]
-			}
-		}
-
-		// iterate over the visitedURLs using sync.Map's Range method
+		// Check if a URL with the same base path and parameter names has been visited
 		foundAlias := false
 		visitedURL.Range(func(key, value interface{}) bool {
-			vURL, ok := key.(string)
+			visitedURLStr, ok := key.(string)
 			if !ok {
-				return true // continue the iteration
+				return true // Continue iteration
 			}
 
-			v, err := url.Parse(vURL)
+			visitedURL, err := url.Parse(visitedURLStr)
 			if err != nil {
-				return true // continue the iteration
+				return true // Continue iteration
 			}
 
-			if v.RawQuery == "" {
-				if v.Path == u.Path && len(v.Query()) == len(params) {
-					foundAlias = true
-					return false // stop the iteration
-				}
-			} else {
-				// extract query parameters
-				vParams, err := url.ParseQuery(v.RawQuery)
-				if err != nil {
-					return true // continue the iteration
-				}
+			// Normalize the visited URL path
+			visitedURL.Path = path.Clean(visitedURL.Path)
 
-				// create the canonical URL without query parameters
-				v.RawQuery = ""
-				vCanonicalURL := v.String()
-
-				if vCanonicalURL == canonicalURL {
-					foundAlias = true
-					return false // stop the iteration
-				}
-
-				// check if the alias URL only differs in the query parameter values
-				vAliasValues := make(map[string]string)
-				for name, paramValues := range vParams {
-					if len(paramValues) > 0 {
-						vAliasValues[name] = paramValues[0]
-					}
-				}
-
-				alias := true
-				for name, value := range aliasValues {
-					if vAliasValues[name] != value {
-						alias = false
-						break
-					}
-				}
-				if alias {
-					foundAlias = true
-					return false // stop the iteration
-				}
+			// Check if base URLs match
+			visitedURL.RawQuery = ""
+			if visitedURL.String() != canonicalURL {
+				return true // Continue iteration, not the same base URL
 			}
 
-			return true // continue the iteration
+			// Extract and sort visited URL query parameter names
+			visitedParams := visitedURL.Query()
+			var visitedParamNames []string
+			for name := range visitedParams {
+				visitedParamNames = append(visitedParamNames, name)
+			}
+			sort.Strings(visitedParamNames)
+
+			// Check if parameter names match
+			if reflect.DeepEqual(paramNames, visitedParamNames) {
+				foundAlias = true
+				return false // Stop iteration
+			}
+
+			return true // Continue iteration
 		})
 
-		if foundAlias {
-			return true
-		}
+		return foundAlias
 	}
-
-	return false
 }
 
 // mergeRegexMatches merges regex matches
