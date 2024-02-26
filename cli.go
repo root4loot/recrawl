@@ -155,15 +155,21 @@ func (c *CLI) handleOutput(runner *runner.Runner, result runner.Result) {
 
 // print with color
 func (c *CLI) printWithColor(statusCode int, url string) {
-	switch statusCode {
-	case 200:
-		log.Result(color.Colorize(color.Green, statusCode, url))
-	case 404:
+	switch {
+	case statusCode >= 200 && statusCode < 300:
+		log.Result(color.Colorize(color.Green, fmt.Sprintf("%d %s", statusCode, url)))
+	case statusCode >= 300 && statusCode < 400:
+		log.Result(color.Colorize(color.Orange, fmt.Sprintf("%d %s", statusCode, url)))
+	case statusCode >= 400 && statusCode < 500:
 		if c.opts.Verbose > 1 {
-			log.Result(color.Colorize(color.Red, statusCode, url))
+			log.Result(color.Colorize(color.Red, fmt.Sprintf("%d %s", statusCode, url)))
 		}
+	case statusCode >= 500:
+		log.Result(color.Colorize(color.Purple, fmt.Sprintf("%d %s", statusCode, url))) // or a bright shade of red
+	case statusCode >= 100 && statusCode < 200:
+		log.Result(color.Colorize(color.Blue, fmt.Sprintf("%d %s", statusCode, url)))
 	default:
-		log.Result(color.Colorize(color.Yellow, statusCode, url))
+		log.Result(color.Colorize(color.LightGrey, fmt.Sprintf("%d %s", statusCode, url))) // or color.White
 	}
 }
 
