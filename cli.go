@@ -9,6 +9,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"sync"
 
 	"github.com/root4loot/goutils/color"
 	"github.com/root4loot/goutils/log"
@@ -91,10 +92,18 @@ func (c *CLI) initialize() {
 
 // processResults is a goroutine that processes the results as they come in
 func (c *CLI) processResults(runner *runner.Runner) {
+	// Using a sync.Map for thread-safe operations
+	printedURLs := new(sync.Map)
+
 	go func() {
 		for result := range runner.Results {
-
 			if c.shouldExcludeMediaURL(result.RequestURL) || c.shouldExcludeByExtension(result.RequestURL) {
+				continue
+			}
+
+			// Check if the URL has already been printed
+			if _, loaded := printedURLs.LoadOrStore(result.RequestURL, struct{}{}); loaded {
+				// URL has already been printed, so skip it
 				continue
 			}
 
