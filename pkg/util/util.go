@@ -61,11 +61,9 @@ func AddSlashIfNeeded(url string) string {
 	}
 }
 
-// RemoveSlashUnwanted checks and removes the trailing slash from a URL string if the URL contains query parameters,
-// fragment identifiers, or assignment operators.
-// It ensures that URLs with specific structures (those containing '?', '#', or '=') do not end with a redundant slash.
+// RemoveSlashUnwanted removes an unwanted "/" suffix from a URL
 func RemoveSlashUnwanted(url string) string {
-	if strings.HasSuffix(url, "/") && strings.Contains(url, "?") || strings.Contains(url, "#") || strings.Contains(url, "=") {
+	if strings.HasSuffix(url, "/") && (strings.Contains(url, "?") || strings.Contains(url, "#") || strings.Contains(url, "=")) {
 		return url[:len(url)-1]
 	}
 	return url
