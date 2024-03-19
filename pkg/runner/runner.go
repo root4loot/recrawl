@@ -33,7 +33,7 @@ import (
 )
 
 var (
-	re_path              = regexp.MustCompile(`(?:"|')(?:(((?:[a-zA-Z]{1,10}://|//)[^"'/]{1,}\.[a-zA-Z]{2,}[^"']*)|((?:/|\.\./|\./)[^"'><,;|*()(%%$^/\\\[\]][^"'><,;|()]*[^"'><,;|()]*))|([a-zA-Z0-9_\-/]{1,}/[a-zA-Z0-9_\-/]*\.[a-zA-Z0-9_]+(?:[\?|#][^"|']*)?)|([a-zA-Z0-9_\-/]{1,}/[a-zA-Z0-9_\-/]{3,}(?:[\?|#][^"|']*)?)|([a-zA-Z0-9_\-]+(?:\.[a-zA-Z0-9_]{1,})+)|([a-zA-Z0-9_\-/]+/))(?:"|')`)
+	re_path              = regexp.MustCompile(`(?:"|')(?:(((?:[a-zA-Z]{1,10}:(?:\\)?/(?:\\)?/|//)[^"'/]{1,}\.[a-zA-Z]{2,}[^"']*)|((?:/|\.\./|\./|\\/)[^"'><,;|*()(%%$^/\\\[\]][^"'><,;|()]*[^"'><,;|()]*))|([a-zA-Z0-9_\-/]{1,}/[a-zA-Z0-9_\-/]*\.[a-zA-Z0-9_]+(?:[\?|#][^"|']*)?)|([a-zA-Z0-9_\-/]{1,}/[a-zA-Z0-9_\-/]{3,}(?:[\?|#][^"|']*)?)|([a-zA-Z0-9_\-]+(?:\.[a-zA-Z0-9_]{1,})+)|([a-zA-Z0-9_\-/]+/))(?:"|')`)
 	re_robots            = regexp.MustCompile(`(?:Allow|Disallow): \s*(.*)`)
 	dnsResolutionTimeout = 3 * time.Second
 	hostHashes           = make(map[string]map[string]bool) // Map of host to map of hash to bool
@@ -320,7 +320,7 @@ func (r *Runner) Worker(c_urls <-chan *url.URL, c_queue chan<- *url.URL, c_wait 
 		}
 
 		writestring := fmt.Sprintf("c_url: %s\nlandingURL: %s\npaths: %s\n", c_url.String(), landingURL, strings.Join(paths, "\n"))
-		fileutil.WriteFileAppend(writestring, "debug.txt")
+		fileutil.WriteFileAppend(writestring, "debug.txt") // TODO: remove this
 
 		rawURLs, err = r.setURL(landingURL, paths)
 
@@ -471,6 +471,8 @@ func (r *Runner) shouldSkipPath(u *url.URL, path string) bool {
 }
 
 func formatURL(u *url.URL, path string) string {
+	path = strings.ReplaceAll(path, "\\", "") // Remove backslashes
+
 	if !strings.HasPrefix(path, "/") && !strings.HasPrefix(path, "http") && strings.Contains(path, ".") {
 		path = "/" + path
 	}
