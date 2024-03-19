@@ -91,8 +91,8 @@ func (c *CLI) parseFlags() {
 	flag.StringVar(&opts.CLI.ResolversFile, "r", "", "")
 	flag.BoolVar(&opts.SkipRedundant, "skip-redundant", options.Default().SkipRedundant, "")
 	flag.BoolVar(&opts.SkipRedundant, "sr", options.Default().SkipRedundant, "")
-	// flag.BoolVar(&opts.SkipSameBody, "skip-same", options.Default().SkipSameBody, "")
-	// flag.BoolVar(&opts.SkipSameBody, "ss", options.Default().SkipSameBody, "")
+	flag.BoolVar(&opts.SkipSameBody, "skip-same", options.Default().SkipSameBody, "")
+	flag.BoolVar(&opts.SkipSameBody, "ss", options.Default().SkipSameBody, "")
 
 	// OUTPUT
 	flag.BoolVar(&opts.Silence, "s", false, "")
