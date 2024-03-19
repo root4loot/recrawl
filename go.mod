@@ -4,6 +4,7 @@ go 1.21.1
 
 require (
 	github.com/PuerkitoBio/purell v1.2.1
+	github.com/glaslos/ssdeep v0.3.3
 	github.com/gookit/color v1.5.4
 	github.com/root4loot/goscope v0.0.0-20231212113300-e6b38b908437
 	github.com/root4loot/goutils v0.0.0-20240216160548-b33a1510d80d

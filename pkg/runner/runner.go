@@ -5,8 +5,6 @@ package runner
 
 import (
 	"bytes"
-	"crypto/sha256"
-	"encoding/hex"
 	"errors"
 	"fmt"
 	"io"
@@ -22,6 +20,7 @@ import (
 	"time"
 
 	"github.com/PuerkitoBio/purell"
+	"github.com/glaslos/ssdeep"
 	"github.com/root4loot/goscope"
 	"github.com/root4loot/goutils/domainutil"
 	"github.com/root4loot/goutils/fileutil"
@@ -37,7 +36,7 @@ var (
 	re_path              = regexp.MustCompile(`(?:"|')(?:(((?:[a-zA-Z]{1,10}://|//)[^"'/]{1,}\.[a-zA-Z]{2,}[^"']*)|((?:/|\.\./|\./)[^"'><,;|*()(%%$^/\\\[\]][^"'><,;|()]*[^"'><,;|()]*))|([a-zA-Z0-9_\-/]{1,}/[a-zA-Z0-9_\-/]*\.[a-zA-Z0-9_]+(?:[\?|#][^"|']*)?)|([a-zA-Z0-9_\-/]{1,}/[a-zA-Z0-9_\-/]{3,}(?:[\?|#][^"|']*)?)|([a-zA-Z0-9_\-]+(?:\.[a-zA-Z0-9_]{1,})+)|([a-zA-Z0-9_\-/]+/))(?:"|')`)
 	re_robots            = regexp.MustCompile(`(?:Allow|Disallow): \s*(.*)`)
 	dnsResolutionTimeout = 3 * time.Second
-	hostHashes           = make(map[string]map[string]bool) // map of domain/IP to map of response body hashes
+	hostHashes           = make(map[string]map[string]bool) // Map of host to map of hash to bool
 )
 
 type Runner struct {
@@ -306,8 +305,8 @@ func (r *Runner) Worker(c_urls <-chan *url.URL, c_queue chan<- *url.URL, c_wait 
 			continue
 		}
 
-		// Check if the url should be processed based on the response body hash
-		if r.Options.SkipSameBody && !shouldProcessPage(c_url.Host, resp) {
+		// Skip processing similar content if the option is set
+		if !shouldProcessSimilarContent(c_url.Host, resp) {
 			continue
 		}
 
@@ -350,35 +349,37 @@ func (r *Runner) Worker(c_urls <-chan *url.URL, c_queue chan<- *url.URL, c_wait 
 	}
 }
 
-// shouldProcessPage checks if a page should be processed (based on the hash of the response body)
-func shouldProcessPage(host string, resp *http.Response) bool {
+// shouldProcessSimilarContent checks if a page should be processed based on the fuzzy hash of the response body
+func shouldProcessSimilarContent(host string, resp *http.Response) bool {
 	// Read the response body
 	bodyBytes, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return false // or handle the error as you see fit
+		log.Errorf("Error reading response body: %v", err)
+		return false
 	}
-
-	// Convert it back to io.ReadCloser
+	// It's important to reset the response body so it can be read again later
 	resp.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
 
-	// Hash of responseBody
-	hasher := sha256.New()
-	hasher.Write(bodyBytes)
-	hash := hex.EncodeToString(hasher.Sum(nil))
+	// Generate a fuzzy hash of the response body
+	hash, _ := ssdeep.FuzzyBytes(bodyBytes)
 
 	// Initialize the nested map if not already done
 	if hostHashes[host] == nil {
 		hostHashes[host] = make(map[string]bool)
 	}
 
-	// Check whether the hash already exists for the given domain or IP
-	_, exists := hostHashes[host][hash]
-	if exists {
-		log.Debugf("Skipping %s page as it has already been processed", resp.Request.URL.String())
-		return false
+	// Check the similarity of the new hash against existing hashes for the host
+	for existingHash := range hostHashes[host] {
+		score, _ := ssdeep.Distance(existingHash, hash)
+
+		// Threshold for considering content the same
+		if score > 95 {
+			log.Info("Skipping page as similar content has been processed: ", resp.Request.URL.String())
+			return false
+		}
 	}
 
-	// If it doesn't exist, store it and return true
+	// If no similar hash exists, store the new hash and proceed
 	hostHashes[host][hash] = true
 	return true
 }
