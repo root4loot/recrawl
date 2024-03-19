@@ -23,7 +23,6 @@ import (
 	"github.com/glaslos/ssdeep"
 	"github.com/root4loot/goscope"
 	"github.com/root4loot/goutils/domainutil"
-	"github.com/root4loot/goutils/fileutil"
 	"github.com/root4loot/goutils/httputil"
 	"github.com/root4loot/goutils/log"
 	"github.com/root4loot/goutils/sliceutil"
@@ -318,9 +317,6 @@ func (r *Runner) Worker(c_urls <-chan *url.URL, c_queue chan<- *url.URL, c_wait 
 			log.Warnf("Failed to scrape %s: %v", landingURL, err)
 			continue
 		}
-
-		writestring := fmt.Sprintf("c_url: %s\nlandingURL: %s\npaths: %s\n", c_url.String(), landingURL, strings.Join(paths, "\n"))
-		fileutil.WriteFileAppend(writestring, "debug.txt") // TODO: remove this
 
 		rawURLs, err = r.setURL(landingURL, paths)
 
