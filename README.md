@@ -194,7 +194,6 @@ func main() {
 - Headless browsing
 - Output and filter by MIME
 - Option to perform dirbusting / custom wordlist
-- Dirbusting / custom wordlist
 - Respect robots.txt option
 
 ---
