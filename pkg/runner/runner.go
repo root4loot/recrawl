@@ -262,15 +262,8 @@ func (r *Runner) Worker(c_urls <-chan *url.URL, c_queue chan<- *url.URL, c_wait 
 			log.Debugf("Processing %s", c_url)
 		}
 
-		// Check if robots.txt is present for the host and add it to the queue
-		if c_url.Path == "" || c_url.Path == "/" && !strings.HasSuffix("/robots.txt", c_url.Path) && !r.isVisitedURL(c_url.String()+"/robots.txt") {
-			robotsURL := fmt.Sprintf("%s://%s/robots.txt", c_url.Scheme, c_url.Host)
-			robotsParsedURL, err := url.Parse(robotsURL)
-			if err == nil {
-				time.Sleep(r.getDelay() * time.Millisecond)
-				c_wait <- 1
-				go r.queueURL(c_queue, robotsParsedURL)
-			}
+		if r.shouldAddRobotsTxt(c_url) {
+			r.addRobotsTxtToQueue(c_url, c_queue, c_wait)
 		}
 
 		// avoid example.com/foo/bar/foo/bar/foo/bar
@@ -341,6 +334,24 @@ func (r *Runner) Worker(c_urls <-chan *url.URL, c_queue chan<- *url.URL, c_wait 
 			go r.queueURL(c_queue, u)
 		}
 		r.Results <- Result{RequestURL: c_url.String(), StatusCode: resp.StatusCode, Error: nil}
+	}
+}
+
+// shouldAddRobotsTxt checks if robots.txt should be added to the queue for a given URL
+func (r *Runner) shouldAddRobotsTxt(c_url *url.URL) bool {
+	// Check if the URL path is either empty or "/" and not already pointing to robots.txt
+	// and ensure it hasn't been visited yet
+	return (c_url.Path == "" || c_url.Path == "/") && !strings.HasSuffix(c_url.Path, "robots.txt") && !r.isVisitedURL(c_url.String()+"/robots.txt")
+}
+
+// addRobotsTxtToQueue adds the robots.txt file to the queue for a given URL
+func (r *Runner) addRobotsTxtToQueue(c_url *url.URL, c_queue chan<- *url.URL, c_wait chan<- int) {
+	robotsURL := fmt.Sprintf("%s://%s/robots.txt", c_url.Scheme, c_url.Host)
+	robotsParsedURL, err := url.Parse(robotsURL)
+	if err == nil {
+		time.Sleep(r.getDelay() * time.Millisecond)
+		c_wait <- 1
+		go r.queueURL(c_queue, robotsParsedURL)
 	}
 }
 
