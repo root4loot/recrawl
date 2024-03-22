@@ -13,19 +13,18 @@ import (
 )
 
 type Options struct {
-	Include       []string // domains to be included
-	Exclude       []string // domains to be included
-	Concurrency   int      // number of concurrent requests
-	Timeout       int      // Request timeout duration (in seconds)
-	Delay         int      // delay between each request (in ms)
-	DelayJitter   int      // maximum jitter to add to delay (in ms)
-	UserAgent     string   // custom user-agent
-	Proxy         string   // proxy to use for requests
-	Silence       bool     // suppress output from console
-	Verbose       int      // verbosity level
-	Resolvers     []string // resolvers to use for DNS resolution
-	SkipRedundant bool     // skip requests that only differ parameter values
-	CLI           CLI      // CLI options
+	Include     []string // domains to be included
+	Exclude     []string // domains to be included
+	Concurrency int      // number of concurrent requests
+	Timeout     int      // Request timeout duration (in seconds)
+	Delay       int      // delay between each request (in ms)
+	DelayJitter int      // maximum jitter to add to delay (in ms)
+	UserAgent   string   // custom user-agent
+	Proxy       string   // proxy to use for requests
+	Silence     bool     // suppress output from console
+	Verbose     int      // verbosity level
+	Resolvers   []string // resolvers to use for DNS resolution
+	CLI         CLI      // CLI options
 }
 
 type CLI struct {
@@ -48,12 +47,11 @@ type CLI struct {
 // Default returns the default options
 func Default() *Options {
 	return &Options{
-		Concurrency:   20,
-		Timeout:       10,
-		Delay:         0,
-		DelayJitter:   0,
-		SkipRedundant: true,
-		UserAgent:     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:120.0) Gecko/20100101 Firefox/120.0",
+		Concurrency: 20,
+		Timeout:     10,
+		Delay:       0,
+		DelayJitter: 0,
+		UserAgent:   "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:120.0) Gecko/20100101 Firefox/120.0",
 	}
 }
 

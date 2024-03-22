@@ -34,7 +34,6 @@ func (c *CLI) usage() {
 	fmt.Fprintf(w, "\t%s,\t%s\t%s\t(Default: %v seconds)\n", "-to", "--timeout", "max request timeout", options.Default().Timeout)
 	fmt.Fprintf(w, "\t%s,\t%s\t%s\t(Default: %v milliseconds)\n", "-d", "--delay", "delay between requests", options.Default().Delay)
 	fmt.Fprintf(w, "\t%s,\t%s\t%s\t(Default: %v milliseconds)\n", "-dj", "--delay-jitter", "max jitter between requests", options.Default().DelayJitter)
-	fmt.Fprintf(w, "\t%s,\t%s\t%s\t(Default: %v)\n", "-sr", "--skip-redundant", "skip requests that only differ in parameter values", options.Default().SkipRedundant)
 	// fmt.Fprintf(w, "\t%s,\t%s\t%s\t(Default: %v)\n", "-ss", "--skip-same", "skip crawling responses that have the same response body", options.Default().SkipSameBody)
 	fmt.Fprintf(w, "\t%s,\t%s\t%s\t(Default: %v)\n", "-ua", "--user-agent", "set user agent", "Mozilla/5.0")
 	fmt.Fprintf(w, "\t%s,\t%s\t%s\t(Default: %v)\n", "-p", "--proxy", "set proxy", "none")
@@ -89,8 +88,6 @@ func (c *CLI) parseFlags() {
 	flag.StringVar(&opts.Proxy, "p", options.Default().Proxy, "")
 	flag.StringVar(&opts.CLI.ResolversFile, "resolvers", "", "")
 	flag.StringVar(&opts.CLI.ResolversFile, "r", "", "")
-	flag.BoolVar(&opts.SkipRedundant, "skip-redundant", options.Default().SkipRedundant, "")
-	flag.BoolVar(&opts.SkipRedundant, "sr", options.Default().SkipRedundant, "")
 
 	// OUTPUT
 	flag.BoolVar(&opts.Silence, "s", false, "")
