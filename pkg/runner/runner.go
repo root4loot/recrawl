@@ -284,7 +284,7 @@ func (r *Runner) Worker(c_urls <-chan *url.URL, c_queue chan<- *url.URL, c_wait 
 			continue
 		}
 
-		if resp != nil && httputil.IsBinaryResponse(resp) || resp.StatusCode >= 300 && resp.StatusCode <= 399 {
+		if httputil.IsBinaryResponse(resp) || resp.StatusCode >= 300 && resp.StatusCode <= 399 {
 			r.Results <- Result{RequestURL: c_url.String(), StatusCode: resp.StatusCode, Error: nil}
 		}
 
