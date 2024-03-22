@@ -32,10 +32,9 @@ import (
 )
 
 var (
-	re_path              = regexp.MustCompile(`(?:"|')(?:(((?:[a-zA-Z]{1,10}:(?:\\)?/(?:\\)?/|//)[^"'/]{1,}\.[a-zA-Z]{2,}[^"']*)|((?:/|\.\./|\./|\\/)[^"'><,;|*()(%%$^/\\\[\]][^"'><,;|()]*[^"'><,;|()]*))|([a-zA-Z0-9_\-/]{1,}/[a-zA-Z0-9_\-/]*\.[a-zA-Z0-9_]+(?:[\?|#][^"|']*)?)|([a-zA-Z0-9_\-/]{1,}/[a-zA-Z0-9_\-/]{3,}(?:[\?|#][^"|']*)?)|([a-zA-Z0-9_\-]+(?:\.[a-zA-Z0-9_]{1,})+)|([a-zA-Z0-9_\-/]+/))(?:"|')`)
-	re_robots            = regexp.MustCompile(`(?:Allow|Disallow): \s*(.*)`)
-	dnsResolutionTimeout = 3 * time.Second
-	hostHashes           = make(map[string]map[string]bool) // Map of host to map of hash to bool
+	re_path    = regexp.MustCompile(`(?:"|')(?:(((?:[a-zA-Z]{1,10}:(?:\\)?/(?:\\)?/|//)[^"'/]{1,}\.[a-zA-Z]{2,}[^"']*)|((?:/|\.\./|\./|\\/)[^"'><,;|*()(%%$^/\\\[\]][^"'><,;|()]*[^"'><,;|()]*))|([a-zA-Z0-9_\-/]{1,}/[a-zA-Z0-9_\-/]*\.[a-zA-Z0-9_]+(?:[\?|#][^"|']*)?)|([a-zA-Z0-9_\-/]{1,}/[a-zA-Z0-9_\-/]{3,}(?:[\?|#][^"|']*)?)|([a-zA-Z0-9_\-]+(?:\.[a-zA-Z0-9_]{1,})+)|([a-zA-Z0-9_\-/]+/))(?:"|')`)
+	re_robots  = regexp.MustCompile(`(?:Allow|Disallow): \s*(.*)`)
+	hostHashes = make(map[string]map[string]bool) // Map of host to map of hash to bool
 )
 
 type Runner struct {
@@ -717,13 +716,6 @@ func (r *Runner) isRedundantURL(urlStr string) bool {
 
 		return foundAlias
 	}
-}
-
-// mergeRegexMatches merges regex matches
-func mergeRegexMatches(regexPattern, input string) []string {
-	regex := regexp.MustCompile(regexPattern)
-	allMatches := regex.FindAllString(input, -1)
-	return allMatches
 }
 
 // removeQuotes takes a string as input and removes single and double quotes if they are both prefixed and trailing.
