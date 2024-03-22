@@ -245,7 +245,7 @@ func (r *Runner) startWorkers(c_urls <-chan *url.URL, c_queue chan<- *url.URL, c
 
 // queueURL adds a URL to the queue
 func (r *Runner) queueURL(c_queue chan<- *url.URL, url *url.URL) {
-	url, err := url.Parse(r.cleanDomain(url.String()))
+	url, err := url.Parse(r.cleanURL(url.String()))
 	if err == nil {
 		c_queue <- url
 	}
@@ -644,13 +644,13 @@ func (r *Runner) isVisitedHost(key string) bool {
 	return ok
 }
 
-// cleanDomain cleans a domain for use in a URL
-func (r *Runner) cleanDomain(domain string) string {
-	domain = util.TrimDoubleSlashes(domain)
-	domain = util.EnsureScheme(domain)
-	domain = util.AddSlashIfNeeded(domain)
-	domain = util.RemoveSlashUnwanted(domain)
-	return domain
+// cleanURL cleans a domain for use in a URL
+func (r *Runner) cleanURL(url string) string {
+	url = util.TrimDoubleSlashes(url)
+	url = util.EnsureScheme(url)
+	url = util.AddSlashIfNeeded(url)
+	url = util.RemoveSlashUnwanted(url)
+	return url
 }
 
 // isRedundantURL determines if a given URL has already been encountered with only query parameter differences.
