@@ -41,7 +41,6 @@ CONFIGURATIONS:
    -to,   --timeout          max request timeout                                  (Default: 10 seconds)
    -d,    --delay            delay between requests                               (Default: 0 milliseconds)
    -dj,   --delay-jitter     max jitter between requests                          (Default: 0 milliseconds)
-   -sr,   --skip-redundant   skip requests that only differ in parameter values   (Default: true)
    -ua,   --user-agent       set user agent                                       (Default: Mozilla/5.0)
    -p,    --proxy            set proxy                                            (Default: none)
    -r,    --resolvers        file containing list of resolvers                    (Default: System DNS)

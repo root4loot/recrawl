@@ -30,14 +30,13 @@ func (c *CLI) usage() {
 
 	// print the configurations section
 	fmt.Fprintln(w, "\nCONFIGURATIONS:")
-	fmt.Fprintf(w, "\t%s,\t%s\t%s\t(Default: %v)\n", "-c", "--concurrency", "number of concurrent requests", options.Default().Concurrency)
-	fmt.Fprintf(w, "\t%s,\t%s\t%s\t(Default: %v seconds)\n", "-to", "--timeout", "max request timeout", options.Default().Timeout)
-	fmt.Fprintf(w, "\t%s,\t%s\t%s\t(Default: %v milliseconds)\n", "-d", "--delay", "delay between requests", options.Default().Delay)
-	fmt.Fprintf(w, "\t%s,\t%s\t%s\t(Default: %v milliseconds)\n", "-dj", "--delay-jitter", "max jitter between requests", options.Default().DelayJitter)
-	// fmt.Fprintf(w, "\t%s,\t%s\t%s\t(Default: %v)\n", "-ss", "--skip-same", "skip crawling responses that have the same response body", options.Default().SkipSameBody)
-	fmt.Fprintf(w, "\t%s,\t%s\t%s\t(Default: %v)\n", "-ua", "--user-agent", "set user agent", "Mozilla/5.0")
-	fmt.Fprintf(w, "\t%s,\t%s\t%s\t(Default: %v)\n", "-p", "--proxy", "set proxy", "none")
-	fmt.Fprintf(w, "\t%s,\t%s\t%s\t(Default: %v)\n", "-r", "--resolvers", "file containing list of resolvers", "System DNS")
+	fmt.Fprintf(w, "\t%s,\t%s\t  %s\t                 (Default: %v)\n", "-c", "--concurrency", "number of concurrent requests", options.Default().Concurrency)
+	fmt.Fprintf(w, "\t%s,\t%s\t  %s\t                 (Default: %v seconds)\n", "-to", "--timeout", "max request timeout", options.Default().Timeout)
+	fmt.Fprintf(w, "\t%s,\t%s\t  %s\t                 (Default: %v milliseconds)\n", "-d", "--delay", "delay between requests", options.Default().Delay)
+	fmt.Fprintf(w, "\t%s,\t%s\t  %s\t                 (Default: %v milliseconds)\n", "-dj", "--delay-jitter", "max jitter between requests", options.Default().DelayJitter)
+	fmt.Fprintf(w, "\t%s,\t%s\t  %s\t                 (Default: %v)\n", "-ua", "--user-agent", "set user agent", "Mozilla/5.0")
+	fmt.Fprintf(w, "\t%s,\t%s\t  %s\t                 (Default: %v)\n", "-p", "--proxy", "set proxy", "none")
+	fmt.Fprintf(w, "\t%s,\t%s\t  %s\t                 (Default: %v)\n", "-r", "--resolvers", "file containing list of resolvers", "System DNS")
 
 	// print the output section
 	fmt.Fprintln(w, "\nOUTPUT:")
