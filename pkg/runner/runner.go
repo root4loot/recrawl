@@ -5,7 +5,6 @@ package runner
 
 import (
 	"bytes"
-	"errors"
 	"fmt"
 	"io"
 	"math/rand"
@@ -254,86 +253,92 @@ func (r *Runner) queueURL(c_queue chan<- *url.URL, url *url.URL) {
 // worker is a worker that processes URLs from the queue
 func (r *Runner) Worker(c_urls <-chan *url.URL, c_queue chan<- *url.URL, c_wait chan<- int, c_result chan<- Result) {
 	for c_url := range c_urls {
-
-		var rawURLs []string
-		if c_url == nil || c_url.Host == "" {
+		// Initial checks on the URL
+		if c_url == nil || c_url.Host == "" || r.isTrapped(c_url.Path) || r.isRedundantURL(c_url.String()) {
+			log.Debugf("Skipping URL due to initial checks: %s", c_url)
 			continue
-		} else {
-			log.Debugf("Processing %s", c_url)
 		}
 
+		// Add robots.txt if needed
 		if r.shouldAddRobotsTxt(c_url) {
 			r.addRobotsTxtToQueue(c_url, c_queue, c_wait)
 		}
 
-		// avoid example.com/foo/bar/foo/bar/foo/bar
-		if r.isTrapped(c_url.Path) {
-			log.Infof("Skipping URL (trapped in loop): %s", c_url.String())
-			continue
-		}
+		currentURL := c_url
+		redirectCount := 0
+		var lastValidResponse *http.Response
 
-		// skip URLs that only differ in parameter values
-		if r.isRedundantURL(c_url.String()) {
-			log.Infof("Skipping URL (redundant): %s", c_url.String())
-			continue
-		}
-
-		_, resp, err := r.request(c_url)
-
-		if resp == nil {
-			continue
-		}
-
-		if httputil.IsBinaryResponse(resp) || resp.StatusCode >= 300 && resp.StatusCode <= 399 {
-			r.Results <- Result{RequestURL: c_url.String(), StatusCode: resp.StatusCode, Error: nil}
-		}
-
-		if err != nil {
-			if !strings.Contains(err.Error(), "already visited") {
-				log.Infof("%v", err.Error())
-				r.Results <- Result{RequestURL: c_url.String(), StatusCode: 0, Error: err}
-			}
-			continue
-		}
-
-		// Skip processing similar content if the option is set
-		if !shouldProcessSimilarContent(c_url.Host, resp) {
-			continue
-		}
-
-		landingURL := resp.Request.URL.String()
-
-		paths, err := r.scrape(resp)
-
-		if err != nil {
-			log.Warnf("Failed to scrape %s: %v", landingURL, err)
-			continue
-		}
-
-		rawURLs, err = r.setURL(landingURL, paths)
-
-		if err != nil {
-			log.Warnf("%v", err)
-			continue
-		}
-
-		for i := range rawURLs {
-			u, err := url.Parse(rawURLs[i])
-
+		for redirectCount < 10 {
+			_, resp, err := r.request(currentURL)
 			if err != nil {
-				log.Warnf("%v", err)
-				continue
+				log.Infof("Error requesting %s: %v", currentURL, err)
+				r.Results <- Result{RequestURL: currentURL.String(), StatusCode: 0, Error: err}
+				break
+			}
+			if resp == nil {
+				break
 			}
 
-			// Skip paths that have two or more dots
-			if strings.Count(u.Path, ".") >= 2 {
-				continue
+			r.Results <- Result{RequestURL: currentURL.String(), StatusCode: resp.StatusCode, Error: nil}
+
+			// Check for binary response or redirection
+			if httputil.IsBinaryResponse(resp) || resp.StatusCode >= 300 && resp.StatusCode <= 399 {
+				if resp.StatusCode >= 300 && resp.StatusCode <= 399 {
+					location, err := resp.Location()
+					if err != nil || location == nil {
+						break
+					}
+					if !r.Options.FollowRedirects {
+						break
+					}
+					// Queue the location for further processing
+					currentURL = location
+					redirectCount++
+					continue // proceed to handle the next redirect
+				}
+				break // stop processing if binary response or not following redirects
 			}
 
-			time.Sleep(r.getDelay() * time.Millisecond)
-			go r.queueURL(c_queue, u)
+			// If response is valid and not a redirect, process further
+			lastValidResponse = resp
+			break
 		}
-		r.Results <- Result{RequestURL: c_url.String(), StatusCode: resp.StatusCode, Error: nil}
+
+		// Process the last valid response if available
+		if lastValidResponse != nil {
+			paths, err := r.scrape(lastValidResponse)
+			if err != nil {
+				log.Warnf("Failed to scrape %s: %v", currentURL, err)
+				continue
+			}
+
+			rawURLs, err := r.setURL(currentURL.String(), paths)
+			if err != nil {
+				log.Warnf("Failed to set URLs from %s: %v", currentURL, err)
+				continue
+			}
+
+			for _, rawURL := range rawURLs {
+				u, err := url.Parse(rawURL)
+				if err != nil {
+					log.Warnf("Error parsing URL %s: %v", rawURL, err)
+					continue
+				}
+
+				// Additional checks on the path
+				if strings.Count(u.Path, ".") >= 2 {
+					continue
+				}
+
+				// Queue each new URL discovered from the scraping
+				go r.queueURL(c_queue, u)
+			}
+		}
+
+		// Finally, report the result for the current URL if it was the last valid response
+		if lastValidResponse != nil {
+			r.Results <- Result{RequestURL: currentURL.String(), StatusCode: lastValidResponse.StatusCode, Error: nil}
+		}
 	}
 }
 
@@ -396,49 +401,38 @@ func (r *Runner) request(u *url.URL) (req *http.Request, resp *http.Response, er
 
 	// Check if URL has already been visited
 	if r.isVisitedURL(u.String()) {
-		return nil, nil, nil
+		log.Debugf("URL already visited: %s", u.String())
+		return nil, nil, fmt.Errorf("URL already visited")
 	}
 
-	// add visited
+	// Add URL to the visited list
 	r.addVisitedURL(u.String())
 
+	// Create a new HTTP GET request
 	req, err = http.NewRequest("GET", u.String(), nil)
 	if err != nil {
+		log.Warnf("Failed to create request for %s: %v", u.String(), err)
 		return
 	}
 
+	// Set user-agent if specified
 	if r.Options.UserAgent != "" {
 		req.Header.Add("User-Agent", r.Options.UserAgent)
 	}
 
-	// Only follow redirects if the new URL has not been visited
+	// Configure the client to not follow redirects
 	r.client.CheckRedirect = func(req *http.Request, via []*http.Request) error {
-		if len(via) >= 10 {
-			return errors.New("stopped after 10 redirects")
-		}
-
-		nextURL, err := req.URL.Parse(req.Response.Header.Get("Location"))
-		if err != nil {
-			return err
-		}
-
-		if !r.isVisitedURL(nextURL.String()) {
-			r.addVisitedURL(nextURL.String())
-			return nil
-		}
-
-		return errors.New("already visited")
+		return http.ErrUseLastResponse
 	}
 
+	// Perform the HTTP request
 	resp, err = r.client.Do(req)
-
 	if err != nil {
-		if strings.Contains(fmt.Sprint(err), "gave HTTP response to HTTPS client") {
-			u.Scheme = strings.Replace(u.Scheme, "https://", "http://", 1)
-			r.request(u)
-		}
+		log.Warnf("HTTP request failed for %s: %v", u.String(), err)
+		return
 	}
-	return
+
+	return req, resp, nil
 }
 
 // setURL sets the URL for a request
