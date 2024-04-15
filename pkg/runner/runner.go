@@ -10,8 +10,6 @@ import (
 	"math/rand"
 	"net/http"
 	"net/url"
-	"path"
-	"reflect"
 	"regexp"
 	"sort"
 	"strings"
@@ -281,7 +279,15 @@ func (r *Runner) Worker(c_urls <-chan *url.URL, c_queue chan<- *url.URL, c_wait 
 				break
 			}
 
-			if r.isResponseSimilar(currentURL.Host, resp, 97) {
+			// Check if the URL is redundant based on query parameters
+			if r.isRedundantURL(currentURL.String()) {
+				log.Infof("Skipping URL as it's redundant: %s", currentURL)
+				break
+			}
+
+			// Check if the response is similar to previously processed content
+			if r.isRedundantBody(currentURL.Host, resp, 97) {
+				log.Infof("Skipping URL as similar content has been processed: %s", currentURL)
 				break
 			}
 
@@ -346,8 +352,8 @@ func (r *Runner) addRobotsTxtToQueue(c_url *url.URL, c_queue chan<- *url.URL, c_
 	}
 }
 
-// isResponseSimilar checks if a similar response has been detected based on fuzzy hashing
-func (r *Runner) isResponseSimilar(host string, resp *http.Response, threshold int) bool {
+// isRedundantBody determines if a response body is similar to previously processed content
+func (r *Runner) isRedundantBody(host string, resp *http.Response, threshold int) bool {
 	// Read the response body
 	bodyBytes, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -371,13 +377,106 @@ func (r *Runner) isResponseSimilar(host string, resp *http.Response, threshold i
 
 		// Threshold for considering content the same
 		if score >= threshold {
-			log.Info("Skipping page as similar content has been processed: ", resp.Request.URL.String())
 			return true
 		}
 	}
 
 	// If no similar hash exists, store the new hash and proceed
 	fuzzyHashes[host][hash] = true
+	return false
+}
+
+// isRedundantURL determines if a given URL has already been encountered with only query parameter differences.
+// It checks for two scenarios:
+//  1. If the URL has no query parameters, it verifies if the path has been visited.
+//  2. If the URL has query parameters, it compares the base URL (excluding parameters) and parameter names
+//     with previously visited URLs to determine if it's essentially the same page that has been visited.
+//
+// This helps in avoiding re-processing of pages that have already been parsed but might have different
+func (r *Runner) isRedundantURL(rawURL string) bool {
+	u, err := url.Parse(rawURL)
+	if err != nil {
+		return false
+	}
+	if u.RawQuery == "" {
+		// Check if the canonical URL is already visited
+		if r.isVisitedURL(u.Path) {
+			return true
+		}
+	} else {
+		// extract query parameters
+		params, err := url.ParseQuery(u.RawQuery)
+		if err != nil {
+			return false
+		}
+		// create the canonical URL without query parameters
+		u.RawQuery = ""
+		canonicalURL := u.String()
+		// check if the canonical URL is already visited
+		if r.isVisitedURL(canonicalURL) {
+			return true
+		}
+		// check if the alias URL only differs in the query parameter values
+		aliasValues := make(map[string]string)
+		for name, paramValues := range params {
+			if len(paramValues) > 0 {
+				aliasValues[name] = paramValues[0]
+			}
+		}
+		// iterate over the visitedURLs using sync.Map's Range method
+		foundAlias := false
+		visitedURL.Range(func(key, value interface{}) bool {
+			vURL, ok := key.(string)
+			if !ok {
+				return true // continue the iteration
+			}
+			v, err := url.Parse(vURL)
+			if err != nil {
+				return true // continue the iteration
+			}
+			if v.RawQuery == "" {
+				if v.Path == u.Path && len(v.Query()) == len(params) {
+					foundAlias = true
+					return false // stop the iteration
+				}
+			} else {
+				// extract query parameters
+				vParams, err := url.ParseQuery(v.RawQuery)
+				if err != nil {
+					return true // continue the iteration
+				}
+				// create the canonical URL without query parameters
+				v.RawQuery = ""
+				vCanonicalURL := v.String()
+				if vCanonicalURL == canonicalURL {
+					foundAlias = true
+					return false // stop the iteration
+				}
+				// check if the alias URL only differs in the query parameter values
+				vAliasValues := make(map[string]string)
+				for name, paramValues := range vParams {
+					if len(paramValues) > 0 {
+						vAliasValues[name] = paramValues[0]
+					}
+				}
+				alias := true
+				for name, value := range aliasValues {
+					if vAliasValues[name] != value {
+						alias = false
+						break
+					}
+				}
+				if alias {
+					foundAlias = true
+					return false // stop the iteration
+				}
+			}
+			return true // continue the iteration
+		})
+		if foundAlias {
+			return true
+		}
+	}
 	return false
 }
 
@@ -633,80 +732,14 @@ func (r *Runner) cleanURL(url string) string {
 	return url
 }
 
-// isRedundantURL determines if a given URL has already been encountered with only query parameter differences.
-// It checks for two scenarios:
-//  1. If the URL has no query parameters, it verifies if the path has been visited.
-//  2. If the URL has query parameters, it compares the base URL (excluding parameters) and parameter names
-//     with previously visited URLs to determine if it's essentially the same page that has been visited.
-//
-// This helps in avoiding re-processing of pages that have already been parsed but might have different
-// parameter values in the URL.
-func (r *Runner) isRedundantURL(urlStr string) bool {
-	u, err := url.Parse(urlStr)
-	if err != nil {
-		return false
+// getSortedParameterNames returns a sorted slice of parameter names from a url.Values map.
+func (r *Runner) getSortedParameterNames(params url.Values) []string {
+	var names []string
+	for name := range params {
+		names = append(names, name)
 	}
-
-	// Normalize the URL path
-	u.Path = path.Clean(u.Path)
-
-	if u.RawQuery == "" {
-		// Check if the URL without query parameters is already visited
-		return r.isVisitedURL(u.String())
-	} else {
-		// Extract and sort query parameter names
-		params := u.Query()
-		var paramNames []string
-		for name := range params {
-			paramNames = append(paramNames, name)
-		}
-		sort.Strings(paramNames)
-
-		// Create the canonical URL without query parameters
-		u.RawQuery = ""
-		canonicalURL := u.String()
-
-		// Check if a URL with the same base path and parameter names has been visited
-		foundAlias := false
-		visitedURL.Range(func(key, value interface{}) bool {
-			visitedURLStr, ok := key.(string)
-			if !ok {
-				return true // Continue iteration
-			}
-
-			visitedURL, err := url.Parse(visitedURLStr)
-			if err != nil {
-				return true // Continue iteration
-			}
-
-			// Normalize the visited URL path
-			visitedURL.Path = path.Clean(visitedURL.Path)
-
-			// Check if base URLs match
-			visitedURL.RawQuery = ""
-			if visitedURL.String() != canonicalURL {
-				return true // Continue iteration, not the same base URL
-			}
-
-			// Extract and sort visited URL query parameter names
-			visitedParams := visitedURL.Query()
-			var visitedParamNames []string
-			for name := range visitedParams {
-				visitedParamNames = append(visitedParamNames, name)
-			}
-			sort.Strings(visitedParamNames)
-
-			// Check if parameter names match
-			if reflect.DeepEqual(paramNames, visitedParamNames) {
-				foundAlias = true
-				return false // Stop iteration
-			}
-
-			return true // Continue iteration
-		})
-
-		return foundAlias
-	}
+	sort.Strings(names)
+	return names
 }
 
 // removeQuotes takes a string as input and removes single and double quotes if they are both prefixed and trailing.
