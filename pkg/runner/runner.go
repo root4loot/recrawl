@@ -31,9 +31,9 @@ import (
 )
 
 var (
-	re_path    = regexp.MustCompile(`(?:"|')(?:(((?:[a-zA-Z]{1,10}:(?:\\)?/(?:\\)?/|//)[^"'/]{1,}\.[a-zA-Z]{2,}[^"']*)|((?:/|\.\./|\./|\\/)[^"'><,;|*()(%%$^/\\\[\]][^"'><,;|()]*[^"'><,;|()]*))|([a-zA-Z0-9_\-/]{1,}/[a-zA-Z0-9_\-/]*\.[a-zA-Z0-9_]+(?:[\?|#][^"|']*)?)|([a-zA-Z0-9_\-/]{1,}/[a-zA-Z0-9_\-/]{3,}(?:[\?|#][^"|']*)?)|([a-zA-Z0-9_\-]+(?:\.[a-zA-Z0-9_]{1,})+)|([a-zA-Z0-9_\-/]+/))(?:"|')`)
-	re_robots  = regexp.MustCompile(`(?:Allow|Disallow): \s*(.*)`)
-	hostHashes = make(map[string]map[string]bool) // Map of host to map of hash to bool
+	re_path     = regexp.MustCompile(`(?:"|')(?:(((?:[a-zA-Z]{1,10}:(?:\\)?/(?:\\)?/|//)[^"'/]{1,}\.[a-zA-Z]{2,}[^"']*)|((?:/|\.\./|\./|\\/)[^"'><,;|*()(%%$^/\\\[\]][^"'><,;|()]*[^"'><,;|()]*))|([a-zA-Z0-9_\-/]{1,}/[a-zA-Z0-9_\-/]*\.[a-zA-Z0-9_]+(?:[\?|#][^"|']*)?)|([a-zA-Z0-9_\-/]{1,}/[a-zA-Z0-9_\-/]{3,}(?:[\?|#][^"|']*)?)|([a-zA-Z0-9_\-]+(?:\.[a-zA-Z0-9_]{1,})+)|([a-zA-Z0-9_\-/]+/))(?:"|')`)
+	re_robots   = regexp.MustCompile(`(?:Allow|Disallow): \s*(.*)`)
+	fuzzyHashes = make(map[string]map[string]bool) // Map of host to map of hash to bool
 )
 
 type Runner struct {
@@ -280,6 +280,10 @@ func (r *Runner) Worker(c_urls <-chan *url.URL, c_queue chan<- *url.URL, c_wait 
 				break
 			}
 
+			if r.isResponseSimilar(currentURL.Host, resp, 97) {
+				break
+			}
+
 			r.Results <- Result{RequestURL: currentURL.String(), StatusCode: resp.StatusCode, Error: nil}
 
 			if resp.StatusCode >= 300 && resp.StatusCode <= 399 {
@@ -341,8 +345,8 @@ func (r *Runner) addRobotsTxtToQueue(c_url *url.URL, c_queue chan<- *url.URL, c_
 	}
 }
 
-// shouldProcessSimilarContent checks if a page should be processed based on the fuzzy hash of the response body
-func shouldProcessSimilarContent(host string, resp *http.Response) bool {
+// isResponseSimilar checks if a similar response has been detected based on fuzzy hashing
+func (r *Runner) isResponseSimilar(host string, resp *http.Response, threshold int) bool {
 	// Read the response body
 	bodyBytes, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -356,24 +360,24 @@ func shouldProcessSimilarContent(host string, resp *http.Response) bool {
 	hash, _ := ssdeep.FuzzyBytes(bodyBytes)
 
 	// Initialize the nested map if not already done
-	if hostHashes[host] == nil {
-		hostHashes[host] = make(map[string]bool)
+	if fuzzyHashes[host] == nil {
+		fuzzyHashes[host] = make(map[string]bool)
 	}
 
 	// Check the similarity of the new hash against existing hashes for the host
-	for existingHash := range hostHashes[host] {
+	for existingHash := range fuzzyHashes[host] {
 		score, _ := ssdeep.Distance(existingHash, hash)
 
 		// Threshold for considering content the same
-		if score > 95 {
+		if score >= threshold {
 			log.Info("Skipping page as similar content has been processed: ", resp.Request.URL.String())
-			return false
+			return true
 		}
 	}
 
 	// If no similar hash exists, store the new hash and proceed
-	hostHashes[host][hash] = true
-	return true
+	fuzzyHashes[host][hash] = true
+	return false
 }
 
 // request makes a request to a URL
