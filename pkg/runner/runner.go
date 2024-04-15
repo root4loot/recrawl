@@ -253,22 +253,23 @@ func (r *Runner) queueURL(c_queue chan<- *url.URL, url *url.URL) {
 // worker is a worker that processes URLs from the queue
 func (r *Runner) Worker(c_urls <-chan *url.URL, c_queue chan<- *url.URL, c_wait chan<- int, c_result chan<- Result) {
 	for c_url := range c_urls {
-		// Initial checks on the URL
 		if c_url == nil || c_url.Host == "" || r.isTrapped(c_url.Path) || r.isRedundantURL(c_url.String()) {
 			log.Debugf("Skipping URL due to initial checks: %s", c_url)
 			continue
 		}
 
-		// Add robots.txt if needed
 		if r.shouldAddRobotsTxt(c_url) {
 			r.addRobotsTxtToQueue(c_url, c_queue, c_wait)
 		}
 
 		currentURL := c_url
 		redirectCount := 0
-		var lastValidResponse *http.Response
+		for {
+			if redirectCount >= 10 { // Limit maximum redirects to prevent loops
+				log.Infof("Redirect limit reached for %s", currentURL)
+				break
+			}
 
-		for redirectCount < 10 {
 			_, resp, err := r.request(currentURL)
 			if err != nil {
 				log.Infof("Error requesting %s: %v", currentURL, err)
@@ -281,63 +282,43 @@ func (r *Runner) Worker(c_urls <-chan *url.URL, c_queue chan<- *url.URL, c_wait 
 
 			r.Results <- Result{RequestURL: currentURL.String(), StatusCode: resp.StatusCode, Error: nil}
 
-			// Check for binary response or redirection
-			if httputil.IsBinaryResponse(resp) || resp.StatusCode >= 300 && resp.StatusCode <= 399 {
-				if resp.StatusCode >= 300 && resp.StatusCode <= 399 {
-					location, err := resp.Location()
-					if err != nil || location == nil {
-						break
-					}
-					if !r.Options.FollowRedirects {
-						break
-					}
-					// Queue the location for further processing
-					currentURL = location
-					redirectCount++
-					continue // proceed to handle the next redirect
+			if resp.StatusCode >= 300 && resp.StatusCode <= 399 {
+				location, err := resp.Location()
+				if err != nil || location == nil {
+					log.Warnf("Failed to handle redirect from %s", currentURL)
+					break
 				}
-				break // stop processing if binary response or not following redirects
-			}
-
-			// If response is valid and not a redirect, process further
-			lastValidResponse = resp
-			break
-		}
-
-		// Process the last valid response if available
-		if lastValidResponse != nil {
-			paths, err := r.scrape(lastValidResponse)
-			if err != nil {
-				log.Warnf("Failed to scrape %s: %v", currentURL, err)
-				continue
-			}
-
-			rawURLs, err := r.setURL(currentURL.String(), paths)
-			if err != nil {
-				log.Warnf("Failed to set URLs from %s: %v", currentURL, err)
-				continue
-			}
-
-			for _, rawURL := range rawURLs {
-				u, err := url.Parse(rawURL)
+				currentURL = location // Update currentURL to the redirect location
+				redirectCount++
+			} else {
+				// This is a valid response that's not a redirect, so we process it
+				paths, err := r.scrape(resp)
 				if err != nil {
-					log.Warnf("Error parsing URL %s: %v", rawURL, err)
-					continue
+					log.Warnf("Failed to scrape %s: %v", currentURL, err)
+					break
 				}
 
-				// Additional checks on the path
-				if strings.Count(u.Path, ".") >= 2 {
-					continue
+				rawURLs, err := r.setURL(currentURL.String(), paths)
+				if err != nil {
+					log.Warnf("Failed to set URLs from %s: %v", currentURL, err)
+					break
 				}
 
-				// Queue each new URL discovered from the scraping
-				go r.queueURL(c_queue, u)
+				for _, rawURL := range rawURLs {
+					u, err := url.Parse(rawURL)
+					if err != nil {
+						log.Warnf("Error parsing URL %s: %v", rawURL, err)
+						continue
+					}
+
+					if strings.Count(u.Path, ".") >= 2 {
+						continue
+					}
+
+					go r.queueURL(c_queue, u)
+				}
+				break // Exit the loop since a valid non-redirect response has been handled
 			}
-		}
-
-		// Finally, report the result for the current URL if it was the last valid response
-		if lastValidResponse != nil {
-			r.Results <- Result{RequestURL: currentURL.String(), StatusCode: lastValidResponse.StatusCode, Error: nil}
 		}
 	}
 }
