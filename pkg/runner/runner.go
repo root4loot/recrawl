@@ -103,7 +103,6 @@ func (r *Runner) Run(targets ...string) {
 			continue
 		}
 
-		logInfo("Crawling target:", mainTarget.String())
 		go r.queueURL(c_queue, mainTarget)
 	}
 
@@ -253,6 +252,8 @@ func (r *Runner) queueURL(c_queue chan<- *url.URL, url *url.URL) {
 // worker is a worker that processes URLs from the queue
 func (r *Runner) Worker(c_urls <-chan *url.URL, c_queue chan<- *url.URL, c_wait chan<- int, c_result chan<- Result) {
 	for c_url := range c_urls {
+		log.Debugf("Processing URL: %s", c_url.String())
+
 		if c_url == nil || c_url.Host == "" || r.isTrapped(c_url.Path) || r.isRedundantURL(c_url.String()) {
 			log.Debugf("Skipping URL due to initial checks: %s", c_url)
 			continue

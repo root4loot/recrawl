@@ -116,7 +116,6 @@ This will crawl hackerone.com and filter JavaScript files. Here's a sample outpu
 [recrawl] (INF) Included extensions: js
 [recrawl] (INF) Concurrency: 20
 [recrawl] (INF) Timeout: 10 seconds
-[recrawl] (INF) Crawling target: http://hackerone.com
 [recrawl] (RES) 200 https://www.hackerone.com/sites/default/files/js/js_EOrKavGmjAkpIaCW_cpGJ240OpVZev_5NI-WGIx5URg.js
 [recrawl] (RES) 200 https://www.hackerone.com/sites/default/files/js/js_5JbqBIuSpSQJk1bRx1jnlE-pARPyPPF5H07tKLzNC80.js
 [recrawl] (RES) 200 https://www.hackerone.com/sites/default/files/js/js_a7_tjanmGpd_aITZ38ofV8QT2o2axkGnWqPwKna1Wf0.js
