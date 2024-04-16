@@ -1,4 +1,3 @@
-<br>
 <div align="center">
   <br>
   <img src="assets/logo.png" alt="recrawl logo" width="310">
@@ -11,6 +10,10 @@
 </div>
 
 <br>
+
+<div align="center" style="color:red">
+   <strong>Warning:</strong> This project is under active development. Bugs are to be expected.
+</div>
 
 ## Installation
 
