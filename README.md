@@ -48,6 +48,7 @@ CONFIGURATIONS:
    -fr,   --follow-redirects     follow redirects                                      (Default: true)
    -p,    --proxy                set proxy                                             (Default: none)
    -r,    --resolvers            file containing list of resolvers                     (Default: System DNS)
+   -H,    --header               set custom header                                     (Default: none)
 
 OUTPUT:
    -fs,   --filter-status        filter by status code                                 (comma-separated)   

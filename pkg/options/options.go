@@ -12,20 +12,24 @@ import (
 	"github.com/gookit/color"
 )
 
+// StringSlice type to handle repeated flag values
+type StringSlice []string
+
 type Options struct {
-	Include         []string // domains to be included
-	Exclude         []string // domains to be included
-	Concurrency     int      // number of concurrent requests
-	Timeout         int      // Request timeout duration (in seconds)
-	Delay           int      // delay between each request (in ms)
-	DelayJitter     int      // maximum jitter to add to delay (in ms)
-	UserAgent       string   // custom user-agent
-	Proxy           string   // proxy to use for requests
-	Silence         bool     // suppress output from console
-	Verbose         int      // verbosity level
-	Resolvers       []string // resolvers to use for DNS resolution
-	FollowRedirects bool     // follow redirects
-	CLI             CLI      // CLI options
+	Include         []string    // domains to be included
+	Exclude         []string    // domains to be included
+	Concurrency     int         // number of concurrent requests
+	Timeout         int         // Request timeout duration (in seconds)
+	Delay           int         // delay between each request (in ms)
+	DelayJitter     int         // maximum jitter to add to delay (in ms)
+	UserAgent       string      // custom user-agent
+	Proxy           string      // proxy to use for requests
+	Silence         bool        // suppress output from console
+	Verbose         int         // verbosity level
+	Resolvers       []string    // resolvers to use for DNS resolution
+	FollowRedirects bool        // follow redirects
+	Headers         StringSlice // custom headers to add to requests
+	CLI             CLI         // CLI options
 }
 
 type CLI struct {
@@ -84,4 +88,15 @@ func (o *Options) ValidateOptions() {
 		strings.Contains(o.CLI.Exclude, ", ") {
 		log.Fatal("target list must not contain space (must be comma-separated)")
 	}
+}
+
+// String provides the string representation of the slice
+func (s *StringSlice) String() string {
+	return strings.Join(*s, ", ")
+}
+
+// Set appends a value to the slice
+func (s *StringSlice) Set(value string) error {
+	*s = append(*s, value)
+	return nil
 }

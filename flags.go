@@ -38,6 +38,7 @@ func (c *CLI) usage() {
 	fmt.Fprintf(w, "\t%s,\t%s\t  %s\t                  (Default: %v)\n", "-fr", "--follow-redirects", "follow redirects", options.Default().FollowRedirects)
 	fmt.Fprintf(w, "\t%s,\t%s\t  %s\t                  (Default: %v)\n", "-p", "--proxy", "set proxy", "none")
 	fmt.Fprintf(w, "\t%s,\t%s\t  %s\t                  (Default: %v)\n", "-r", "--resolvers", "file containing list of resolvers", "System DNS")
+	fmt.Fprintf(w, "\t%s,\t%s\t  %s\t                  (Default: %v)\n", "-H", "--header", "set custom header", "none")
 
 	// print the output section
 	fmt.Fprintln(w, "\nOUTPUT:")
@@ -88,6 +89,8 @@ func (c *CLI) parseFlags() {
 	flag.StringVar(&opts.Proxy, "p", options.Default().Proxy, "")
 	flag.StringVar(&opts.CLI.ResolversFile, "resolvers", "", "")
 	flag.StringVar(&opts.CLI.ResolversFile, "r", "", "")
+	flag.Var(&opts.Headers, "header", "")
+	flag.Var(&opts.Headers, "H", "")
 
 	// OUTPUT
 	flag.BoolVar(&opts.Silence, "s", false, "")
@@ -125,4 +128,5 @@ func (c *CLI) parseFlags() {
 			c.opts.Verbose = len(strings.TrimPrefix(arg, "-"))
 		}
 	}
+
 }
