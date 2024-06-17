@@ -527,7 +527,7 @@ func (r *Runner) setURL(rawURL string, paths []string) (rawURLs []string, err er
 	}
 
 	// Skip URLs with file extensions
-	if urlutil.HasFileExtensionParsed(u) {
+	if urlutil.HasFileExtension(rawURL) {
 		return nil, fmt.Errorf("URL has file extension")
 	}
 
