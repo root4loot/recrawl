@@ -19,6 +19,10 @@ github.com/root4loot/goutils v0.0.0-20240617134707-cf567d145513 h1:iSAbjm0PEWJwf
 github.com/root4loot/goutils v0.0.0-20240617134707-cf567d145513/go.mod h1:QpKgqgwXZMtvOIG+dnZm3Gu7jvgPNEBVb4T+f1uPmac=
 github.com/root4loot/goutils v0.0.0-20240617135101-4d2fc4e41aa2 h1:DXoJRbLzWThw6d1ysEs4jyLB+36xjQ7KvdlldsM/Rqc=
 github.com/root4loot/goutils v0.0.0-20240617135101-4d2fc4e41aa2/go.mod h1:QpKgqgwXZMtvOIG+dnZm3Gu7jvgPNEBVb4T+f1uPmac=
+github.com/root4loot/goutils v0.0.0-20240617141244-893f0ab32bbf h1:BdewGHc3yGjbRjxkAbFqJ1scC/EXneUM1DphnLlFbro=
+github.com/root4loot/goutils v0.0.0-20240617141244-893f0ab32bbf/go.mod h1:QpKgqgwXZMtvOIG+dnZm3Gu7jvgPNEBVb4T+f1uPmac=
+github.com/root4loot/goutils v0.0.0-20240617141717-0121a59aa7f9 h1:6TScM9lwBbIksRiLVn8NDR3l21V/5OGx5R9Tx+/dVzE=
+github.com/root4loot/goutils v0.0.0-20240617141717-0121a59aa7f9/go.mod h1:QpKgqgwXZMtvOIG+dnZm3Gu7jvgPNEBVb4T+f1uPmac=
 github.com/sirupsen/logrus v1.9.3 h1:dueUQJ1C2q9oE3F7wvmSGAaVtTmUizReu6fjN8uqzbQ=
 github.com/sirupsen/logrus v1.9.3/go.mod h1:naHLuLoDiP4jHNo9R0sCBMtWGeIprob74mVsIT4qYEQ=
 github.com/stretchr/objx v0.1.0/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+wExME=

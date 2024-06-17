@@ -7,7 +7,7 @@ require (
 	github.com/glaslos/ssdeep v0.3.3
 	github.com/gookit/color v1.5.4
 	github.com/root4loot/goscope v0.0.0-20231212113300-e6b38b908437
-	github.com/root4loot/goutils v0.0.0-20240617135101-4d2fc4e41aa2
+	github.com/root4loot/goutils v0.0.0-20240617141717-0121a59aa7f9
 )
 
 require (

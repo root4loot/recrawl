@@ -14,8 +14,10 @@ import (
 	"github.com/root4loot/goutils/color"
 	"github.com/root4loot/goutils/fileutil"
 	"github.com/root4loot/goutils/log"
+	"github.com/root4loot/goutils/urlutil"
 	"github.com/root4loot/recrawl/pkg/options"
 	"github.com/root4loot/recrawl/pkg/runner"
+	"github.com/root4loot/recrawl/pkg/util"
 )
 
 type CLI struct {
@@ -114,7 +116,7 @@ func (c *CLI) processResults(runner *runner.Runner) {
 }
 
 func (c *CLI) shouldExcludeMediaURL(url string) bool {
-	if c.hasHideMedia() && isMediaURL(url) {
+	if c.hasHideMedia() && urlutil.IsMediaExt(urlutil.GetExt(url)) {
 		log.Debugf("Excluding media URL from output: %s", url)
 		return true
 	}
@@ -255,7 +257,7 @@ func (c *CLI) logActiveOptions() {
 		tag.Logf("Hiding status codes: %t", c.opts.CLI.HideStatusCodes)
 	}
 	if c.hasHideMedia() {
-		tag.Logf("Hiding media: %v", getMediaExtensions())
+		tag.Logf("Hiding media: %v", util.GetMediaExtensions())
 	}
 	if c.hasInfile() {
 		tag.Logf("Input file: %s", c.opts.CLI.Infile)
@@ -374,19 +376,4 @@ func filterUrlExtensionsContains(url string, filterUrlExtensions []string) bool 
 		}
 	}
 	return false
-}
-
-// isMediaURL determines if the given URL is a media URL
-func isMediaURL(url string) bool {
-	for _, ext := range getMediaExtensions() {
-		if strings.HasSuffix(url, ext) {
-			return true
-		}
-	}
-	return false
-}
-
-// getMediaExtensions returns the media extensions
-func getMediaExtensions() []string {
-	return []string{".png", ".jpg", ".jpeg", ".woff", ".woff2", ".ttf", ".eot", ".svg", ".gif", ".ico", ".webp", ".mp4", ".webm", ".mp3", ".wav", ".flac", ".aac", ".ogg", ".m4a", ".flv", ".avi", ".mov", ".wmv", ".swf", ".mkv", ".m4v", ".3gp", ".3g2"}
 }
