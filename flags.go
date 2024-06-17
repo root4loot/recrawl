@@ -85,6 +85,8 @@ func (c *CLI) parseFlags() {
 	flag.IntVar(&opts.DelayJitter, "dj", options.Default().DelayJitter, "")
 	flag.StringVar(&opts.UserAgent, "user-agent", options.Default().UserAgent, "")
 	flag.StringVar(&opts.UserAgent, "ua", options.Default().UserAgent, "")
+	flag.BoolVar(&opts.FollowRedirects, "follow-redirects", options.Default().FollowRedirects, "")
+	flag.BoolVar(&opts.FollowRedirects, "fr", options.Default().FollowRedirects, "")
 	flag.StringVar(&opts.Proxy, "proxy", options.Default().Proxy, "")
 	flag.StringVar(&opts.Proxy, "p", options.Default().Proxy, "")
 	flag.StringVar(&opts.CLI.ResolversFile, "resolvers", "", "")
