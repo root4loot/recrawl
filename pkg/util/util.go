@@ -15,19 +15,6 @@ func RemoveSlashUnwanted(url string) string {
 	return url
 }
 
-// TrimDoubleSlashes trims double slashes from a URL
-func TrimDoubleSlashes(target string) string {
-	if strings.HasPrefix(target, "http://") {
-		target = "http://" + strings.Replace(target[len("http://"):], "//", "/", -1)
-	} else if strings.HasPrefix(target, "https://") {
-		target = "https://" + strings.Replace(target[len("https://"):], "//", "/", -1)
-	} else {
-		// Replace all other occurrences of "//"
-		target = strings.Replace(target, "//", "/", -1)
-	}
-	return target
-}
-
 // isTextContentType checks if a string is a certain content-type
 func IsTextContentType(str string) bool {
 	var nonTextContentTypes = []string{
