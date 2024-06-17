@@ -3,36 +3,6 @@
 
 package util
 
-import (
-	"strings"
-)
-
-// isTextContentType checks if a string is a certain content-type
-func IsTextContentType(str string) bool {
-	var nonTextContentTypes = []string{
-		"application/octet-stream",
-		"image/*",
-		"audio/*",
-		"video/*",
-		"application/pdf",
-		"application/zip",
-		"application/x-gzip",
-		"application/vnd.ms-excel",
-		"application/vnd.ms-powerpoint",
-		"application/vnd.ms-word",
-	}
-	for _, i := range nonTextContentTypes {
-		if i == str {
-			return false
-		}
-		part := strings.Split(i, "/")[0]
-		if part == "image" || part == "audio" || part == "video" {
-			return false
-		}
-	}
-	return true
-}
-
 // GetMediaExtensions returns a slice of common media file extensions
 func GetMediaExtensions() []string {
 	return []string{

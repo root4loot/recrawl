@@ -11,12 +11,8 @@ github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZb
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
 github.com/root4loot/goscope v0.0.0-20231212113300-e6b38b908437 h1:vjItbp5voKzNcAiY/v7wHlEYSgsJ1iPbom/sRT4Md5g=
 github.com/root4loot/goscope v0.0.0-20231212113300-e6b38b908437/go.mod h1:+lH9u5tgGBzWoRUVy7enGx7V5iHukKFqNGptY9HRjAo=
-github.com/root4loot/goutils v0.0.0-20240617144130-7c1cb631b88d h1:Wq+5r3L5usLrYL3tb6XW9GeGr9Z/5xXcfWUxfowdXFQ=
-github.com/root4loot/goutils v0.0.0-20240617144130-7c1cb631b88d/go.mod h1:QpKgqgwXZMtvOIG+dnZm3Gu7jvgPNEBVb4T+f1uPmac=
-github.com/root4loot/goutils v0.0.0-20240617144357-70cc79253211 h1:Ax3/jl7PYMV0owUbFISRnbrYuQ2oaR49NIOwVCBI6fU=
-github.com/root4loot/goutils v0.0.0-20240617144357-70cc79253211/go.mod h1:QpKgqgwXZMtvOIG+dnZm3Gu7jvgPNEBVb4T+f1uPmac=
-github.com/root4loot/goutils v0.0.0-20240617144734-31545c71f677 h1:83KzwjaDh/U2GNtecPfiGPk9ejaUvgrQYSz5WE+YSvc=
-github.com/root4loot/goutils v0.0.0-20240617144734-31545c71f677/go.mod h1:QpKgqgwXZMtvOIG+dnZm3Gu7jvgPNEBVb4T+f1uPmac=
+github.com/root4loot/goutils v0.0.0-20240617145229-8d2184b6475c h1:VVfkxGxA7FM+79nUwO0TPT17q7+tqEiQms6OoaeGOOw=
+github.com/root4loot/goutils v0.0.0-20240617145229-8d2184b6475c/go.mod h1:QpKgqgwXZMtvOIG+dnZm3Gu7jvgPNEBVb4T+f1uPmac=
 github.com/sirupsen/logrus v1.9.3 h1:dueUQJ1C2q9oE3F7wvmSGAaVtTmUizReu6fjN8uqzbQ=
 github.com/sirupsen/logrus v1.9.3/go.mod h1:naHLuLoDiP4jHNo9R0sCBMtWGeIprob74mVsIT4qYEQ=
 github.com/stretchr/objx v0.1.0/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+wExME=
