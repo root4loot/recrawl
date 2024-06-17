@@ -4,10 +4,7 @@
 package util
 
 import (
-	"bufio"
-	"os"
 	"path/filepath"
-	"regexp"
 	"strings"
 
 	"github.com/root4loot/goutils/urlutil"
@@ -61,12 +58,6 @@ func TrimDoubleSlashes(target string) string {
 	return target
 }
 
-// IsFile checks if string looks like a domain
-func IsFile(str string) bool {
-	re := regexp.MustCompile(`^\w+\.\w+.*`)
-	return re.MatchString(str)
-}
-
 // isTextContentType checks if a string is a certain content-type
 func IsTextContentType(str string) bool {
 	var nonTextContentTypes = []string{
@@ -91,19 +82,4 @@ func IsTextContentType(str string) bool {
 		}
 	}
 	return true
-}
-
-// ReadFileLines reads a file line by line
-func ReadFileLines(filepath string) (lines []string, err error) {
-	file, err := os.Open(filepath)
-	if err != nil {
-		return
-	}
-	defer file.Close()
-
-	scanner := bufio.NewScanner(file)
-	for scanner.Scan() {
-		lines = append(lines, scanner.Text())
-	}
-	return
 }

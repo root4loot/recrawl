@@ -12,10 +12,10 @@ import (
 	"sync"
 
 	"github.com/root4loot/goutils/color"
+	"github.com/root4loot/goutils/fileutil"
 	"github.com/root4loot/goutils/log"
 	"github.com/root4loot/recrawl/pkg/options"
 	"github.com/root4loot/recrawl/pkg/runner"
-	"github.com/root4loot/recrawl/pkg/util"
 )
 
 type CLI struct {
@@ -56,7 +56,7 @@ func processStdinInput(cli *CLI, r *runner.Runner) {
 
 // processInfile processes the infile targets provided by the user
 func processInfile(cli *CLI, r *runner.Runner) {
-	targets, err := util.ReadFileLines(cli.opts.CLI.Infile)
+	targets, err := fileutil.ReadFile(cli.opts.CLI.Infile)
 	if err != nil {
 		log.Fatalf("Error reading file: %v", err)
 	}

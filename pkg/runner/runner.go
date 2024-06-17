@@ -532,17 +532,13 @@ func (r *Runner) setURL(rawURL string, paths []string) (rawURLs []string, err er
 	}
 
 	for _, path := range paths {
-		if r.shouldSkipPath(u, path) || strutil.IsBinaryString(path) || !strutil.IsPrintable(path) {
+		if r.shouldSkipPath(u, path) || strutil.IsBinaryString(path) || !strutil.IsPrintable(path) || strings.Count(u.Path, ".") >= 2 {
 			continue
 		}
 
-		if util.IsFile(path) {
+		// Add path if path is a domain
+		if domainutil.IsDomainName(path) {
 			rawURLs = append(rawURLs, rawURL+"/"+path)
-		}
-
-		// Skip paths that have two or more dots
-		if strings.Count(u.Path, ".") >= 2 {
-			continue
 		}
 
 		formattedURL := formatURL(u, path)
