@@ -22,6 +22,7 @@ import (
 	"github.com/root4loot/goutils/httputil"
 	"github.com/root4loot/goutils/log"
 	"github.com/root4loot/goutils/sliceutil"
+	"github.com/root4loot/goutils/strutil"
 	"github.com/root4loot/goutils/urlutil"
 	"github.com/root4loot/recrawl/pkg/options"
 	"github.com/root4loot/recrawl/pkg/util"
@@ -531,7 +532,7 @@ func (r *Runner) setURL(rawURL string, paths []string) (rawURLs []string, err er
 	}
 
 	for _, path := range paths {
-		if r.shouldSkipPath(u, path) || util.IsBinaryString(path) || !util.IsPrintable(path) {
+		if r.shouldSkipPath(u, path) || strutil.IsBinaryString(path) || !strutil.IsPrintable(path) {
 			continue
 		}
 
@@ -583,7 +584,7 @@ func formatURL(u *url.URL, path string) string {
 		return u.Scheme + "://" + u.Host + path + "/"
 	}
 
-	if urlutil.HasFileExtension(path) || util.HasParam(path) {
+	if urlutil.HasFileExtension(path) || urlutil.HasParam(path) {
 		return u.Scheme + "://" + u.Host + u.Path + "/" + path
 	}
 

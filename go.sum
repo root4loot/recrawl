@@ -13,6 +13,12 @@ github.com/root4loot/goscope v0.0.0-20231212113300-e6b38b908437 h1:vjItbp5voKzNc
 github.com/root4loot/goscope v0.0.0-20231212113300-e6b38b908437/go.mod h1:+lH9u5tgGBzWoRUVy7enGx7V5iHukKFqNGptY9HRjAo=
 github.com/root4loot/goutils v0.0.0-20240617131739-ab68d201136e h1:BIXEmxo2hjFspicmNNpTp7Wk0BkwHVRqYq6ZBFfUsh0=
 github.com/root4loot/goutils v0.0.0-20240617131739-ab68d201136e/go.mod h1:QpKgqgwXZMtvOIG+dnZm3Gu7jvgPNEBVb4T+f1uPmac=
+github.com/root4loot/goutils v0.0.0-20240617134554-665470865026 h1:opwzG6iqV2Ad/nt62bOcWl8cTkVed3w71EoYtP8U8r4=
+github.com/root4loot/goutils v0.0.0-20240617134554-665470865026/go.mod h1:QpKgqgwXZMtvOIG+dnZm3Gu7jvgPNEBVb4T+f1uPmac=
+github.com/root4loot/goutils v0.0.0-20240617134707-cf567d145513 h1:iSAbjm0PEWJwf4gnzBQfLvA6p618Jej0rrtDmsljDuE=
+github.com/root4loot/goutils v0.0.0-20240617134707-cf567d145513/go.mod h1:QpKgqgwXZMtvOIG+dnZm3Gu7jvgPNEBVb4T+f1uPmac=
+github.com/root4loot/goutils v0.0.0-20240617135101-4d2fc4e41aa2 h1:DXoJRbLzWThw6d1ysEs4jyLB+36xjQ7KvdlldsM/Rqc=
+github.com/root4loot/goutils v0.0.0-20240617135101-4d2fc4e41aa2/go.mod h1:QpKgqgwXZMtvOIG+dnZm3Gu7jvgPNEBVb4T+f1uPmac=
 github.com/sirupsen/logrus v1.9.3 h1:dueUQJ1C2q9oE3F7wvmSGAaVtTmUizReu6fjN8uqzbQ=
 github.com/sirupsen/logrus v1.9.3/go.mod h1:naHLuLoDiP4jHNo9R0sCBMtWGeIprob74mVsIT4qYEQ=
 github.com/stretchr/objx v0.1.0/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+wExME=
