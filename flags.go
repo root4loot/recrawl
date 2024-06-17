@@ -3,58 +3,79 @@ package main
 import (
 	"flag"
 	"fmt"
+	"html/template"
 	"os"
 	"strings"
-	"text/tabwriter"
 
 	"github.com/root4loot/recrawl/pkg/options"
 )
+
+type UsageData struct {
+	AppName                string
+	DefaultConcurrency     int
+	DefaultTimeout         int
+	DefaultDelay           int
+	DefaultDelayJitter     int
+	DefaultFollowRedirects bool
+}
+
+const usageTemplate = `
+Usage:
+  {{.AppName}} [options] (-t <target> | -I <targets.txt>)
+
+TARGETING:
+  -i, --infile         file containing targets                   (one per line)
+  -t, --target         target domain/url                         (comma-separated)
+  -ih, --include-host  also crawls this host (if found)          (comma-separated)
+  -eh, --exclude-host  do not crawl this host (if found)         (comma-separated)
+
+CONFIGURATIONS:
+  -c, --concurrency       number of concurrent requests          (Default: {{.DefaultConcurrency}})
+  -to, --timeout          max request timeout                    (Default: {{.DefaultTimeout}} seconds)
+  -d, --delay             delay between requests                 (Default: {{.DefaultDelay}} milliseconds)
+  -dj, --delay-jitter     max jitter between requests            (Default: {{.DefaultDelayJitter}} milliseconds)
+  -ua, --user-agent       set user agent                         (Default: Mozilla/5.0)
+  -fr, --follow-redirects follow redirects                       (Default: {{.DefaultFollowRedirects}})
+  -p, --proxy             set proxy                              (Default: none)
+  -r, --resolvers         file containing list of resolvers      (Default: System DNS)
+  -H, --header            set custom header                      (Default: none)
+
+OUTPUT:
+  -fs, --filter-status    filter by status code                  (comma-separated)
+  -fe, --filter-ext       filter by extension                    (comma-separated)
+  -v, --verbose           verbose output                         (use -vv for added verbosity)
+  -o, --outfile           output results to given file
+  -hs, --hide-status      hide status code from output
+  -hw, --hide-warning     hide warnings from output
+  -hm, --hide-media       hide media from output (images, fonts, etc.)
+  -s, --silence           silence results from output
+  -h, --help              display help
+      --version           display version
+`
 
 func (c *CLI) banner() {
 	fmt.Println("\nrecrawl", version, "by", author)
 }
 
 func (c *CLI) usage() {
-	// create a new tabwriter
-	w := tabwriter.NewWriter(os.Stdout, 2, 0, 3, ' ', 0)
+	data := UsageData{
+		AppName:                os.Args[0],
+		DefaultConcurrency:     options.Default().Concurrency,
+		DefaultTimeout:         options.Default().Timeout,
+		DefaultDelay:           options.Default().Delay,
+		DefaultDelayJitter:     options.Default().DelayJitter,
+		DefaultFollowRedirects: options.Default().FollowRedirects,
+	}
 
-	// print the usage header
-	fmt.Fprintln(w, "Usage:\t"+os.Args[0]+" [options] (-t <target> | -i <targets.txt>)")
+	tmpl, err := template.New("usage").Parse(usageTemplate)
+	if err != nil {
+		panic(err)
+	}
 
-	// print the targeting section
-	fmt.Fprintln(w, "\nTARGETING:")
-	fmt.Fprintf(w, "\t%s,\t%s\t\t   %s\t                  (%s)\t\n", "-i", "--infile", "file containing targets", "one per line")
-	fmt.Fprintf(w, "\t%s,\t%s\t\t   %s\t                  (%s)\t\n", "-t", "--target", "target domain/url", "comma-separated")
-	fmt.Fprintf(w, "\t%s,\t%s\t\t   %s\t                  (%s)\t\n", "-ih", "--include-host", "also crawls this host (if found)", "comma-separated")
-	fmt.Fprintf(w, "\t%s,\t%s\t\t   %s\t                  (%s)\t\n", "-eh", "--exclude-host", "do not crawl this host (if found)", "comma-separated")
-
-	// print the configurations section
-	fmt.Fprintln(w, "\nCONFIGURATIONS:")
-	fmt.Fprintf(w, "\t%s,\t%s\t  %s\t                  (Default: %v)\n", "-c", "--concurrency", "number of concurrent requests", options.Default().Concurrency)
-	fmt.Fprintf(w, "\t%s,\t%s\t  %s\t                  (Default: %v seconds)\n", "-to", "--timeout", "max request timeout", options.Default().Timeout)
-	fmt.Fprintf(w, "\t%s,\t%s\t  %s\t                  (Default: %v milliseconds)\n", "-d", "--delay", "delay between requests", options.Default().Delay)
-	fmt.Fprintf(w, "\t%s,\t%s\t  %s\t                  (Default: %v milliseconds)\n", "-dj", "--delay-jitter", "max jitter between requests", options.Default().DelayJitter)
-	fmt.Fprintf(w, "\t%s,\t%s\t  %s\t                  (Default: %v)\n", "-ua", "--user-agent", "set user agent", "Mozilla/5.0")
-	fmt.Fprintf(w, "\t%s,\t%s\t  %s\t                  (Default: %v)\n", "-fr", "--follow-redirects", "follow redirects", options.Default().FollowRedirects)
-	fmt.Fprintf(w, "\t%s,\t%s\t  %s\t                  (Default: %v)\n", "-p", "--proxy", "set proxy", "none")
-	fmt.Fprintf(w, "\t%s,\t%s\t  %s\t                  (Default: %v)\n", "-r", "--resolvers", "file containing list of resolvers", "System DNS")
-	fmt.Fprintf(w, "\t%s,\t%s\t  %s\t                  (Default: %v)\n", "-H", "--header", "set custom header", "none")
-
-	// print the output section
-	fmt.Fprintln(w, "\nOUTPUT:")
-	fmt.Fprintf(w, "\t%s,\t%s\t\t  %s\t       (%s)\t\n", "-fs", "--filter-status", "filter by status code", "comma-separated")
-	fmt.Fprintf(w, "\t%s,\t%s\t\t  %s\t       (%s)\t\n", "-fe", "--filter-ext", "filter by extension", "comma-separated")
-	fmt.Fprintf(w, "\t%s,\t%s\t\t  %s\t              \t\n", "-v", "--verbose", "verbose output (use -vv for added verbosity)")
-	fmt.Fprintf(w, "\t%s,\t%s\t\t  %s\n", "-o", "--outfile", "output results to given file")
-	fmt.Fprintf(w, "\t%s,\t%s\t\t  %s\n", "-hs", "--hide-status", "hide status code from output")
-	fmt.Fprintf(w, "\t%s,\t%s\t\t  %s\n", "-hw", "--hide-warning", "hide warnings from output")
-	fmt.Fprintf(w, "\t%s,\t%s\t\t  %s\n", "-hm", "--hide-media", "hide media from output (images, fonts, etc.)")
-	fmt.Fprintf(w, "\t%s,\t%s\t\t  %s\n", "-s", "--silence", "silence results from output")
-	fmt.Fprintf(w, "\t%s,\t%s\t\t  %s\n", "-h", "--help", "display help")
-	fmt.Fprintf(w, "\t\t%s\t\t  %s\n", "--version", "display version")
-
-	// flush the tabwriter
-	w.Flush()
+	err = tmpl.Execute(os.Stdout, data)
+	if err != nil {
+		panic(err)
+	}
 }
 
 func (c *CLI) parseFlags() {
