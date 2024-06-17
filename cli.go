@@ -17,7 +17,6 @@ import (
 	"github.com/root4loot/goutils/urlutil"
 	"github.com/root4loot/recrawl/pkg/options"
 	"github.com/root4loot/recrawl/pkg/runner"
-	"github.com/root4loot/recrawl/pkg/util"
 )
 
 type CLI struct {
@@ -257,7 +256,7 @@ func (c *CLI) logActiveOptions() {
 		tag.Logf("Hiding status codes: %t", c.opts.CLI.HideStatusCodes)
 	}
 	if c.hasHideMedia() {
-		tag.Logf("Hiding media: %v", util.GetMediaExtensions())
+		tag.Logf("Hiding media: %v", urlutil.GetMediaExtensions())
 	}
 	if c.hasInfile() {
 		tag.Logf("Input file: %s", c.opts.CLI.Infile)
