@@ -15,19 +15,6 @@ import (
 	"github.com/root4loot/goutils/urlutil"
 )
 
-// HasFile checks if a URL has a file extension
-func HasFile(url string) bool {
-	url = strings.TrimPrefix(url, "http://")
-	url = strings.TrimPrefix(url, "https://")
-	parts := strings.Split(url, "/")
-	if len(parts) > 1 {
-		if strings.Contains(parts[len(parts)-1], ".") {
-			return true
-		}
-	}
-	return false
-}
-
 // HasParam checks if a URL has a parameter
 func HasParam(str string) bool {
 	re := regexp.MustCompile(`\?.*`)

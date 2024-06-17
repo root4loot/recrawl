@@ -11,7 +11,6 @@ import (
 	"net/http"
 	"net/url"
 	"regexp"
-	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -564,10 +563,6 @@ func formatURL(u *url.URL, path string) string {
 		path = "/" + path
 	}
 
-	// if util.HasFile(u.String()) && u.Path == "/robots.txt" {
-	// 	return u.String()
-	// }
-
 	if urlutil.HasScheme(path) || domainutil.IsValidDomain(path) || strings.HasPrefix(path, "//") {
 		return path
 	}
@@ -588,7 +583,7 @@ func formatURL(u *url.URL, path string) string {
 		return u.Scheme + "://" + u.Host + path + "/"
 	}
 
-	if util.HasFile(path) || util.HasParam(path) {
+	if urlutil.HasFileExtension(path) || util.HasParam(path) {
 		return u.Scheme + "://" + u.Host + u.Path + "/" + path
 	}
 
@@ -734,16 +729,6 @@ func (r *Runner) cleanURL(url string) string {
 	return url
 }
 
-// getSortedParameterNames returns a sorted slice of parameter names from a url.Values map.
-func (r *Runner) getSortedParameterNames(params url.Values) []string {
-	var names []string
-	for name := range params {
-		names = append(names, name)
-	}
-	sort.Strings(names)
-	return names
-}
-
 // removeQuotes takes a string as input and removes single and double quotes if they are both prefixed and trailing.
 func (r *Runner) removeQuotes(input string) string {
 	if len(input) < 2 {
@@ -769,12 +754,4 @@ func (r *Runner) setLogLevel() {
 	} else {
 		log.SetLevel(log.ErrorLevel) // Default to Error level logging
 	}
-}
-
-// temporarily sets the log level to Info and logs the Info message
-func logInfo(str1 string, str2 string) {
-	originalLevel := log.GetLevel() // Store the original log level
-	log.SetLevel(log.InfoLevel)     // Temporarily set level to Info
-	log.Info(str1, str2)            // Log the Info message
-	log.SetLevel(originalLevel)     // Restore original log level
 }
