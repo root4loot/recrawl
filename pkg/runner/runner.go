@@ -96,6 +96,7 @@ func (r *Runner) Run(targets ...string) {
 
 	for _, target := range targets {
 		mainTarget, err := r.initializeTargetProcessing(target)
+
 		if err != nil {
 			log.Warn("Error preparing target:", err)
 			continue
@@ -328,7 +329,7 @@ func (r *Runner) Worker(c_urls <-chan *url.URL, c_queue chan<- *url.URL, c_wait 
 
 					go r.queueURL(c_queue, u)
 				}
-				break // Exit the loop since a valid non-redirect response has been handled
+				break
 			}
 		}
 	}
@@ -527,6 +528,11 @@ func (r *Runner) setURL(rawURL string, paths []string) (rawURLs []string, err er
 	u, err := url.Parse(rawURL)
 	if err != nil {
 		return nil, err
+	}
+
+	// Skip URLs with file extensions
+	if urlutil.HasFileExtensionParsed(u) {
+		return nil, fmt.Errorf("URL has file extension")
 	}
 
 	for _, path := range paths {
