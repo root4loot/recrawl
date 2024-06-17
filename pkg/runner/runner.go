@@ -323,10 +323,6 @@ func (r *Runner) Worker(c_urls <-chan *url.URL, c_queue chan<- *url.URL, c_wait 
 						continue
 					}
 
-					if strings.Count(u.Path, ".") >= 2 {
-						continue
-					}
-
 					go r.queueURL(c_queue, u)
 				}
 				break
