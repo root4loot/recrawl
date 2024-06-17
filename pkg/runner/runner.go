@@ -720,8 +720,8 @@ func (r *Runner) isVisitedHost(key string) bool {
 // cleanURL cleans a domain for use in a URL
 func (r *Runner) cleanURL(url string) string {
 	url = util.TrimDoubleSlashes(url)
-	url = util.EnsureScheme(url)
-	url = util.AddSlashIfNeeded(url)
+	url = urlutil.EnsureScheme(url)
+	url = urlutil.EnsureTrailingSlash(url)
 	url = util.RemoveSlashUnwanted(url)
 	return url
 }

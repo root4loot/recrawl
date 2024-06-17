@@ -4,38 +4,8 @@
 package util
 
 import (
-	"path/filepath"
 	"strings"
-
-	"github.com/root4loot/goutils/urlutil"
 )
-
-// Ensure ensures a URL has a scheme
-func EnsureScheme(target string) string {
-	if target != "" && !urlutil.HasScheme(target) {
-		return "http://" + target
-	}
-	return target
-}
-
-// AddSlashIfNeeded adds a "/" suffix to a URL if needed
-func AddSlashIfNeeded(url string) string {
-	if !strings.HasSuffix(url, "/") {
-		if strings.Contains(url, "?") || strings.Contains(url, "#") || strings.Contains(url, "=") {
-			// URL has query params or a fragment, don't add a "/" suffix
-			return url
-		} else if strings.Contains(filepath.Ext(url), ".") {
-			// URL ends with a file extension, don't add a "/" suffix
-			return url
-		} else {
-			// URL needs a "/" suffix
-			return url + "/"
-		}
-	} else {
-		// URL already has a "/" suffix
-		return url
-	}
-}
 
 // RemoveSlashUnwanted removes an unwanted "/" suffix from a URL
 func RemoveSlashUnwanted(url string) string {
