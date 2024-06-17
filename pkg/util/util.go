@@ -7,14 +7,6 @@ import (
 	"strings"
 )
 
-// RemoveSlashUnwanted removes an unwanted "/" suffix from a URL
-func RemoveSlashUnwanted(url string) string {
-	if strings.HasSuffix(url, "/") && (strings.Contains(url, "?") || strings.Contains(url, "#") || strings.Contains(url, "=")) {
-		return url[:len(url)-1]
-	}
-	return url
-}
-
 // isTextContentType checks if a string is a certain content-type
 func IsTextContentType(str string) bool {
 	var nonTextContentTypes = []string{

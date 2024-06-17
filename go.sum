@@ -15,6 +15,8 @@ github.com/root4loot/goutils v0.0.0-20240617144130-7c1cb631b88d h1:Wq+5r3L5usLrY
 github.com/root4loot/goutils v0.0.0-20240617144130-7c1cb631b88d/go.mod h1:QpKgqgwXZMtvOIG+dnZm3Gu7jvgPNEBVb4T+f1uPmac=
 github.com/root4loot/goutils v0.0.0-20240617144357-70cc79253211 h1:Ax3/jl7PYMV0owUbFISRnbrYuQ2oaR49NIOwVCBI6fU=
 github.com/root4loot/goutils v0.0.0-20240617144357-70cc79253211/go.mod h1:QpKgqgwXZMtvOIG+dnZm3Gu7jvgPNEBVb4T+f1uPmac=
+github.com/root4loot/goutils v0.0.0-20240617144734-31545c71f677 h1:83KzwjaDh/U2GNtecPfiGPk9ejaUvgrQYSz5WE+YSvc=
+github.com/root4loot/goutils v0.0.0-20240617144734-31545c71f677/go.mod h1:QpKgqgwXZMtvOIG+dnZm3Gu7jvgPNEBVb4T+f1uPmac=
 github.com/sirupsen/logrus v1.9.3 h1:dueUQJ1C2q9oE3F7wvmSGAaVtTmUizReu6fjN8uqzbQ=
 github.com/sirupsen/logrus v1.9.3/go.mod h1:naHLuLoDiP4jHNo9R0sCBMtWGeIprob74mVsIT4qYEQ=
 github.com/stretchr/objx v0.1.0/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+wExME=

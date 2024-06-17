@@ -25,7 +25,6 @@ import (
 	"github.com/root4loot/goutils/strutil"
 	"github.com/root4loot/goutils/urlutil"
 	"github.com/root4loot/recrawl/pkg/options"
-	"github.com/root4loot/recrawl/pkg/util"
 )
 
 var (
@@ -722,7 +721,6 @@ func (r *Runner) cleanURL(url string) string {
 	url = urlutil.NormalizeSlashes(url)
 	url = urlutil.EnsureScheme(url)
 	url = urlutil.EnsureTrailingSlash(url)
-	url = util.RemoveSlashUnwanted(url)
 	return url
 }
 
