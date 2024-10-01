@@ -1,4 +1,2 @@
-./recrawl
-.DS_Store
-dist/
-.vscode
+**/.*
+!.dotignore
