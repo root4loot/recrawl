@@ -17,7 +17,6 @@ import (
 
 	"github.com/PuerkitoBio/purell"
 	"github.com/glaslos/ssdeep"
-	"github.com/root4loot/goscope"
 	"github.com/root4loot/goutils/domainutil"
 	"github.com/root4loot/goutils/httputil"
 	"github.com/root4loot/goutils/log"
@@ -25,6 +24,7 @@ import (
 	"github.com/root4loot/goutils/strutil"
 	"github.com/root4loot/goutils/urlutil"
 	"github.com/root4loot/recrawl/pkg/options"
+	"github.com/root4loot/scope"
 )
 
 var (
@@ -36,7 +36,7 @@ var (
 type Runner struct {
 	Options *options.Options
 	Results chan Result
-	Scope   *goscope.Scope
+	Scope   *scope.Scope
 	client  *http.Client
 }
 
@@ -141,7 +141,7 @@ func (r *Runner) InitializeWorkerPool() (chan<- *url.URL, <-chan *url.URL, chan<
 			select {
 			case q := <-c_queue:
 				if q != nil {
-					if r.Scope.IsTargetInScope(q.Host) && !r.isVisitedURL(q.String()) {
+					if r.Scope.IsInScope(q.Host) && !r.isVisitedURL(q.String()) {
 						c_urls <- q
 					}
 					// Only reset the timer if there's activity on c_queue
@@ -188,10 +188,8 @@ func (r *Runner) initializeTargetProcessing(target string) (*url.URL, error) {
 		target = u.Scheme + "://" + u.Hostname()
 	}
 
-	if urlutil.HasScheme(u.Host) {
+	if u.Host != "" {
 		r.Scope.AddInclude(u.Host)
-	} else {
-		r.Scope.AddInclude("*."+u.Host, u.Host)
 	}
 
 	// Add target to the scope if it hasn't been visited
@@ -211,7 +209,7 @@ func (r *Runner) initializeTargetProcessing(target string) (*url.URL, error) {
 // initializeScope initializes the scope
 func (r *Runner) initializeScope() {
 	if r.Scope == nil {
-		r.Scope = goscope.NewScope()
+		r.Scope = scope.NewScope()
 	}
 
 	// add includes
