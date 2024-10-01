@@ -79,7 +79,6 @@ func newCLI() *CLI {
 }
 
 func (c *CLI) initialize() {
-
 	c.logger = log.NewLogger("recrawl")
 	c.parseFlags()
 	c.checkForExits()
@@ -87,7 +86,6 @@ func (c *CLI) initialize() {
 }
 
 func (c *CLI) processResults(runner *runner.Runner) {
-
 	printedURLs := new(sync.Map)
 
 	go func() {
@@ -97,12 +95,13 @@ func (c *CLI) processResults(runner *runner.Runner) {
 			}
 
 			if _, loaded := printedURLs.LoadOrStore(result.RequestURL, struct{}{}); loaded {
-
 				continue
 			}
 
 			c.processStatusCode(result)
-			c.handleOutput(runner, result)
+			if c.hasOutfile() {
+				c.appendToFile([]string{strconv.Itoa(result.StatusCode) + " " + result.RequestURL})
+			}
 		}
 	}()
 }
@@ -141,12 +140,6 @@ func (c *CLI) processStatusCode(result runner.Result) {
 	}
 }
 
-func (c *CLI) handleOutput(runner *runner.Runner, result runner.Result) {
-	if c.hasOutfile() {
-		c.appendToFile([]string{strconv.Itoa(result.StatusCode) + " " + result.RequestURL})
-	}
-}
-
 func (c *CLI) printWithColor(statusCode int, url string) {
 	switch {
 	case statusCode >= 200 && statusCode < 300:
@@ -176,7 +169,6 @@ func (c *CLI) checkForExits() {
 		fmt.Println("recrawl ", version)
 		os.Exit(0)
 	}
-
 	if !c.hasStdin() && !c.hasInfile() && !c.hasTarget() {
 		fmt.Println("")
 		fmt.Println(color.Red, "Missing target", color.Reset)
@@ -221,7 +213,6 @@ func (c *CLI) hasStdin() bool {
 	}
 
 	mode := stat.Mode()
-
 	isPipedFromChrDev := (mode & os.ModeCharDevice) == 0
 	isPipedFromFIFO := (mode & os.ModeNamedPipe) != 0
 
