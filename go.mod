@@ -1,16 +1,17 @@
 module github.com/root4loot/recrawl
 
-go 1.23.0
+go 1.20
 
 require (
-	github.com/PuerkitoBio/purell v1.2.1
+	github.com/PuerkitoBio/purell v1.1.1
 	github.com/glaslos/ssdeep v0.3.3
 	github.com/gookit/color v1.5.4
 	github.com/root4loot/goutils v0.0.0-20241001082813-799fb4f452c1
+	github.com/root4loot/scope v0.0.0-20241001095052-f7bf22cbd9c4
 )
 
 require (
-	github.com/root4loot/scope v0.0.0-20240904154416-13aa57c33326 // indirect
+	github.com/PuerkitoBio/urlesc v0.0.0-20170810143723-de5bf2ad4578 // indirect
 	github.com/sirupsen/logrus v1.9.3 // indirect
 	github.com/xo/terminfo v0.0.0-20210125001918-ca9a967f8778 // indirect
 	github.com/yl2chen/cidranger v1.0.2 // indirect
