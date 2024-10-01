@@ -95,7 +95,6 @@ func (s *StringSlice) String() string {
 	return strings.Join(*s, ", ")
 }
 
-// Set appends a value to the slice
 func (s *StringSlice) Set(value string) error {
 	*s = append(*s, value)
 	return nil

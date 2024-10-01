@@ -145,7 +145,6 @@ func (c *CLI) parseFlags() {
 	flag.Parse()
 	c.opts = *opts
 
-	// Manually check for verbose flags
 	for _, arg := range os.Args {
 		if strings.HasPrefix(arg, "-v") {
 			c.opts.Verbose = len(strings.TrimPrefix(arg, "-"))

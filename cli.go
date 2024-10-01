@@ -46,7 +46,6 @@ func main() {
 	}
 }
 
-// processStdinInput processes the STDIN targets provided by the user
 func processStdinInput(cli *CLI, r *runner.Runner) {
 	scanner := bufio.NewScanner(os.Stdin)
 	for scanner.Scan() {
@@ -55,7 +54,6 @@ func processStdinInput(cli *CLI, r *runner.Runner) {
 	}
 }
 
-// processInfile processes the infile targets provided by the user
 func processInfile(cli *CLI, r *runner.Runner) {
 	targets, err := fileutil.ReadFile(cli.opts.CLI.Infile)
 	if err != nil {
@@ -65,7 +63,6 @@ func processInfile(cli *CLI, r *runner.Runner) {
 	r.Run(targets...)
 }
 
-// processTargets processes the CLI targets provided by the user
 func processTargets(cli *CLI, r *runner.Runner) {
 	targets := cli.getTargets()
 	cli.processResults(r)
@@ -77,23 +74,20 @@ func processTargets(cli *CLI, r *runner.Runner) {
 	}
 }
 
-// newCLI returns a new CLI instance
 func newCLI() *CLI {
 	return &CLI{}
 }
 
-// initialize parses the command line options and sets the options
 func (c *CLI) initialize() {
-	// defaults = options.GetDefaultOptions()
+
 	c.logger = log.NewLogger("recrawl")
 	c.parseFlags()
 	c.checkForExits()
 	c.opts.Include, c.opts.Exclude = c.setScope()
 }
 
-// processResults is a goroutine that processes the results as they come in
 func (c *CLI) processResults(runner *runner.Runner) {
-	// Using a sync.Map for thread-safe operations
+
 	printedURLs := new(sync.Map)
 
 	go func() {
@@ -102,9 +96,8 @@ func (c *CLI) processResults(runner *runner.Runner) {
 				continue
 			}
 
-			// Check if the URL has already been printed
 			if _, loaded := printedURLs.LoadOrStore(result.RequestURL, struct{}{}); loaded {
-				// URL has already been printed, so skip it
+
 				continue
 			}
 
@@ -154,7 +147,6 @@ func (c *CLI) handleOutput(runner *runner.Runner, result runner.Result) {
 	}
 }
 
-// print with color
 func (c *CLI) printWithColor(statusCode int, url string) {
 	switch {
 	case statusCode >= 200 && statusCode < 300:
@@ -166,15 +158,14 @@ func (c *CLI) printWithColor(statusCode int, url string) {
 			log.Result(color.Colorize(color.Red, fmt.Sprintf("%d %s", statusCode, url)))
 		}
 	case statusCode >= 500:
-		log.Result(color.Colorize(color.Purple, fmt.Sprintf("%d %s", statusCode, url))) // or a bright shade of red
+		log.Result(color.Colorize(color.Purple, fmt.Sprintf("%d %s", statusCode, url)))
 	case statusCode >= 100 && statusCode < 200:
 		log.Result(color.Colorize(color.Blue, fmt.Sprintf("%d %s", statusCode, url)))
 	default:
-		log.Result(color.Colorize(color.LightGrey, fmt.Sprintf("%d %s", statusCode, url))) // or color.White
+		log.Result(color.Colorize(color.LightGrey, fmt.Sprintf("%d %s", statusCode, url)))
 	}
 }
 
-// checkForExits checks for the presence of the -h|--help and -v|--version flags
 func (c *CLI) checkForExits() {
 	if c.opts.CLI.Help {
 		c.banner()
@@ -193,7 +184,6 @@ func (c *CLI) checkForExits() {
 	}
 }
 
-// getTargets returns the targets to be used for the scan
 func (c *CLI) getTargets() (targets []string) {
 	if c.hasTarget() {
 		if strings.Contains(c.opts.CLI.Target, ",") {
@@ -206,7 +196,6 @@ func (c *CLI) getTargets() (targets []string) {
 	return
 }
 
-// appendToFile appends the given lines to the given file
 func (c *CLI) appendToFile(lines []string) {
 	file, err := os.OpenFile(c.opts.CLI.Outfile, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644)
 	if err != nil {
@@ -221,12 +210,10 @@ func (c *CLI) appendToFile(lines []string) {
 	}
 }
 
-// setScope sets the scope for the scan
 func (c *CLI) setScope() (inc []string, exc []string) {
 	return strings.Split(c.opts.CLI.Include, ","), strings.Split(c.opts.CLI.Exclude, ",")
 }
 
-// hasStdin determines if the user has piped input
 func (c *CLI) hasStdin() bool {
 	stat, err := os.Stdin.Stat()
 	if err != nil {
@@ -242,7 +229,6 @@ func (c *CLI) hasStdin() bool {
 }
 
 func (c *CLI) logActiveOptions() {
-
 	tag := c.logger.NewLabel("OPTIONS")
 	tag.SetColor(color.Red)
 
@@ -287,77 +273,62 @@ func (c *CLI) logActiveOptions() {
 	}
 }
 
-// hasStatusCodeFilter determines if the user has provided a status code filter
 func (c *CLI) hasStatusCodeFilter() bool {
 	return c.opts.CLI.FilterStatusCode != ""
 }
 
-// hasExtensionFilter determines if the user has provided an extension filter
 func (c *CLI) hasExtensionFilter() bool {
 	return c.opts.CLI.FilterExtensions != ""
 }
 
-// hasHideMedia determines if the user has provided the hide media flag
 func (c *CLI) hasHideMedia() bool {
 	return c.opts.CLI.HideMedia
 }
 
-// hasHideStatus determines if the user has provided the hide status flag
 func (c *CLI) hasHideStatus() bool {
 	return c.opts.CLI.HideStatusCodes
 }
 
-// hasInfile determines if the user has provided an input file
 func (c *CLI) hasInfile() bool {
 	return c.opts.CLI.Infile != ""
 }
 
-// hasOutfile determines if the user has provided an output file
 func (c *CLI) hasOutfile() bool {
 	return c.opts.CLI.Outfile != ""
 }
 
-// hasHideWarning determines if the user has provided the hide warning flag
 func (c *CLI) hasHideWarning() bool {
 	return c.opts.CLI.HideWarning
 }
 
-// hasResolversFile determines if the user has provided a resolvers file
 func (c *CLI) hasResolversFile() bool {
 	return c.opts.CLI.ResolversFile != ""
 }
 
-// hasProxy determines if the user has provided a proxy
 func (c *CLI) hasProxy() bool {
 	return c.opts.Proxy != ""
 }
 
-// hasDelay determines if the user has provided a delay
 func (c *CLI) hasDelay() bool {
 	return c.opts.Delay > 0
 }
 
-// hasDelayJitter determines if the user has provided a delay jitter
 func (c *CLI) hasDelayJitter() bool {
 	return c.opts.DelayJitter > 0
 }
 
-// hasConcurrency determines if the user has provided a concurrency
 func (c *CLI) hasConcurrency() bool {
 	return c.opts.Concurrency > 0
 }
 
-// hasTimeout determines if the user has provided a timeout
 func (c *CLI) hasTimeout() bool {
 	return c.opts.Timeout > 0
 }
 
-// hasTarget determines if the user has provided a target
 func (c *CLI) hasTarget() bool {
 	return c.opts.CLI.Target != ""
 }
 
-// filterStatusContains determines if the given status code is in the filter
 func filterStatusContains(filterStatusCodes []string, statusCode string) bool {
 	for _, code := range filterStatusCodes {
 		if code == statusCode {
@@ -367,7 +338,6 @@ func filterStatusContains(filterStatusCodes []string, statusCode string) bool {
 	return false
 }
 
-// filterUrlExtensionsContains determines if the given URL contains the given extension
 func filterUrlExtensionsContains(url string, filterUrlExtensions []string) bool {
 	for _, ext := range filterUrlExtensions {
 		if strings.HasSuffix(url, "."+ext) {
