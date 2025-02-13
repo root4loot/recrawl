@@ -639,7 +639,7 @@ func (r *Runner) isVisitedHost(key string) bool {
 
 func (r *Runner) cleanURL(url string) string {
 	url = urlutil.NormalizeSlashes(url)
-	url = urlutil.EnsureScheme(url)
+	url = urlutil.EnsureHTTP(url)
 	url = urlutil.EnsureTrailingSlash(url)
 	return url
 }
