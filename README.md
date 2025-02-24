@@ -1,9 +1,9 @@
-<div align="center">
+<!-- <div align="center">
   <br>
-  <img src="assets/logo.png" alt="recrawl logo" width="310">
+  <img src="recrawl.png" alt="recrawl logo" width="310">
 </div>
 
-<br>
+<br> -->
 
 <div align="center">
    <strong>recrawl</strong>: A Web URL crawler written in Go
@@ -12,7 +12,7 @@
 <br>
 
 <div align="center" style="color:red">
-   <strong>Warning:</strong> This project is under active development. Bugs are to be expected.
+   <strong>Warning:</strong> This project is under active development. Expect bugs!
 </div>
 
 ## Installation
