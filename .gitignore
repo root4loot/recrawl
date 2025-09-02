@@ -1,5 +1,8 @@
 **/.*
 !.dotignore
+!.github/
+!.golangci.yml
+!.goreleaser.yaml
 
 # Claude Code directory
 .claude/
