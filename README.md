@@ -11,6 +11,17 @@
 
 <br>
 
+<div align="center">
+   <a href="https://github.com/root4loot/recrawl/actions/workflows/ci.yml">
+      <img src="https://github.com/root4loot/recrawl/actions/workflows/ci.yml/badge.svg" alt="Build Status">
+   </a>
+   <a href="https://goreportcard.com/report/github.com/root4loot/recrawl">
+      <img src="https://goreportcard.com/badge/github.com/root4loot/recrawl" alt="Go Report Card">
+   </a>
+</div>
+
+<br>
+
 <div align="center" style="color:red">
    <strong>Warning:</strong> This project is under active development. Expect bugs!
 </div>
@@ -216,6 +227,45 @@ func main() {
 - Respect robots.txt option
 
 ---
+
+## Testing
+
+This project includes comprehensive unit tests that run without network connectivity using mock HTTP servers.
+
+### Running Tests
+
+```bash
+# Run all tests
+go test ./pkg/recrawl/ -v
+
+# Run tests with coverage
+go test ./pkg/recrawl/ -cover
+
+# Run tests with race detection
+go test ./pkg/recrawl/ -race
+```
+
+### Test Features
+- **31% code coverage** with comprehensive test suite
+- **Mock HTTP servers** for network-free testing
+- **Edge case testing** including path traps, malformed URLs, and error conditions
+- **Scope functionality testing** with various inclusion/exclusion scenarios
+- **Fast execution** - complete test suite runs in ~10ms
+
+See [pkg/recrawl/TEST_README.md](pkg/recrawl/TEST_README.md) for detailed testing documentation.
+
+## CI/CD
+
+This project uses GitHub Actions for continuous integration:
+
+- **✅ Automated testing** on push and pull requests
+- **✅ Multi-platform builds** (Linux, Windows, macOS)  
+- **✅ Go version matrix** (1.19, 1.20, 1.21)
+- **✅ Code coverage reporting** via Codecov
+- **✅ Security scanning** with gosec
+- **✅ Automated releases** on version tags
+
+See [CICD_README.md](CICD_README.md) for complete CI/CD documentation.
 
 ## Contributing
 
