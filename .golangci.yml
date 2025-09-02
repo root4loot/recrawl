@@ -1,0 +1,88 @@
+run:
+  timeout: 5m
+  tests: true
+  modules-download-mode: readonly
+
+linters:
+  enable:
+    - errcheck
+    - gosimple
+    - govet
+    - ineffassign
+    - staticcheck
+    - typecheck
+    - unused
+    - gofmt
+    - goimports
+    - misspell
+    - revive
+    - gosec
+    - gocritic
+    - gocyclo
+    - godox
+    - gofumpt
+    
+  disable:
+    - deadcode # deprecated
+    - varcheck # deprecated
+    - structcheck # deprecated
+    - interfacer # deprecated
+    - maligned # deprecated
+    - golint # deprecated
+    - scopelint # deprecated
+
+linters-settings:
+  errcheck:
+    check-type-assertions: true
+    check-blank: true
+    
+  gocyclo:
+    min-complexity: 15
+    
+  godox:
+    keywords:
+      - TODO
+      - BUG
+      - FIXME
+      - HACK
+      
+  gosec:
+    excludes:
+      - G204 # Subprocess launched with variable
+      - G304 # File path provided as taint input
+      
+  misspell:
+    locale: US
+    
+  revive:
+    min-confidence: 0.8
+    rules:
+      - name: var-naming
+      - name: package-comments
+      - name: exported
+        arguments:
+          - "checkPrivateReceivers"
+          - "sayRepetitiveInsteadOfStutters"
+
+issues:
+  exclude-rules:
+    # Exclude some linters from running on tests files
+    - path: _test\.go
+      linters:
+        - gocyclo
+        - errcheck
+        - gosec
+        - revive
+        
+    # Exclude known linter issues
+    - text: "weak cryptographic primitive"
+      linters:
+        - gosec
+        
+  max-issues-per-linter: 0
+  max-same-issues: 0
+
+output:
+  format: colored-line-number
+  print-issued-lines: true
+  print-linter-name: true
