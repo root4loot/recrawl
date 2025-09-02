@@ -1,7 +1,7 @@
 // Author: Daniel Antonsen (@danielantonsen)
 // Distributed Under MIT License
 
-package runner
+package recrawl
 
 import (
 	"bytes"
@@ -23,7 +23,6 @@ import (
 	"github.com/root4loot/goutils/sliceutil"
 	"github.com/root4loot/goutils/strutil"
 	"github.com/root4loot/goutils/urlutil"
-	"github.com/root4loot/recrawl/pkg/options"
 	"github.com/root4loot/scope"
 )
 
@@ -33,8 +32,8 @@ var (
 	fuzzyHashes = make(map[string]map[string]bool) // Map of host to map of hash to bool
 )
 
-type Runner struct {
-	Options *options.Options
+type Crawler struct {
+	Options *Options
 	Results chan Result
 	Scope   *scope.Scope
 	client  *http.Client
@@ -56,35 +55,40 @@ var (
 )
 
 func init() {
-	log.Init("recrawl")
+    log.Init("recrawl")
 }
 
-func NewRunnerWithDefaults() *Runner {
-	return newRunner(options.Default())
-}
+// New creates a Runner with default Options. (Deprecated: use NewRecrawl)
+func New() *Crawler { return newCrawler(NewOptions()) }
 
-func NewRunnerWithOptions(o *options.Options) *Runner {
-	return newRunner(o)
-}
+// NewWithOptions creates a Runner using the provided Options. (Deprecated: use NewRecrawlWithOptions)
+func NewWithOptions(o *Options) *Crawler { return newCrawler(o) }
 
-func newRunner(o *options.Options) *Runner {
-	runner := &Runner{
-		Results: make(chan Result),
-		Options: o,
-	}
+// NewRecrawl creates a Crawler with default options.
+func NewRecrawl() *Crawler { return newCrawler(NewOptions()) }
 
+// NewRecrawlWithOptions creates a Crawler with the provided options.
+func NewRecrawlWithOptions(o *Options) *Crawler { return newCrawler(o) }
+
+func newCrawler(o *Options) *Crawler {
+    runner := &Crawler{
+        Results: make(chan Result),
+        Options: o,
+    }
+
+	// Ensure essential defaults are present without overriding explicit values
+	runner.Options.ApplyDefaults()
 	runner.setLogLevel()
 	runner.initializeScope()
-	runner.client = NewHTTPClient(o).client
+    runner.client = NewHTTPClient(o).client
 
 	return runner
 }
 
-func (r *Runner) Run(targets ...string) {
+func (r *Crawler) Run(targets ...string) {
 	log.Debug("Run() called!")
 
 	r.Options.ValidateOptions()
-	r.Options.SetDefaultsMissing()
 	c_queue, c_urls, c_wait := r.InitializeWorkerPool()
 
 	log.Debug("number of targets: ", len(targets))
@@ -108,7 +112,7 @@ func (r *Runner) Run(targets ...string) {
 	r.startWorkers(c_urls, c_queue, c_wait)
 }
 
-func (r *Runner) InitializeWorkerPool() (chan<- *url.URL, <-chan *url.URL, chan<- int) {
+func (r *Crawler) InitializeWorkerPool() (chan<- *url.URL, <-chan *url.URL, chan<- int) {
 	c_wait := make(chan int)
 	c_urls := make(chan *url.URL)
 	c_queue := make(chan *url.URL)
@@ -156,7 +160,7 @@ func (r *Runner) InitializeWorkerPool() (chan<- *url.URL, <-chan *url.URL, chan<
 	return c_queue, c_urls, c_wait
 }
 
-func (r *Runner) initializeTargetProcessing(target string) (*url.URL, error) {
+func (r *Crawler) initializeTargetProcessing(target string) (*url.URL, error) {
 	if !strings.Contains(target, "://") {
 		scheme, _, err := httputil.FindScheme(target)
 		if err != nil {
@@ -175,7 +179,8 @@ func (r *Runner) initializeTargetProcessing(target string) (*url.URL, error) {
 	}
 
 	if u.Host != "" {
-		r.Scope.AddInclude(u.Host)
+		// Ensure the main target is considered in-scope
+		_ = r.Scope.AddInclude(u.Host)
 	}
 
 	if !r.isVisitedHost(u.Hostname()) {
@@ -190,21 +195,17 @@ func (r *Runner) initializeTargetProcessing(target string) (*url.URL, error) {
 	return u, nil
 }
 
-func (r *Runner) initializeScope() {
+func (r *Crawler) initializeScope() {
+	// Prefer user-provided scope; else ensure a new scope exists
+	if r.Options.Scope != nil {
+		r.Scope = r.Options.Scope
+	}
 	if r.Scope == nil {
 		r.Scope = scope.NewScope()
 	}
-
-	for _, include := range r.Options.Include {
-		r.Scope.AddInclude(include)
-	}
-
-	for _, exclude := range r.Options.Exclude {
-		r.Scope.AddExclude(exclude)
-	}
 }
 
-func (r *Runner) startWorkers(c_urls <-chan *url.URL, c_queue chan<- *url.URL, c_wait chan<- int) {
+func (r *Crawler) startWorkers(c_urls <-chan *url.URL, c_queue chan<- *url.URL, c_wait chan<- int) {
 	var wg sync.WaitGroup
 	for i := 0; i < r.Options.Concurrency; i++ {
 		wg.Add(1)
@@ -216,14 +217,14 @@ func (r *Runner) startWorkers(c_urls <-chan *url.URL, c_queue chan<- *url.URL, c
 	wg.Wait()
 }
 
-func (r *Runner) queueURL(c_queue chan<- *url.URL, url *url.URL) {
+func (r *Crawler) queueURL(c_queue chan<- *url.URL, url *url.URL) {
 	url, err := url.Parse(r.cleanURL(url.String()))
 	if err == nil {
 		c_queue <- url
 	}
 }
 
-func (r *Runner) Worker(c_urls <-chan *url.URL, c_queue chan<- *url.URL, c_wait chan<- int, c_result chan<- Result) {
+func (r *Crawler) Worker(c_urls <-chan *url.URL, c_queue chan<- *url.URL, c_wait chan<- int, c_result chan<- Result) {
 	for c_url := range c_urls {
 		log.Debugf("Processing URL: %s", c_url.String())
 
@@ -301,11 +302,11 @@ func (r *Runner) Worker(c_urls <-chan *url.URL, c_queue chan<- *url.URL, c_wait 
 	}
 }
 
-func (r *Runner) shouldAddRobotsTxt(c_url *url.URL) bool {
+func (r *Crawler) shouldAddRobotsTxt(c_url *url.URL) bool {
 	return (c_url.Path == "" || c_url.Path == "/") && !strings.HasSuffix(c_url.Path, "robots.txt") && !r.isVisitedURL(c_url.String()+"/robots.txt")
 }
 
-func (r *Runner) addRobotsTxtToQueue(c_url *url.URL, c_queue chan<- *url.URL, c_wait chan<- int) {
+func (r *Crawler) addRobotsTxtToQueue(c_url *url.URL, c_queue chan<- *url.URL, c_wait chan<- int) {
 	robotsURL := fmt.Sprintf("%s://%s/robots.txt", c_url.Scheme, c_url.Host)
 	robotsParsedURL, err := url.Parse(robotsURL)
 	if err == nil {
@@ -315,7 +316,7 @@ func (r *Runner) addRobotsTxtToQueue(c_url *url.URL, c_queue chan<- *url.URL, c_
 	}
 }
 
-func (r *Runner) isRedundantBody(host string, resp *http.Response, threshold int) bool {
+func (r *Crawler) isRedundantBody(host string, resp *http.Response, threshold int) bool {
 	bodyBytes, err := io.ReadAll(resp.Body)
 	if err != nil {
 		log.Errorf("Error reading response body: %v", err)
@@ -340,7 +341,7 @@ func (r *Runner) isRedundantBody(host string, resp *http.Response, threshold int
 	return false
 }
 
-func (r *Runner) isRedundantURL(rawURL string) bool {
+func (r *Crawler) isRedundantURL(rawURL string) bool {
 	u, err := url.Parse(rawURL)
 	if err != nil {
 		return false
@@ -418,7 +419,7 @@ func (r *Runner) isRedundantURL(rawURL string) bool {
 	return false
 }
 
-func (r *Runner) request(u *url.URL) (req *http.Request, resp *http.Response, err error) {
+func (r *Crawler) request(u *url.URL) (req *http.Request, resp *http.Response, err error) {
 	log.Debug("Requesting ", u.String())
 
 	if r.isVisitedURL(u.String()) {
@@ -451,7 +452,7 @@ func (r *Runner) request(u *url.URL) (req *http.Request, resp *http.Response, er
 	return req, resp, nil
 }
 
-func (r *Runner) setURL(rawURL string, paths []string) (rawURLs []string, err error) {
+func (r *Crawler) setURL(rawURL string, paths []string) (rawURLs []string, err error) {
 	log.Debugf("Setting URL for %s", rawURL)
 
 	u, err := url.Parse(rawURL)
@@ -480,7 +481,7 @@ func (r *Runner) setURL(rawURL string, paths []string) (rawURLs []string, err er
 	return
 }
 
-func (r *Runner) shouldSkipPath(u *url.URL, path string) bool {
+func (r *Crawler) shouldSkipPath(u *url.URL, path string) bool {
 	return path == u.Host || r.isMedia(path) || path == "" || strings.HasSuffix(u.Host, path)
 }
 
@@ -518,7 +519,7 @@ func formatURL(u *url.URL, path string) string {
 	return u.Scheme + "://" + u.Host + u.Path + "/" + path + "/"
 }
 
-func (r *Runner) scrape(resp *http.Response) ([]string, error) {
+func (r *Crawler) scrape(resp *http.Response) ([]string, error) {
 	log.Debugf("Scraping %s", resp.Request.URL.String())
 
 	body, err := io.ReadAll(resp.Body)
@@ -533,7 +534,7 @@ func (r *Runner) scrape(resp *http.Response) ([]string, error) {
 	return r.scrapePaths(body), nil
 }
 
-func (r *Runner) scrapeRobotsTxt(body []byte) []string {
+func (r *Crawler) scrapeRobotsTxt(body []byte) []string {
 	var res []string
 
 	reExtension := regexp.MustCompile(`/\.[a-z0-9]+$`)
@@ -551,7 +552,7 @@ func (r *Runner) scrapeRobotsTxt(body []byte) []string {
 	return sliceutil.Unique(res)
 }
 
-func (r *Runner) scrapePaths(body []byte) []string {
+func (r *Crawler) scrapePaths(body []byte) []string {
 	var res []string
 	matches := re_path.FindAllStringSubmatch(string(body), -1)
 	for _, match := range matches {
@@ -581,14 +582,14 @@ const normalizationFlags purell.NormalizationFlags = purell.FlagRemoveDefaultPor
 	purell.FlagEncodeNecessaryEscapes |
 	purell.FlagSortQuery
 
-func (r *Runner) normalizeURLString(rawURL string) (normalizedURL string, err error) {
+func (r *Crawler) normalizeURLString(rawURL string) (normalizedURL string, err error) {
 
 	normalizedURL = strings.ReplaceAll(rawURL, `\`, `%5C`)
 	normalizedURL, err = purell.NormalizeURLString(normalizedURL, normalizationFlags)
 	return normalizedURL, err
 }
 
-func (r *Runner) isMedia(path string) bool {
+func (r *Crawler) isMedia(path string) bool {
 	mimes := []string{"audio/", "application/", "font/", "image/", "multipart/", "text/", "video/"}
 	for _, mime := range mimes {
 		if strings.HasPrefix(path, mime) {
@@ -598,7 +599,7 @@ func (r *Runner) isMedia(path string) bool {
 	return false
 }
 
-func (r *Runner) isTrapped(path string) bool {
+func (r *Crawler) isTrapped(path string) bool {
 	var tot int
 	parts := strings.Split(path, "/")
 	if len(parts) >= 10 {
@@ -612,39 +613,39 @@ func (r *Runner) isTrapped(path string) bool {
 	return false
 }
 
-func (r *Runner) getDelay() time.Duration {
+func (r *Crawler) getDelay() time.Duration {
 	if r.Options.DelayJitter != 0 {
 		return time.Duration(r.Options.Delay + rand.Intn(r.Options.DelayJitter))
 	}
 	return time.Duration(r.Options.Delay)
 }
 
-func (r *Runner) addVisitedURL(key string) {
+func (r *Crawler) addVisitedURL(key string) {
 	visitedURL.Store(key, true)
 }
 
-func (r *Runner) addVisitedHost(key string) {
+func (r *Crawler) addVisitedHost(key string) {
 	visitedHost.Store(key, true)
 }
 
-func (r *Runner) isVisitedURL(key string) bool {
+func (r *Crawler) isVisitedURL(key string) bool {
 	_, ok := visitedURL.Load(key)
 	return ok
 }
 
-func (r *Runner) isVisitedHost(key string) bool {
+func (r *Crawler) isVisitedHost(key string) bool {
 	_, ok := visitedHost.Load(key)
 	return ok
 }
 
-func (r *Runner) cleanURL(url string) string {
+func (r *Crawler) cleanURL(url string) string {
 	url = urlutil.NormalizeSlashes(url)
 	url = urlutil.EnsureHTTP(url)
 	url = urlutil.EnsureTrailingSlash(url)
 	return url
 }
 
-func (r *Runner) removeQuotes(input string) string {
+func (r *Crawler) removeQuotes(input string) string {
 	if len(input) < 2 {
 		return input
 	}
@@ -656,7 +657,7 @@ func (r *Runner) removeQuotes(input string) string {
 	return input
 }
 
-func (r *Runner) setLogLevel() {
+func (r *Crawler) setLogLevel() {
 	if r.Options.Verbose == 1 {
 		log.SetLevel(log.InfoLevel)
 	} else if r.Options.Verbose == 2 {

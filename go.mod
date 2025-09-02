@@ -6,8 +6,8 @@ require (
 	github.com/PuerkitoBio/purell v1.1.1
 	github.com/glaslos/ssdeep v0.3.3
 	github.com/gookit/color v1.5.4
-	github.com/root4loot/goutils v0.0.0-20250120103546-a5943f185935
-	github.com/root4loot/scope v0.0.0-20241001095052-f7bf22cbd9c4
+	github.com/root4loot/goutils v0.0.0-20250302043352-6bbe55c2774a
+	github.com/root4loot/scope v0.0.0-20250302021344-b995af0f9cb2
 )
 
 require (

@@ -3,35 +3,39 @@ package main
 import (
 	"fmt"
 
-	"github.com/root4loot/recrawl/pkg/options"
-	"github.com/root4loot/recrawl/pkg/runner"
+	"github.com/root4loot/recrawl/pkg/recrawl"
+	"github.com/root4loot/scope"
 )
 
 func main() {
-	options := options.Options{
-		Include:     []string{"example.com"},
-		Exclude:     []string{"support.hackerone.com"},
-		Concurrency: 2,
-		Timeout:     10,
-		Delay:       0,
-		DelayJitter: 0,
-		Resolvers:   []string{"8.8.8.8", "208.67.222.222"},
-		UserAgent:   "recrawl",
-	}
 
-	runner := runner.NewRunnerWithOptions(&options)
+	opts := recrawl.NewOptions().WithDefaults()
+	s := scope.NewScope()
 
-	// create a separate goroutine to process the results as they come in
+	_ = s.AddInclude("sub.example.com")     // also follow links here
+	_ = s.AddExclude("support.example.com") // but don't follow links here
+
+	opts.Scope = s
+	opts.Concurrency = 2
+	opts.Timeout = 10
+	opts.Resolvers = []string{"8.8.8.8", "208.67.222.222"}
+	opts.UserAgent = "recrawl"
+
+	// Defaults already applied by NewOptions(); nothing else needed here
+
+	r := recrawl.NewRecrawlWithOptions(opts)
+
+	// process results as they come in
 	go func() {
-		for result := range runner.Results {
+		for result := range r.Results {
 			fmt.Println(result.StatusCode, result.RequestURL, result.Error)
 		}
 	}()
 
 	// single target
-	runner.Run("google.com")
+	r.Run("example.com")
 
 	// multiple targets
-	targets := []string{"hackerone.com", "bugcrowd.com"}
-	runner.Run(targets...)
+	targets := []string{"example.org", "example.net"}
+	r.Run(targets...)
 }

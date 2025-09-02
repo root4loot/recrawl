@@ -15,12 +15,12 @@ import (
 	"github.com/root4loot/goutils/fileutil"
 	"github.com/root4loot/goutils/log"
 	"github.com/root4loot/goutils/urlutil"
-	"github.com/root4loot/recrawl/pkg/options"
-	"github.com/root4loot/recrawl/pkg/runner"
+	"github.com/root4loot/recrawl/pkg/recrawl"
+	"github.com/root4loot/scope"
 )
 
 type CLI struct {
-	opts   options.Options
+	opts   recrawl.Options
 	logger *log.Logger
 }
 
@@ -29,7 +29,7 @@ const author = "@danielantonsen"
 func main() {
 	cli := newCLI()
 	cli.initialize()
-	r := runner.NewRunnerWithOptions(&cli.opts)
+    r := recrawl.NewRecrawlWithOptions(&cli.opts)
 
 	cli.logActiveOptions()
 
@@ -46,7 +46,7 @@ func main() {
 	}
 }
 
-func processStdinInput(cli *CLI, r *runner.Runner) {
+func processStdinInput(cli *CLI, r *recrawl.Crawler) {
 	scanner := bufio.NewScanner(os.Stdin)
 	for scanner.Scan() {
 		cli.processResults(r)
@@ -54,7 +54,7 @@ func processStdinInput(cli *CLI, r *runner.Runner) {
 	}
 }
 
-func processInfile(cli *CLI, r *runner.Runner) {
+func processInfile(cli *CLI, r *recrawl.Crawler) {
 	targets, err := fileutil.ReadFile(cli.opts.CLI.Infile)
 	if err != nil {
 		log.Fatalf("Error reading file: %v", err)
@@ -63,7 +63,7 @@ func processInfile(cli *CLI, r *runner.Runner) {
 	r.Run(targets...)
 }
 
-func processTargets(cli *CLI, r *runner.Runner) {
+func processTargets(cli *CLI, r *recrawl.Crawler) {
 	targets := cli.getTargets()
 	cli.processResults(r)
 
@@ -82,10 +82,10 @@ func (c *CLI) initialize() {
 	c.logger = log.NewLogger("recrawl")
 	c.parseFlags()
 	c.checkForExits()
-	c.opts.Include, c.opts.Exclude = c.setScope()
+	c.opts.Scope = c.setScope()
 }
 
-func (c *CLI) processResults(runner *runner.Runner) {
+func (c *CLI) processResults(runner *recrawl.Crawler) {
 	printedURLs := new(sync.Map)
 
 	go func() {
@@ -125,7 +125,7 @@ func (c *CLI) shouldExcludeByExtension(url string) bool {
 	return false
 }
 
-func (c *CLI) processStatusCode(result runner.Result) {
+func (c *CLI) processStatusCode(result recrawl.Result) {
 	if !c.hasHideStatus() {
 		if c.hasStatusCodeFilter() {
 			codeFilters := strings.Split(c.opts.CLI.FilterStatusCode, ",")
@@ -202,8 +202,31 @@ func (c *CLI) appendToFile(lines []string) {
 	}
 }
 
-func (c *CLI) setScope() (inc []string, exc []string) {
-	return strings.Split(c.opts.CLI.Include, ","), strings.Split(c.opts.CLI.Exclude, ",")
+func (c *CLI) setScope() *scope.Scope {
+	s := scope.NewScope()
+	// Includes
+	if c.opts.CLI.Include != "" {
+		inc := strings.Split(strings.ReplaceAll(c.opts.CLI.Include, " ", ""), ",")
+		var filtered []string
+		for _, v := range inc {
+			if v != "" {
+				filtered = append(filtered, v)
+			}
+		}
+		_ = s.AddIncludes(filtered)
+	}
+	// Excludes
+	if c.opts.CLI.Exclude != "" {
+		exc := strings.Split(strings.ReplaceAll(c.opts.CLI.Exclude, " ", ""), ",")
+		var filtered []string
+		for _, v := range exc {
+			if v != "" {
+				filtered = append(filtered, v)
+			}
+		}
+		_ = s.AddExcludes(filtered)
+	}
+	return s
 }
 
 func (c *CLI) hasStdin() bool {
@@ -261,6 +284,16 @@ func (c *CLI) logActiveOptions() {
 	}
 	if c.hasTimeout() {
 		tag.Logf("Timeout: %d seconds", c.opts.Timeout)
+	}
+	if c.opts.Scope != nil {
+		inc := c.opts.Scope.GetIncludes()
+		exc := c.opts.Scope.GetExcludes()
+		if len(inc) > 0 {
+			tag.Logf("Scope includes: %s", strings.Join(inc, ","))
+		}
+		if len(exc) > 0 {
+			tag.Logf("Scope excludes: %s", strings.Join(exc, ","))
+		}
 	}
 }
 

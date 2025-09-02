@@ -31,37 +31,46 @@ docker run -it recrawl -h
 
 ## Usage
 ```sh
-Usage: ./recrawl [options] (-t <target> | -i <targets.txt>)
-
 TARGETING:
-   -i,    --infile               file containing targets                               (one per line)      
-   -t,    --target               target domain/url                                     (comma-separated)   
-   -ih,   --include-host         also crawls this host (if found)                      (comma-separated)   
-   -eh,   --exclude-host         do not crawl this host (if found)                     (comma-separated)   
+  -i, --infile         file containing targets                   (one per line)
+  -t, --target         target domain/url                         (comma-separated)
+  -ih, --include-host  also crawls this host (if found)          (comma-separated)
+  -eh, --exclude-host  do not crawl this host (if found)         (comma-separated)
 
 CONFIGURATIONS:
-   -c,    --concurrency          number of concurrent requests                         (Default: 20)
-   -to,   --timeout              max request timeout                                   (Default: 10 seconds)
-   -d,    --delay                delay between requests                                (Default: 0 milliseconds)
-   -dj,   --delay-jitter         max jitter between requests                           (Default: 0 milliseconds)
-   -ua,   --user-agent           set user agent                                        (Default: Mozilla/5.0)
-   -fr,   --follow-redirects     follow redirects                                      (Default: true)
-   -p,    --proxy                set proxy                                             (Default: none)
-   -r,    --resolvers            file containing list of resolvers                     (Default: System DNS)
-   -H,    --header               set custom header                                     (Default: none)
+  -c, --concurrency       number of concurrent requests          (Default: 20)
+  -to, --timeout          max request timeout                    (Default: 10 seconds)
+  -d, --delay             delay between requests                 (Default: 0 milliseconds)
+  -dj, --delay-jitter     max jitter between requests            (Default: 0 milliseconds)
+  -ua, --user-agent       set user agent                         (Default: Mozilla/5.0)
+  -fr, --follow-redirects follow redirects                       (Default: true)
+  -p, --proxy             set proxy                              (Default: none)
+  -r, --resolvers         file containing list of resolvers      (Default: System DNS)
+  -H, --header            set custom header                      (Default: none)
 
 OUTPUT:
-   -fs,   --filter-status        filter by status code                                 (comma-separated)   
-   -fe,   --filter-ext           filter by extension                                   (comma-separated)   
-   -v,    --verbose              verbose output (use -vv for added verbosity)                              
-   -o,    --outfile              output results to given file
-   -hs,   --hide-status          hide status code from output
-   -hw,   --hide-warning         hide warnings from output
-   -hm,   --hide-media           hide media from output (images, fonts, etc.)
-   -s,    --silence              silence results from output
-   -h,    --help                 display help
-          --version              display version
+  -fs, --filter-status    filter by status code                  (comma-separated)
+  -fe, --filter-ext       filter by extension                    (comma-separated)
+  -v, --verbose           verbose output                         (use -vv for added verbosity)
+  -o, --outfile           output results to given file
+  -hs, --hide-status      hide status code from output
+  -hw, --hide-warning     hide warnings from output
+  -hm, --hide-media       hide media from output (images, fonts, etc.)
+  -s, --silence           silence results from output
+  -h, --help              display help
+      --version           display version
+[recrawl] (INF) Concurrency: 20
+[recrawl] (INF) Timeout: 10 seconds
 ```
+
+**Scope Behavior**
+- If no includes are defined, everything is in scope unless explicitly excluded.
+- If includes are defined, only those targets are in scope; everything else is out of scope by default.
+- Exclusions always take priority over inclusions.
+
+You can control scope via flags (`-ih/--include-host`, `-eh/--exclude-host`), or programmatically by providing a `*scope.Scope` on options.
+
+Note: The crawler automatically adds the main target's host to the scope includes to keep discovery focused. Broaden scope using `-ih`/`--include-host` or by adding includes to your custom `scope.Scope`.
 
 ## Example
 
@@ -84,6 +93,9 @@ OUTPUT:
 
 # Crawl *.example.com but avoid foo.example.com
 ➜ recrawl -t example.com -eh foo.example.com
+
+# Only crawl hosts within explicit scope
+➜ recrawl -t example.com -ih example.com,example.net
 ```
 
 ### Example running
@@ -154,39 +166,43 @@ go get -u github.com/root4loot/recrawl
 package main
 
 import (
-	"fmt"
+    "fmt"
 
-	"github.com/root4loot/recrawl/pkg/options"
-	"github.com/root4loot/recrawl/pkg/runner"
+    "github.com/root4loot/recrawl/pkg/recrawl"
+    "github.com/root4loot/scope"
 )
 
 func main() {
-	options := options.Options{
-		Include:     []string{"example.com"},
-		Exclude:     []string{"support.hackerone.com"},
-		Concurrency: 2,
-		Timeout:     10,
-		Delay:       0,
-		DelayJitter: 0,
-		Resolvers:   []string{"8.8.8.8", "208.67.222.222"},
-		UserAgent:   "recrawl",
-	}
+    // With defaults
+    opts := recrawl.NewOptions()
+    // Optional: provide a custom Scope. If no includes are defined, everything is in scope unless excluded.
+    s := scope.NewScope()
+    _ = s.AddInclude("example.com")
+    _ = s.AddExclude("support.hackerone.com")
+    opts.Scope = s
+    opts.Concurrency = 2
+    opts.Timeout = 10
+    opts.Resolvers = []string{"8.8.8.8", "208.67.222.222"}
+    opts.UserAgent = "recrawl"
 
-	runner := runner.NewRunnerWithOptions(&options)
+    // Or without defaults: opts := recrawl.NewEmptyOptions()
+    // Then set only the fields you need.
 
-	// create a separate goroutine to process the results as they come in
-	go func() {
-		for result := range runner.Results {
-			fmt.Println(result.StatusCode, result.RequestURL, result.Error)
-		}
-	}()
+    r := recrawl.NewRecrawlWithOptions(opts)
 
-	// single target
-	runner.Run("google.com")
+    // process results as they stream in
+    go func() {
+        for result := range r.Results {
+            fmt.Println(result.StatusCode, result.RequestURL, result.Error)
+        }
+    }()
 
-	// multiple targets
-	targets := []string{"hackerone.com", "bugcrowd.com"}
-	runner.Run(targets...)
+    // single target
+    r.Run("google.com")
+
+    // multiple targets
+    targets := []string{"hackerone.com", "bugcrowd.com"}
+    r.Run(targets...)
 }
 
 ```

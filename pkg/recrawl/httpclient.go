@@ -1,4 +1,4 @@
-package runner
+package recrawl
 
 import (
 	"crypto/tls"
@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/root4loot/goutils/urlutil"
-	"github.com/root4loot/recrawl/pkg/options"
 )
 
 type HTTPClient struct {
@@ -31,7 +30,7 @@ func (hrt *HeaderRoundTripper) RoundTrip(req *http.Request) (*http.Response, err
 }
 
 // NewHTTPClient returns a new HTTP client with custom headers if provided
-func NewHTTPClient(options *options.Options) *HTTPClient {
+func NewHTTPClient(options *Options) *HTTPClient {
 	// Initializing transport with the creation line
 	transport := &http.Transport{
 		TLSClientConfig:       &tls.Config{InsecureSkipVerify: true},

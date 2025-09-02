@@ -1,22 +1,22 @@
 package main
 
 import (
-	"flag"
-	"fmt"
-	"html/template"
-	"os"
-	"strings"
+    "flag"
+    "fmt"
+    "html/template"
+    "os"
+    "strings"
 
-	"github.com/root4loot/recrawl/pkg/options"
+    "github.com/root4loot/recrawl/pkg/recrawl"
 )
 
 type UsageData struct {
-	AppName                string
-	DefaultConcurrency     int
-	DefaultTimeout         int
-	DefaultDelay           int
-	DefaultDelayJitter     int
-	DefaultFollowRedirects bool
+    AppName                string
+    DefaultConcurrency     int
+    DefaultTimeout         int
+    DefaultDelay           int
+    DefaultDelayJitter     int
+    DefaultFollowRedirects bool
 }
 
 const usageTemplate = `
@@ -58,14 +58,14 @@ func (c *CLI) banner() {
 }
 
 func (c *CLI) usage() {
-	data := UsageData{
-		AppName:                os.Args[0],
-		DefaultConcurrency:     options.Default().Concurrency,
-		DefaultTimeout:         options.Default().Timeout,
-		DefaultDelay:           options.Default().Delay,
-		DefaultDelayJitter:     options.Default().DelayJitter,
-		DefaultFollowRedirects: options.Default().FollowRedirects,
-	}
+    data := UsageData{
+        AppName:                os.Args[0],
+        DefaultConcurrency:     recrawl.NewOptions().Concurrency,
+        DefaultTimeout:         recrawl.NewOptions().Timeout,
+        DefaultDelay:           recrawl.NewOptions().Delay,
+        DefaultDelayJitter:     recrawl.NewOptions().DelayJitter,
+        DefaultFollowRedirects: recrawl.NewOptions().FollowRedirects,
+    }
 
 	tmpl, err := template.New("usage").Parse(usageTemplate)
 	if err != nil {
@@ -79,7 +79,7 @@ func (c *CLI) usage() {
 }
 
 func (c *CLI) parseFlags() {
-	opts := new(options.Options)
+    opts := new(recrawl.Options)
 
 	var verbose bool
 
@@ -96,20 +96,20 @@ func (c *CLI) parseFlags() {
 	flag.StringVar(&opts.CLI.Exclude, "eh", "", "")
 
 	// CONFIGURATIONS
-	flag.IntVar(&opts.Concurrency, "concurrency", options.Default().Concurrency, "")
-	flag.IntVar(&opts.Concurrency, "c", options.Default().Concurrency, "")
-	flag.IntVar(&opts.Timeout, "timeout", options.Default().Timeout, "")
-	flag.IntVar(&opts.Timeout, "to", options.Default().Timeout, "")
-	flag.IntVar(&opts.Delay, "delay", options.Default().Delay, "")
-	flag.IntVar(&opts.Delay, "d", options.Default().Delay, "")
-	flag.IntVar(&opts.DelayJitter, "delay-jitter", options.Default().DelayJitter, "")
-	flag.IntVar(&opts.DelayJitter, "dj", options.Default().DelayJitter, "")
-	flag.StringVar(&opts.UserAgent, "user-agent", options.Default().UserAgent, "")
-	flag.StringVar(&opts.UserAgent, "ua", options.Default().UserAgent, "")
-	flag.BoolVar(&opts.FollowRedirects, "follow-redirects", options.Default().FollowRedirects, "")
-	flag.BoolVar(&opts.FollowRedirects, "fr", options.Default().FollowRedirects, "")
-	flag.StringVar(&opts.Proxy, "proxy", options.Default().Proxy, "")
-	flag.StringVar(&opts.Proxy, "p", options.Default().Proxy, "")
+    flag.IntVar(&opts.Concurrency, "concurrency", recrawl.NewOptions().Concurrency, "")
+    flag.IntVar(&opts.Concurrency, "c", recrawl.NewOptions().Concurrency, "")
+    flag.IntVar(&opts.Timeout, "timeout", recrawl.NewOptions().Timeout, "")
+    flag.IntVar(&opts.Timeout, "to", recrawl.NewOptions().Timeout, "")
+    flag.IntVar(&opts.Delay, "delay", recrawl.NewOptions().Delay, "")
+    flag.IntVar(&opts.Delay, "d", recrawl.NewOptions().Delay, "")
+    flag.IntVar(&opts.DelayJitter, "delay-jitter", recrawl.NewOptions().DelayJitter, "")
+    flag.IntVar(&opts.DelayJitter, "dj", recrawl.NewOptions().DelayJitter, "")
+    flag.StringVar(&opts.UserAgent, "user-agent", recrawl.NewOptions().UserAgent, "")
+    flag.StringVar(&opts.UserAgent, "ua", recrawl.NewOptions().UserAgent, "")
+    flag.BoolVar(&opts.FollowRedirects, "follow-redirects", recrawl.NewOptions().FollowRedirects, "")
+    flag.BoolVar(&opts.FollowRedirects, "fr", recrawl.NewOptions().FollowRedirects, "")
+    flag.StringVar(&opts.Proxy, "proxy", recrawl.NewOptions().Proxy, "")
+    flag.StringVar(&opts.Proxy, "p", recrawl.NewOptions().Proxy, "")
 	flag.StringVar(&opts.CLI.ResolversFile, "resolvers", "", "")
 	flag.StringVar(&opts.CLI.ResolversFile, "r", "", "")
 	flag.Var(&opts.Headers, "header", "")
