@@ -5,7 +5,7 @@
 !.goreleaser.yaml
 domains.txt
 .claude/
-recrawl
+/recrawl
 coverage.out
 coverage.html
 *.test
