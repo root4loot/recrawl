@@ -460,8 +460,21 @@ func (r *Crawler) setURL(rawURL string, paths []string) (rawURLs []string, err e
 		return nil, err
 	}
 
+	// Skip scraping certain file types that are unlikely to contain useful paths
 	if urlutil.HasFileExtension(rawURL) {
-		return nil, fmt.Errorf("URL has file extension")
+		ext := strings.ToLower(urlutil.GetExt(rawURL))
+		// Allow scraping of files that might contain useful references
+		scrapableExtensions := []string{"txt", "json", "xml", "js", "css", "html", "htm", "md", "yml", "yaml", "conf", "config"}
+		isScrapable := false
+		for _, scrapableExt := range scrapableExtensions {
+			if ext == scrapableExt {
+				isScrapable = true
+				break
+			}
+		}
+		if !isScrapable {
+			return nil, fmt.Errorf("URL has non-scrapable file extension: %s", ext)
+		}
 	}
 
 	for _, path := range paths {
