@@ -3,38 +3,19 @@
 !.github/
 !.golangci.yml
 !.goreleaser.yaml
-
-# Claude Code directory
+domains.txt
 .claude/
-
-# Compiled binaries
 recrawl
-recrawl.exe
-
-# Test coverage files
 coverage.out
 coverage.html
-
-# Go build artifacts
-*.exe
-*.exe~
-*.dll
-*.so
-*.dylib
 *.test
-
-# Temporary files
 *.tmp
 *.swp
 *.swo
 *~
-
-# IDE files
 .vscode/
 .idea/
 *.iml
-
-# OS generated files
 .DS_Store
 .DS_Store?
 ._*
