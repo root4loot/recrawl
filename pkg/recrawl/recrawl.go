@@ -18,7 +18,6 @@ import (
 	"github.com/PuerkitoBio/purell"
 	"github.com/glaslos/ssdeep"
 	"github.com/root4loot/goutils/domainutil"
-	"github.com/root4loot/goutils/httputil"
 	"github.com/root4loot/goutils/log"
 	"github.com/root4loot/goutils/sliceutil"
 	"github.com/root4loot/goutils/strutil"
@@ -162,11 +161,12 @@ func (r *Crawler) InitializeWorkerPool() (chan<- *url.URL, <-chan *url.URL, chan
 
 func (r *Crawler) initializeTargetProcessing(target string) (*url.URL, error) {
 	if !strings.Contains(target, "://") {
-		scheme, _, err := httputil.FindScheme(target)
-		if err != nil {
-			return nil, fmt.Errorf("failed to determine scheme for target '%s': %v", target, err)
+		// Default to user preference (HTTPS by default, HTTP if --prefer-http is used)
+		if r.Options.PreferHTTP {
+			target = "http://" + target
+		} else {
+			target = "https://" + target
 		}
-		target = scheme + "://" + target
 	}
 
 	u, err := url.Parse(target)

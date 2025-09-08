@@ -28,6 +28,7 @@ type Options struct {
 	Resolvers       []string     // resolvers to use for DNS resolution
 	FollowRedirects bool         // follow redirects
 	Headers         StringSlice  // custom headers to add to requests
+	PreferHTTP      bool         // prefer HTTP over HTTPS for non-schemed targets
 	CLI             CLI          // CLI options
 }
 

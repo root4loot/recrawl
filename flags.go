@@ -39,6 +39,7 @@ CONFIGURATIONS:
   -p, --proxy             set proxy                              (Default: none)
   -r, --resolvers         file containing list of resolvers      (Default: System DNS)
   -H, --header            set custom header                      (Default: none)
+  -ph, --prefer-http      prefer HTTP over HTTPS for targets    (Default: false)
 
 OUTPUT:
   -fs, --filter-status    filter by status code                  (comma-separated)
@@ -114,6 +115,8 @@ func (c *CLI) parseFlags() {
 	flag.StringVar(&opts.CLI.ResolversFile, "r", "", "")
 	flag.Var(&opts.Headers, "header", "")
 	flag.Var(&opts.Headers, "H", "")
+	flag.BoolVar(&opts.PreferHTTP, "prefer-http", false, "")
+	flag.BoolVar(&opts.PreferHTTP, "ph", false, "")
 
 	// OUTPUT
 	flag.BoolVar(&opts.Silence, "s", false, "")

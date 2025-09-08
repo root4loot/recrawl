@@ -58,6 +58,7 @@ CONFIGURATIONS:
   -p, --proxy             set proxy                              (Default: none)
   -r, --resolvers         file containing list of resolvers      (Default: System DNS)
   -H, --header            set custom header                      (Default: none)
+  -ph, --prefer-http      prefer HTTP over HTTPS for targets    (Default: false)
 
 OUTPUT:
   -fs, --filter-status    filter by status code                  (comma-separated)
@@ -70,8 +71,6 @@ OUTPUT:
   -s, --silence           silence results from output
   -h, --help              display help
       --version           display version
-[recrawl] (INF) Concurrency: 20
-[recrawl] (INF) Timeout: 10 seconds
 ```
 
 **Scope Behavior**
