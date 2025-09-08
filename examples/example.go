@@ -20,6 +20,8 @@ func main() {
 	opts.Timeout = 10
 	opts.Resolvers = []string{"8.8.8.8", "208.67.222.222"}
 	opts.UserAgent = "recrawl"
+	// Enable parameter mining
+	opts.MineParams = true
 
 	// Defaults already applied by NewOptions(); nothing else needed here
 
@@ -32,10 +34,11 @@ func main() {
 		}
 	}()
 
-	// single target
+	// single run
 	r.Run("example.com")
 
-	// multiple targets
-	targets := []string{"example.org", "example.net"}
-	r.Run(targets...)
+	if jsonStr, err := r.ParamMiner.ToJSON(); err == nil && jsonStr != "" {
+		fmt.Println("Parameters:")
+		fmt.Println(jsonStr)
+	}
 }

@@ -35,16 +35,18 @@ var (
 )
 
 type Crawler struct {
-	Options *Options
-	Results chan Result
-	Scope   *scope.Scope
-	client  *http.Client
+    Options    *Options
+    Results    chan Result
+    Scope      *scope.Scope
+    client     *http.Client
+    ParamMiner *ParamMiner
 }
 
 type Result struct {
-	RequestURL string
-	StatusCode int
-	Error      error
+    RequestURL string
+    StatusCode int
+    Parameters []ParamMine
+    Error      error
 }
 
 type Results struct {
@@ -57,7 +59,7 @@ var (
 )
 
 func init() {
-    log.Init("recrawl")
+	log.Init("recrawl")
 }
 
 func NewRecrawl() *Crawler { return newCrawler(NewOptions()) }
@@ -66,14 +68,15 @@ func NewRecrawlWithOptions(o *Options) *Crawler { return newCrawler(o) }
 
 func newCrawler(o *Options) *Crawler {
     runner := &Crawler{
-        Results: make(chan Result),
-        Options: o,
+        Results:    make(chan Result),
+        Options:    o,
+        ParamMiner: NewParamMiner(),
     }
 
 	runner.Options.ApplyDefaults()
 	runner.setLogLevel()
 	runner.initializeScope()
-    runner.client = NewHTTPClient(o).client
+	runner.client = NewHTTPClient(o).client
 
 	return runner
 }
@@ -95,7 +98,7 @@ func (r *Crawler) Run(targets ...string) {
 		}
 
 		go r.queueURL(c_queue, mainTarget)
-		
+
 		if (strings.ToLower(r.Options.BruteforceLevel) != "none" && r.Options.UseBruteforce) || len(r.Options.WordlistFiles) > 0 || r.Options.CLI.WordlistFiles != "" {
 			go r.queueWordlistPaths(mainTarget, c_queue, c_wait)
 		}
@@ -210,6 +213,7 @@ func (r *Crawler) startWorkers(c_urls <-chan *url.URL, c_queue chan<- *url.URL, 
 		}()
 	}
 	wg.Wait()
+	close(r.Results)
 }
 
 func (r *Crawler) queueURL(c_queue chan<- *url.URL, url *url.URL) {
@@ -250,17 +254,12 @@ func (r *Crawler) Worker(c_urls <-chan *url.URL, c_queue chan<- *url.URL, c_wait
 				break
 			}
 
-			if r.isRedundantURL(currentURL.String()) {
-				log.Infof("Skipping URL as it's redundant: %s", currentURL)
-				break
-			}
-
 			if r.isRedundantBody(currentURL.Host, resp, 97) {
 				log.Infof("Skipping URL as similar content has been processed: %s", currentURL)
 				break
 			}
 
-			r.Results <- Result{RequestURL: currentURL.String(), StatusCode: resp.StatusCode, Error: nil}
+			r.Results <- Result{RequestURL: currentURL.String(), StatusCode: resp.StatusCode, Parameters: nil, Error: nil}
 
 			if resp.StatusCode >= 300 && resp.StatusCode <= 399 {
 				location, err := resp.Location()
@@ -455,7 +454,6 @@ func (r *Crawler) setURL(rawURL string, paths []string) (rawURLs []string, err e
 		return nil, err
 	}
 
-
 	for _, path := range paths {
 		if r.shouldSkipPath(u, path) || strutil.IsBinaryString(path) || !strutil.IsPrintable(path) || strings.Count(u.Path, ".") >= 2 {
 			continue
@@ -518,6 +516,14 @@ func (r *Crawler) scrape(resp *http.Response) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	// extract parameters if enabled
+    if r.Options.MineParams {
+        params := ExtractParameters(resp.Request.URL.String(), body)
+        for _, param := range params {
+            r.ParamMiner.AddParameter(param)
+        }
+    }
 
 	if strings.HasSuffix(resp.Request.URL.String(), "robots.txt") {
 		return r.scrapeRobotsTxt(body), nil
@@ -663,7 +669,7 @@ func (r *Crawler) setLogLevel() {
 
 func (r *Crawler) loadWordlists() []string {
 	var wordlistEntries []string
-	
+
 	if strings.ToLower(r.Options.BruteforceLevel) != "none" && r.Options.UseBruteforce {
 		builtinWordlists := r.getBuiltinWordlistsForLevel(r.Options.BruteforceLevel)
 		for _, wordlist := range builtinWordlists {
@@ -673,14 +679,14 @@ func (r *Crawler) loadWordlists() []string {
 			}
 		}
 	}
-	
+
 	var wordlistFiles []string
 	if len(r.Options.WordlistFiles) > 0 {
 		wordlistFiles = r.Options.WordlistFiles
 	} else if r.Options.CLI.WordlistFiles != "" {
 		wordlistFiles = strings.Split(r.Options.CLI.WordlistFiles, ",")
 	}
-	
+
 	for _, file := range wordlistFiles {
 		file = strings.TrimSpace(file)
 		if entries := r.loadWordlistFile(file); len(entries) > 0 {
@@ -688,15 +694,15 @@ func (r *Crawler) loadWordlists() []string {
 			log.Debugf("Loaded %d entries from custom wordlist: %s", len(entries), file)
 		}
 	}
-	
+
 	return sliceutil.Unique(wordlistEntries)
 }
 
 func (r *Crawler) getBuiltinWordlistsForLevel(level string) []string {
 	var wordlists []string
-	
+
 	wordlists = append(wordlists, filepath.Join("wordlists", "recrawl.txt"))
-	
+
 	switch strings.ToLower(level) {
 	case "none":
 		return []string{}
@@ -710,21 +716,21 @@ func (r *Crawler) getBuiltinWordlistsForLevel(level string) []string {
 		log.Warnf("Unknown bruteforce level '%s', defaulting to 'light'", level)
 		return r.getBuiltinWordlistsForLevel("light")
 	}
-	
+
 	return wordlists
 }
 
 // loadWordlistFile loads entries from a single wordlist file
 func (r *Crawler) loadWordlistFile(filename string) []string {
 	var entries []string
-	
+
 	file, err := os.Open(filename)
 	if err != nil {
 		log.Debugf("Could not open wordlist file %s: %v", filename, err)
 		return entries
 	}
 	defer file.Close()
-	
+
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
 		line := strings.TrimSpace(scanner.Text())
@@ -734,11 +740,11 @@ func (r *Crawler) loadWordlistFile(filename string) []string {
 		}
 		entries = append(entries, line)
 	}
-	
+
 	if err := scanner.Err(); err != nil {
 		log.Warnf("Error reading wordlist file %s: %v", filename, err)
 	}
-	
+
 	return entries
 }
 
@@ -748,15 +754,15 @@ func (r *Crawler) queueWordlistPaths(targetURL *url.URL, c_queue chan<- *url.URL
 	if len(wordlistEntries) == 0 {
 		return
 	}
-	
+
 	log.Debugf("Queuing %d wordlist entries for %s", len(wordlistEntries), targetURL.Host)
-	
+
 	for _, entry := range wordlistEntries {
 		// Skip directory entries for now (ending with /)
 		if strings.HasSuffix(entry, "/") {
 			continue
 		}
-		
+
 		// Construct URL for this wordlist entry
 		wordlistURL := fmt.Sprintf("%s://%s/%s", targetURL.Scheme, targetURL.Host, entry)
 		if parsedURL, err := url.Parse(wordlistURL); err == nil {

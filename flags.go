@@ -41,6 +41,7 @@ CONFIGURATIONS:
   -r, --resolvers         file containing list of resolvers      (Default: System DNS)
   -H, --header            set custom header                      (Default: none)
   -ph, --prefer-http      prefer HTTP over HTTPS for targets     (Default: false)
+  -mp, --mine-params      mine HTTP parameters from responses     (Default: false)
 
 WORDLISTS:
   -bl, --bruteforce-level set bruteforce intensity               (none, light, medium, heavy) (Default: light)
@@ -148,6 +149,8 @@ func (c *CLI) parseFlags() {
 	flag.BoolVar(&opts.CLI.HideStatusCodes, "hide-status", false, "")
 	flag.BoolVar(&opts.CLI.HideMedia, "hm", false, "")
 	flag.BoolVar(&opts.CLI.HideMedia, "hide-media", false, "")
+	flag.BoolVar(&opts.CLI.MineParams, "mine-params", false, "")
+	flag.BoolVar(&opts.CLI.MineParams, "mp", false, "")
 	flag.BoolVar(&opts.CLI.Help, "help", false, "")
 	flag.BoolVar(&opts.CLI.Help, "h", false, "")
 	flag.BoolVar(&opts.CLI.Version, "version", false, "")

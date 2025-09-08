@@ -7,6 +7,7 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -29,8 +30,6 @@ const author = "@danielantonsen"
 func main() {
 	cli := newCLI()
 	cli.initialize()
-	r := recrawl.NewRecrawlWithOptions(&cli.opts)
-
 	cli.logActiveOptions()
 
 	if log.IsOutputPiped() {
@@ -38,40 +37,46 @@ func main() {
 	}
 
 	if cli.hasStdin() {
-		processStdinInput(cli, r)
+		processStdinInput(cli)
 	} else if cli.hasInfile() {
-		processInfile(cli, r)
+		processInfile(cli)
 	} else if cli.hasTarget() {
-		processTargets(cli, r)
+		processTargets(cli)
 	}
 }
 
-func processStdinInput(cli *CLI, r *recrawl.Crawler) {
+func processStdinInput(cli *CLI) {
 	scanner := bufio.NewScanner(os.Stdin)
 	for scanner.Scan() {
-		cli.processResults(r)
+		r := recrawl.NewRecrawlWithOptions(&cli.opts)
+		done := cli.processResults(r)
 		r.Run(scanner.Text())
+		<-done
 	}
 }
 
-func processInfile(cli *CLI, r *recrawl.Crawler) {
+func processInfile(cli *CLI) {
 	targets, err := fileutil.ReadFile(cli.opts.CLI.Infile)
 	if err != nil {
 		log.Fatalf("Error reading file: %v", err)
 	}
-	cli.processResults(r)
+	r := recrawl.NewRecrawlWithOptions(&cli.opts)
+	done := cli.processResults(r)
 	r.Run(targets...)
+	<-done
 }
 
-func processTargets(cli *CLI, r *recrawl.Crawler) {
+func processTargets(cli *CLI) {
 	targets := cli.getTargets()
-	cli.processResults(r)
+	r := recrawl.NewRecrawlWithOptions(&cli.opts)
+	done := cli.processResults(r)
 
 	if len(targets) > 1 {
 		r.Run(targets...)
 	} else {
 		r.Run(targets[0])
 	}
+	<-done
 }
 
 func newCLI() *CLI {
@@ -90,10 +95,12 @@ func (c *CLI) processCliOptions() {
 	if c.opts.CLI.BruteforceLevel != "" {
 		c.opts.BruteforceLevel = c.opts.CLI.BruteforceLevel
 	}
+	c.opts.MineParams = c.opts.CLI.MineParams
 }
 
-func (c *CLI) processResults(runner *recrawl.Crawler) {
+func (c *CLI) processResults(runner *recrawl.Crawler) chan struct{} {
 	printedURLs := new(sync.Map)
+	done := make(chan struct{})
 
 	go func() {
 		for result := range runner.Results {
@@ -110,7 +117,13 @@ func (c *CLI) processResults(runner *recrawl.Crawler) {
 				c.appendToFile([]string{strconv.Itoa(result.StatusCode) + " " + result.RequestURL})
 			}
 		}
+
+		if c.opts.MineParams {
+			c.displayParameters(runner)
+		}
+		close(done)
 	}()
+	return done
 }
 
 func (c *CLI) shouldExcludeMediaURL(url string) bool {
@@ -298,6 +311,9 @@ func (c *CLI) logActiveOptions() {
 	if c.hasCustomWordlists() {
 		tag.Logf("Custom wordlist files: %s", c.opts.CLI.WordlistFiles)
 	}
+	if c.opts.MineParams {
+		tag.Logf("Parameter mining: enabled")
+	}
 	if c.opts.Scope != nil {
 		inc := c.opts.Scope.GetIncludes()
 		exc := c.opts.Scope.GetExcludes()
@@ -390,4 +406,45 @@ func filterUrlExtensionsContains(url string, filterUrlExtensions []string) bool 
 		}
 	}
 	return false
+}
+
+func (c *CLI) displayParameters(runner *recrawl.Crawler) {
+	uniq := runner.ParamMiner.GetUniqueParams()
+	if len(uniq) == 0 {
+		return
+	}
+
+	byCert := map[string]map[string]struct{}{
+		recrawl.CertaintyHigh:   {},
+		recrawl.CertaintyMedium: {},
+		recrawl.CertaintyLow:    {},
+	}
+	for _, p := range uniq {
+		if _, ok := byCert[p.Certainty]; ok {
+			byCert[p.Certainty][p.Name] = struct{}{}
+		}
+	}
+
+	// helper to convert set->sorted list
+	toSorted := func(m map[string]struct{}) []string {
+		out := make([]string, 0, len(m))
+		for k := range m {
+			out = append(out, k)
+		}
+		sort.Strings(out)
+		return out
+	}
+
+	if names := toSorted(byCert[recrawl.CertaintyHigh]); len(names) > 0 {
+		label := color.Colorize(color.Green, "params-certainty-high")
+		log.Result(label + ": " + strings.Join(names, ", "))
+	}
+	if names := toSorted(byCert[recrawl.CertaintyMedium]); len(names) > 0 {
+		label := color.Colorize(color.Orange, "params-certainty-medium")
+		log.Result(label + ": " + strings.Join(names, ", "))
+	}
+	if names := toSorted(byCert[recrawl.CertaintyLow]); len(names) > 0 {
+		label := color.Colorize(color.Red, "params-certainty-low")
+		log.Result(label + ": " + strings.Join(names, ", "))
+	}
 }

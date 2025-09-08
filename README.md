@@ -59,10 +59,11 @@ CONFIGURATIONS:
   -r, --resolvers         file containing list of resolvers      (Default: System DNS)
   -H, --header            set custom header                      (Default: none)
   -ph, --prefer-http      prefer HTTP over HTTPS for targets     (Default: false)
+  -mp, --mine-params      mine HTTP parameters from responses     (Default: false)
 
 WORDLISTS:
-  -bl, --bruteforce-level set bruteforce intensity              (none, light, medium, heavy) (Default: light)
-  -wf, --wordlist-file    custom wordlist file(s)               (comma-separated)
+  -bl, --bruteforce-level set bruteforce intensity               (none, light, medium, heavy) (Default: light)
+  -wf, --wordlist-file    custom wordlist file(s)                (comma-separated)
 
 OUTPUT:
   -fs, --filter-status    filter by status code                  (comma-separated)
@@ -77,14 +78,29 @@ OUTPUT:
       --version           display version
 ```
 
+## Parameter Mining
+
+When enabled with `-mp/--mine-params`, recrawl mines likely HTTP parameters from:
+- URL queries (e.g., `?q=term&page=2`)
+- HTML forms (`<input>`, `<textarea>`, `<select>`)
+- JavaScript bodies in `fetch`, `XMLHttpRequest`, and jQuery `$.post/$.ajax`
+- HTML `data-*` attributes
+- Hidden inputs
+- GraphQL variable declarations
+- WebSocket URLs (query string)
+
+Parameters are grouped by certainty: high (URL/query + form fields), medium (JS/data/hidden/meta), low (reserved for weaker heuristics). Common non-parameters like `class`, `style`, etc. are ignored.
+
+Notes:
+- The parameter summary prints after the crawl finishes.
+- For quick runs, disable bruteforce (`-bl none`) and keep concurrency small (`-c 1`).
+- Parameter names must be simple identifiers (letters, numbers, `_`, `-`) and start with a letter or underscore.
+
 **Scope Behavior**
 - If no includes are defined, everything is in scope unless explicitly excluded.
 - If includes are defined, only those targets are in scope; everything else is out of scope by default.
 - Exclusions always take priority over inclusions.
 
-You can control scope via flags (`-ih/--include-host`, `-eh/--exclude-host`), or programmatically by providing a `*scope.Scope` on options.
-
-Note: The crawler automatically adds the main target's host to the scope includes to keep discovery focused. Broaden scope using `-ih`/`--include-host` or by adding includes to your custom `scope.Scope`.
 
 ## Example
 
@@ -110,6 +126,9 @@ Note: The crawler automatically adds the main target's host to the scope include
 
 # Only crawl hosts within explicit scope
 ➜ recrawl -t example.com -ih example.com,example.net
+
+# Crawl and output mined params
+➜ recrawl -t "https://example.org/?q=abc&page=1" --mine-params
 ```
 
 ### Example running
@@ -140,7 +159,7 @@ Use the -i option to provide a file with targets
 </details>
 
 
-This will crawl hackerone.com and filter JavaScript files. Here's a sample output:
+This will crawl hackerone.com and filter JavaScript files. Sample output:
 
 ```sh
 [recrawl] (INF) Included extensions: js
@@ -187,88 +206,41 @@ import (
 )
 
 func main() {
-    // With defaults
-    opts := recrawl.NewOptions()
-    // Optional: provide a custom Scope. If no includes are defined, everything is in scope unless excluded.
-    s := scope.NewScope()
-    _ = s.AddInclude("example.com")
-    _ = s.AddExclude("support.hackerone.com")
-    opts.Scope = s
-    opts.Concurrency = 2
-    opts.Timeout = 10
-    opts.Resolvers = []string{"8.8.8.8", "208.67.222.222"}
-    opts.UserAgent = "recrawl"
 
-    // Or without defaults: opts := recrawl.NewEmptyOptions()
-    // Then set only the fields you need.
+	opts := recrawl.NewOptions().WithDefaults()
+	s := scope.NewScope()
 
-    r := recrawl.NewRecrawlWithOptions(opts)
+	_ = s.AddInclude("sub.example.com")     // also follow links here
+	_ = s.AddExclude("support.example.com") // but don't follow links here
 
-    // process results as they stream in
+	opts.Scope = s
+	opts.Concurrency = 2
+	opts.Timeout = 10
+	opts.Resolvers = []string{"8.8.8.8", "208.67.222.222"}
+	opts.UserAgent = "recrawl"
+    // Enable parameter mining
+    opts.MineParams = true
+
+	// Defaults already applied by NewOptions(); nothing else needed here
+
+	r := recrawl.NewRecrawlWithOptions(opts)
+
+    // process results as they come in
     go func() {
         for result := range r.Results {
             fmt.Println(result.StatusCode, result.RequestURL, result.Error)
         }
     }()
 
-    // single target
-    r.Run("google.com")
+    // single run
+    r.Run("example.com")
 
-    // multiple targets
-    targets := []string{"hackerone.com", "bugcrowd.com"}
-    r.Run(targets...)
-}
+    if jsonStr, err := r.ParamMiner.ToJSON(); err == nil && jsonStr != "" {
+        fmt.Println("Parameters:")
+        fmt.Println(jsonStr)
+    }
 
 ```
-
-## Todo
-
-- Clean up worker
-- Headless browsing
-- Output and filter by MIME
-- Option to perform dirbusting / custom wordlist
-- Respect robots.txt option
-
----
-
-## Testing
-
-This project includes comprehensive unit tests that run without network connectivity using mock HTTP servers.
-
-### Running Tests
-
-```bash
-# Run all tests
-go test ./pkg/recrawl/ -v
-
-# Run tests with coverage
-go test ./pkg/recrawl/ -cover
-
-# Run tests with race detection
-go test ./pkg/recrawl/ -race
-```
-
-### Test Features
-- **31% code coverage** with comprehensive test suite
-- **Mock HTTP servers** for network-free testing
-- **Edge case testing** including path traps, malformed URLs, and error conditions
-- **Scope functionality testing** with various inclusion/exclusion scenarios
-- **Fast execution** - complete test suite runs in ~10ms
-
-See [pkg/recrawl/TEST_README.md](pkg/recrawl/TEST_README.md) for detailed testing documentation.
-
-## CI/CD
-
-This project uses GitHub Actions for continuous integration:
-
-- **✅ Automated testing** on push and pull requests
-- **✅ Multi-platform builds** (Linux, Windows, macOS)  
-- **✅ Go version matrix** (1.19, 1.20, 1.21)
-- **✅ Code coverage reporting** via Codecov
-- **✅ Security scanning** with gosec
-- **✅ Automated releases** on version tags
-
-See [CICD_README.md](CICD_README.md) for complete CI/CD documentation.
 
 ## Contributing
 

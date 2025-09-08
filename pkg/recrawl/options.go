@@ -28,9 +28,10 @@ type Options struct {
 	FollowRedirects bool         // follow redirects
 	Headers         StringSlice  // custom headers to add to requests
 	PreferHTTP      bool         // prefer HTTP over HTTPS for non-schemed targets
-	UseBruteforce    bool         // enable light directory/file bruteforcing
-	BruteforceLevel  string       // bruteforce intensity level: light, medium, heavy
-	WordlistFiles    StringSlice  // custom wordlist files to use
+	UseBruteforce   bool         // enable light directory/file bruteforcing
+	BruteforceLevel string       // bruteforce intensity level: light, medium, heavy
+	WordlistFiles   StringSlice  // custom wordlist files to use
+	MineParams      bool         // enable parameter extraction
 	CLI             CLI          // CLI options
 }
 
@@ -48,6 +49,7 @@ type CLI struct {
 	HideWarning      bool   // hide warnings
 	BruteforceLevel  string // bruteforce intensity level: none, light, medium, heavy
 	WordlistFiles    string // custom wordlist files (comma separated)
+	MineParams       bool   // enable parameter extraction
 	Version          bool   // print version
 	Help             bool   // print help
 }
