@@ -164,14 +164,14 @@ func (r *Crawler) initializeTargetProcessing(target string) (*url.URL, error) {
 	if !strings.Contains(target, "://") {
 		scheme, _, err := httputil.FindScheme(target)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to determine scheme for target '%s': %v", target, err)
 		}
 		target = scheme + "://" + target
 	}
 
 	u, err := url.Parse(target)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("invalid URL format '%s': %v", target, err)
 	}
 
 	if (u.Scheme == "https" && u.Port() == "443") || (u.Scheme == "http" && u.Port() == "80") {
@@ -189,7 +189,7 @@ func (r *Crawler) initializeTargetProcessing(target string) (*url.URL, error) {
 
 	u, err = url.Parse(target)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("invalid URL format '%s': %v", target, err)
 	}
 
 	return u, nil
