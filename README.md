@@ -58,7 +58,11 @@ CONFIGURATIONS:
   -p, --proxy             set proxy                              (Default: none)
   -r, --resolvers         file containing list of resolvers      (Default: System DNS)
   -H, --header            set custom header                      (Default: none)
-  -ph, --prefer-http      prefer HTTP over HTTPS for targets    (Default: false)
+  -ph, --prefer-http      prefer HTTP over HTTPS for targets     (Default: false)
+
+WORDLISTS:
+  -bl, --bruteforce-level set bruteforce intensity              (none, light, medium, heavy) (Default: light)
+  -wf, --wordlist-file    custom wordlist file(s)               (comma-separated)
 
 OUTPUT:
   -fs, --filter-status    filter by status code                  (comma-separated)

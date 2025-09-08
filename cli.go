@@ -29,7 +29,7 @@ const author = "@danielantonsen"
 func main() {
 	cli := newCLI()
 	cli.initialize()
-    r := recrawl.NewRecrawlWithOptions(&cli.opts)
+	r := recrawl.NewRecrawlWithOptions(&cli.opts)
 
 	cli.logActiveOptions()
 
@@ -83,6 +83,13 @@ func (c *CLI) initialize() {
 	c.parseFlags()
 	c.checkForExits()
 	c.opts.Scope = c.setScope()
+	c.processCliOptions()
+}
+
+func (c *CLI) processCliOptions() {
+	if c.opts.CLI.BruteforceLevel != "" {
+		c.opts.BruteforceLevel = c.opts.CLI.BruteforceLevel
+	}
 }
 
 func (c *CLI) processResults(runner *recrawl.Crawler) {
@@ -285,6 +292,12 @@ func (c *CLI) logActiveOptions() {
 	if c.hasTimeout() {
 		tag.Logf("Timeout: %d seconds", c.opts.Timeout)
 	}
+	if c.hasBruteforce() {
+		tag.Logf("Bruteforcing level: %s", c.opts.BruteforceLevel)
+	}
+	if c.hasCustomWordlists() {
+		tag.Logf("Custom wordlist files: %s", c.opts.CLI.WordlistFiles)
+	}
 	if c.opts.Scope != nil {
 		inc := c.opts.Scope.GetIncludes()
 		exc := c.opts.Scope.GetExcludes()
@@ -351,6 +364,14 @@ func (c *CLI) hasTimeout() bool {
 
 func (c *CLI) hasTarget() bool {
 	return c.opts.CLI.Target != ""
+}
+
+func (c *CLI) hasBruteforce() bool {
+	return strings.ToLower(c.opts.BruteforceLevel) != "none" && c.opts.UseBruteforce
+}
+
+func (c *CLI) hasCustomWordlists() bool {
+	return c.opts.CLI.WordlistFiles != "" || len(c.opts.WordlistFiles) > 0
 }
 
 func filterStatusContains(filterStatusCodes []string, statusCode string) bool {

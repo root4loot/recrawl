@@ -1,22 +1,23 @@
 package main
 
 import (
-    "flag"
-    "fmt"
-    "html/template"
-    "os"
-    "strings"
+	"flag"
+	"fmt"
+	"html/template"
+	"os"
+	"strings"
 
-    "github.com/root4loot/recrawl/pkg/recrawl"
+	"github.com/root4loot/recrawl/pkg/recrawl"
 )
 
 type UsageData struct {
-    AppName                string
-    DefaultConcurrency     int
-    DefaultTimeout         int
-    DefaultDelay           int
-    DefaultDelayJitter     int
-    DefaultFollowRedirects bool
+	AppName                string
+	DefaultConcurrency     int
+	DefaultTimeout         int
+	DefaultDelay           int
+	DefaultDelayJitter     int
+	DefaultFollowRedirects bool
+	DefaultBruteforceLevel string
 }
 
 const usageTemplate = `
@@ -30,16 +31,20 @@ TARGETING:
   -eh, --exclude-host  do not crawl this host (if found)         (comma-separated)
 
 CONFIGURATIONS:
-  -c, --concurrency       number of concurrent requests          (Default: {{.DefaultConcurrency}})
-  -to, --timeout          max request timeout                    (Default: {{.DefaultTimeout}} seconds)
-  -d, --delay             delay between requests                 (Default: {{.DefaultDelay}} milliseconds)
-  -dj, --delay-jitter     max jitter between requests            (Default: {{.DefaultDelayJitter}} milliseconds)
+  -c, --concurrency       number of concurrent requests          (Default: 20)
+  -to, --timeout          max request timeout                    (Default: 10 seconds)
+  -d, --delay             delay between requests                 (Default: 0 milliseconds)
+  -dj, --delay-jitter     max jitter between requests            (Default: 0 milliseconds)
   -ua, --user-agent       set user agent                         (Default: Mozilla/5.0)
-  -fr, --follow-redirects follow redirects                       (Default: {{.DefaultFollowRedirects}})
+  -fr, --follow-redirects follow redirects                       (Default: true)
   -p, --proxy             set proxy                              (Default: none)
   -r, --resolvers         file containing list of resolvers      (Default: System DNS)
   -H, --header            set custom header                      (Default: none)
-  -ph, --prefer-http      prefer HTTP over HTTPS for targets    (Default: false)
+  -ph, --prefer-http      prefer HTTP over HTTPS for targets     (Default: false)
+
+WORDLISTS:
+  -bl, --bruteforce-level set bruteforce intensity               (none, light, medium, heavy) (Default: light)
+  -wf, --wordlist-file    custom wordlist file(s)                (comma-separated)
 
 OUTPUT:
   -fs, --filter-status    filter by status code                  (comma-separated)
@@ -59,14 +64,15 @@ func (c *CLI) banner() {
 }
 
 func (c *CLI) usage() {
-    data := UsageData{
-        AppName:                os.Args[0],
-        DefaultConcurrency:     recrawl.NewOptions().Concurrency,
-        DefaultTimeout:         recrawl.NewOptions().Timeout,
-        DefaultDelay:           recrawl.NewOptions().Delay,
-        DefaultDelayJitter:     recrawl.NewOptions().DelayJitter,
-        DefaultFollowRedirects: recrawl.NewOptions().FollowRedirects,
-    }
+	data := UsageData{
+		AppName:                os.Args[0],
+		DefaultConcurrency:     recrawl.NewOptions().Concurrency,
+		DefaultTimeout:         recrawl.NewOptions().Timeout,
+		DefaultDelay:           recrawl.NewOptions().Delay,
+		DefaultDelayJitter:     recrawl.NewOptions().DelayJitter,
+		DefaultFollowRedirects: recrawl.NewOptions().FollowRedirects,
+		DefaultBruteforceLevel: recrawl.NewOptions().BruteforceLevel,
+	}
 
 	tmpl, err := template.New("usage").Parse(usageTemplate)
 	if err != nil {
@@ -80,7 +86,7 @@ func (c *CLI) usage() {
 }
 
 func (c *CLI) parseFlags() {
-    opts := new(recrawl.Options)
+	opts := new(recrawl.Options)
 
 	var verbose bool
 
@@ -97,26 +103,32 @@ func (c *CLI) parseFlags() {
 	flag.StringVar(&opts.CLI.Exclude, "eh", "", "")
 
 	// CONFIGURATIONS
-    flag.IntVar(&opts.Concurrency, "concurrency", recrawl.NewOptions().Concurrency, "")
-    flag.IntVar(&opts.Concurrency, "c", recrawl.NewOptions().Concurrency, "")
-    flag.IntVar(&opts.Timeout, "timeout", recrawl.NewOptions().Timeout, "")
-    flag.IntVar(&opts.Timeout, "to", recrawl.NewOptions().Timeout, "")
-    flag.IntVar(&opts.Delay, "delay", recrawl.NewOptions().Delay, "")
-    flag.IntVar(&opts.Delay, "d", recrawl.NewOptions().Delay, "")
-    flag.IntVar(&opts.DelayJitter, "delay-jitter", recrawl.NewOptions().DelayJitter, "")
-    flag.IntVar(&opts.DelayJitter, "dj", recrawl.NewOptions().DelayJitter, "")
-    flag.StringVar(&opts.UserAgent, "user-agent", recrawl.NewOptions().UserAgent, "")
-    flag.StringVar(&opts.UserAgent, "ua", recrawl.NewOptions().UserAgent, "")
-    flag.BoolVar(&opts.FollowRedirects, "follow-redirects", recrawl.NewOptions().FollowRedirects, "")
-    flag.BoolVar(&opts.FollowRedirects, "fr", recrawl.NewOptions().FollowRedirects, "")
-    flag.StringVar(&opts.Proxy, "proxy", recrawl.NewOptions().Proxy, "")
-    flag.StringVar(&opts.Proxy, "p", recrawl.NewOptions().Proxy, "")
+	flag.IntVar(&opts.Concurrency, "concurrency", recrawl.NewOptions().Concurrency, "")
+	flag.IntVar(&opts.Concurrency, "c", recrawl.NewOptions().Concurrency, "")
+	flag.IntVar(&opts.Timeout, "timeout", recrawl.NewOptions().Timeout, "")
+	flag.IntVar(&opts.Timeout, "to", recrawl.NewOptions().Timeout, "")
+	flag.IntVar(&opts.Delay, "delay", recrawl.NewOptions().Delay, "")
+	flag.IntVar(&opts.Delay, "d", recrawl.NewOptions().Delay, "")
+	flag.IntVar(&opts.DelayJitter, "delay-jitter", recrawl.NewOptions().DelayJitter, "")
+	flag.IntVar(&opts.DelayJitter, "dj", recrawl.NewOptions().DelayJitter, "")
+	flag.StringVar(&opts.UserAgent, "user-agent", recrawl.NewOptions().UserAgent, "")
+	flag.StringVar(&opts.UserAgent, "ua", recrawl.NewOptions().UserAgent, "")
+	flag.BoolVar(&opts.FollowRedirects, "follow-redirects", recrawl.NewOptions().FollowRedirects, "")
+	flag.BoolVar(&opts.FollowRedirects, "fr", recrawl.NewOptions().FollowRedirects, "")
+	flag.StringVar(&opts.Proxy, "proxy", recrawl.NewOptions().Proxy, "")
+	flag.StringVar(&opts.Proxy, "p", recrawl.NewOptions().Proxy, "")
 	flag.StringVar(&opts.CLI.ResolversFile, "resolvers", "", "")
 	flag.StringVar(&opts.CLI.ResolversFile, "r", "", "")
 	flag.Var(&opts.Headers, "header", "")
 	flag.Var(&opts.Headers, "H", "")
 	flag.BoolVar(&opts.PreferHTTP, "prefer-http", false, "")
 	flag.BoolVar(&opts.PreferHTTP, "ph", false, "")
+
+	// WORDLISTS
+	flag.StringVar(&opts.CLI.BruteforceLevel, "bruteforce-level", "light", "")
+	flag.StringVar(&opts.CLI.BruteforceLevel, "bl", "light", "")
+	flag.StringVar(&opts.CLI.WordlistFiles, "wordlist-file", "", "")
+	flag.StringVar(&opts.CLI.WordlistFiles, "wf", "", "")
 
 	// OUTPUT
 	flag.BoolVar(&opts.Silence, "s", false, "")
