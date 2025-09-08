@@ -114,7 +114,7 @@ func (r *Crawler) Run(targets ...string) {
 func (r *Crawler) InitializeWorkerPool() (chan<- *url.URL, <-chan *url.URL, chan<- int) {
 	c_wait := make(chan int)
 	c_urls := make(chan *url.URL)
-	c_queue := make(chan *url.URL)
+	c_queue := make(chan *url.URL, 10000)
 	queueCount := 0
 
 	timeoutDuration := time.Second * 7
