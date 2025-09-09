@@ -1,13 +1,16 @@
 package recrawl
 
 import (
+	"context"
 	"crypto/tls"
 	"log"
+	"net"
 	"net/http"
 	"net/url"
 	"strings"
 	"time"
 
+	"github.com/miekg/dns"
 	"github.com/root4loot/goutils/urlutil"
 )
 
@@ -41,6 +44,11 @@ func NewHTTPClient(options *Options) *HTTPClient {
 		ResponseHeaderTimeout: time.Duration(options.Timeout) * time.Second,
 	}
 
+	// Set custom dialer with resolvers if provided
+	if len(options.Resolvers) > 0 {
+		transport.DialContext = createCustomDialer(options.Resolvers, time.Duration(options.Timeout)*time.Second)
+	}
+
 	if options.Proxy != "" {
 		if !urlutil.HasScheme(options.Proxy) {
 			options.Proxy = "http://" + options.Proxy
@@ -69,4 +77,64 @@ func NewHTTPClient(options *Options) *HTTPClient {
 	}
 
 	return &HTTPClient{client: client}
+}
+
+// createCustomDialer creates a dialer with custom DNS resolvers using miekg/dns
+func createCustomDialer(resolvers []string, timeout time.Duration) func(ctx context.Context, network, addr string) (net.Conn, error) {
+	return func(ctx context.Context, network, addr string) (net.Conn, error) {
+		host, port, err := net.SplitHostPort(addr)
+		if err != nil {
+			return nil, err
+		}
+
+		// Skip DNS resolution for IP addresses
+		if net.ParseIP(host) != nil {
+			return (&net.Dialer{Timeout: timeout}).DialContext(ctx, network, addr)
+		}
+
+		// Use custom DNS resolvers with miekg/dns
+		ip, err := resolveHostWithCustomResolvers(host, resolvers, timeout)
+		if err != nil {
+			return nil, err
+		}
+
+		// Connect to the resolved IP
+		return (&net.Dialer{Timeout: timeout}).DialContext(ctx, network, net.JoinHostPort(ip, port))
+	}
+}
+
+// resolveHostWithCustomResolvers uses miekg/dns to resolve a hostname with custom DNS servers
+func resolveHostWithCustomResolvers(hostname string, resolvers []string, timeout time.Duration) (string, error) {
+	c := &dns.Client{Timeout: timeout}
+	
+	for _, resolver := range resolvers {
+		if !strings.Contains(resolver, ":") {
+			resolver = resolver + ":53"
+		}
+		
+		// Try A record first
+		m := new(dns.Msg)
+		m.SetQuestion(dns.Fqdn(hostname), dns.TypeA)
+		r, _, err := c.Exchange(m, resolver)
+		if err == nil && len(r.Answer) > 0 {
+			for _, ans := range r.Answer {
+				if a, ok := ans.(*dns.A); ok {
+					return a.A.String(), nil
+				}
+			}
+		}
+		
+		// Try AAAA record if A record fails
+		m.SetQuestion(dns.Fqdn(hostname), dns.TypeAAAA)
+		r, _, err = c.Exchange(m, resolver)
+		if err == nil && len(r.Answer) > 0 {
+			for _, ans := range r.Answer {
+				if aaaa, ok := ans.(*dns.AAAA); ok {
+					return aaaa.AAAA.String(), nil
+				}
+			}
+		}
+	}
+	
+	return "", &net.DNSError{Err: "no IP addresses found", Name: hostname, IsNotFound: true}
 }

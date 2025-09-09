@@ -94,6 +94,18 @@ func (c *CLI) initialize() {
 func (c *CLI) processCliOptions() {
 	c.opts.MineParams = c.opts.CLI.MineParams
 	c.opts.EnableDiscovery = c.opts.CLI.EnableDiscovery
+	c.loadResolvers()
+}
+
+func (c *CLI) loadResolvers() {
+	if c.hasResolversFile() {
+		resolvers, err := fileutil.ReadFile(c.opts.CLI.ResolversFile)
+		if err != nil {
+			log.Fatalf("Error reading resolvers file: %v", err)
+		}
+		c.opts.Resolvers = resolvers
+		log.Debugf("Loaded %d resolvers from file", len(resolvers))
+	}
 }
 
 func (c *CLI) processResults(runner *recrawl.Crawler) chan struct{} {
