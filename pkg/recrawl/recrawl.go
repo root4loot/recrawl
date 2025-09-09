@@ -805,11 +805,9 @@ func (r *Crawler) queueWordlistPaths(targetURL *url.URL, c_queue chan<- *url.URL
 	log.Debugf("Queuing %d wordlist entries for %s", len(wordlistEntries), targetURL.Host)
 
 	for _, entry := range wordlistEntries {
-		// skip entries that are clearly not paths
-		if strings.HasSuffix(entry, "/") {
-			continue
-		}
-
+		// allow both file and directory entries; normalize slashes
+		entry = strings.TrimSpace(entry)
+		entry = strings.TrimPrefix(entry, "/")
 		wordlistURL := fmt.Sprintf("%s://%s/%s", targetURL.Scheme, targetURL.Host, entry)
 		if parsedURL, err := url.Parse(wordlistURL); err == nil {
 			c_wait <- 1
