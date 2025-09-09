@@ -291,8 +291,7 @@ func (r *Crawler) Worker(c_urls <-chan *url.URL, c_queue chan<- *url.URL, c_wait
 					}
 					go r.queueURL(c_queue, u)
 				}
-				// After enqueuing discovered links, queue wordlist paths once per host
-				if ((strings.ToLower(r.Options.BruteforceLevel) != "none" && r.Options.UseBruteforce) || len(r.Options.WordlistFiles) > 0 || r.Options.CLI.WordlistFiles != "") && resp.StatusCode < 400 {
+				if len(rawURLs) > 0 && ((strings.ToLower(r.Options.BruteforceLevel) != "none" && r.Options.UseBruteforce) || len(r.Options.WordlistFiles) > 0 || r.Options.CLI.WordlistFiles != "") && resp.StatusCode < 400 {
 					if _, loaded := wordlistQueued.LoadOrStore(currentURL.Host, true); !loaded {
 						go r.queueWordlistPaths(currentURL, c_queue, c_wait)
 					}
