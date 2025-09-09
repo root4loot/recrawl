@@ -11,7 +11,6 @@ import (
 	"sync"
 )
 
-// Certainty levels for parameters
 const (
 	CertaintyHigh   = "high"
 	CertaintyMedium = "medium"
@@ -31,14 +30,11 @@ type ParamMiner struct {
 	mu         sync.RWMutex
 }
 
-// regex patterns for parameter extraction
 var (
-	// high certainty patterns
 	reFormInput    = regexp.MustCompile(`<input[^>]*\bname\s*=\s*["']?([^"'\s>]+)`)
 	reFormTextarea = regexp.MustCompile(`<textarea[^>]*\bname\s*=\s*["']?([^"'\s>]+)`)
 	reFormSelect   = regexp.MustCompile(`<select[^>]*\bname\s*=\s*["']?([^"'\s>]+)`)
 
-	// medium certainty patterns
 	reJSFetch     = regexp.MustCompile(`fetch\s*\(\s*["']([^"']+)`)
 	reJSXMLHttp   = regexp.MustCompile(`(?:xhr|xmlhttp)\.open\s*\(\s*["'][^"']*["']\s*,\s*["']([^"']+)`)
 	reJSPostData  = regexp.MustCompile(`(?:data|body)\s*:\s*(?:JSON\.stringify\()?\{([^}]*)\}`)
@@ -48,24 +44,21 @@ var (
 	reHiddenInput = regexp.MustCompile(`<input[^>]*(?:type\s*=\s*["']?hidden["']?[^>]*name\s*=\s*["']?([^"'\s>]+)|name\s*=\s*["']?([^"'\s>]+)[^>]*type\s*=\s*["']?hidden["']?)`)
 	reMetaContent = regexp.MustCompile(`<meta[^>]*name\s*=\s*["']([^"']+)["'][^>]*content\s*=\s*["']([^"']*api[^"']*)["']`)
 
-	// GraphQL patterns
 	reGraphQLVar = regexp.MustCompile(`\$([a-zA-Z_][a-zA-Z0-9_]*)\s*:\s*[a-zA-Z![\]]+`)
 
-	// WebSocket patterns
 	reWebSocketURL = regexp.MustCompile(`new\s+WebSocket\s*\(\s*["']([^"']+)`)
 
-	// Object key patterns
 	reObjKey = regexp.MustCompile(`["']?([a-zA-Z_][a-zA-Z0-9_]*)["']?\s*:`)
 )
 
-// NewParameterCollection creates a new parameter collection
+// NewParamMiner creates a new parameter miner
 func NewParamMiner() *ParamMiner {
 	return &ParamMiner{
 		Parameters: make([]ParamMine, 0),
 	}
 }
 
-// AddParameter adds a parameter to the collection (thread-safe)
+// AddParameter adds a parameter (thread-safe)
 func (pc *ParamMiner) AddParameter(param ParamMine) {
 	pc.mu.Lock()
 	defer pc.mu.Unlock()
@@ -90,28 +83,17 @@ func (pc *ParamMiner) GetUniqueParams() []ParamMine {
 	return unique
 }
 
-// ExtractParameters extracts all parameters from HTML/JavaScript content and URL
+// ExtractParameters extracts parameters from content and URL
 func ExtractParameters(requestURL string, body []byte) []ParamMine {
 	var params []ParamMine
 	seen := make(map[string]bool)
 	bodyStr := string(body)
 
-	// high certainty: URL query parameters
 	params = extractURLParams(requestURL, params, seen)
-
-	// high certainty: form fields
 	params = extractFormParams(bodyStr, requestURL, params, seen)
-
-	// medium certainty: JavaScript patterns
 	params = extractJSParams(bodyStr, requestURL, params, seen)
-
-	// medium certainty: data attributes
 	params = extractDataAttributes(bodyStr, requestURL, params, seen)
-
-	// medium certainty: hidden form fields
 	params = extractHiddenFields(bodyStr, requestURL, params, seen)
-
-	// medium certainty: meta tags with API content
 	params = extractMetaTags(bodyStr, requestURL, params, seen)
 
 	return params
@@ -136,7 +118,6 @@ func extractURLParams(requestURL string, params []ParamMine, seen map[string]boo
 }
 
 func extractFormParams(body, requestURL string, params []ParamMine, seen map[string]bool) []ParamMine {
-	// input fields
 	matches := reFormInput.FindAllStringSubmatch(body, -1)
 	for _, match := range matches {
 		if len(match) > 1 && !seen[match[1]] && isValidParamName(match[1]) {
@@ -151,7 +132,6 @@ func extractFormParams(body, requestURL string, params []ParamMine, seen map[str
 		}
 	}
 
-	// textarea fields
 	matches = reFormTextarea.FindAllStringSubmatch(body, -1)
 	for _, match := range matches {
 		if len(match) > 1 && !seen[match[1]] && isValidParamName(match[1]) {
@@ -166,7 +146,6 @@ func extractFormParams(body, requestURL string, params []ParamMine, seen map[str
 		}
 	}
 
-	// select fields
 	matches = reFormSelect.FindAllStringSubmatch(body, -1)
 	for _, match := range matches {
 		if len(match) > 1 && !seen[match[1]] && isValidParamName(match[1]) {
@@ -185,7 +164,6 @@ func extractFormParams(body, requestURL string, params []ParamMine, seen map[str
 }
 
 func extractJSParams(body, requestURL string, params []ParamMine, seen map[string]bool) []ParamMine {
-	// Fetch API calls
 	matches := reJSFetch.FindAllStringSubmatch(body, -1)
 	for _, match := range matches {
 		if len(match) > 1 {
@@ -193,7 +171,6 @@ func extractJSParams(body, requestURL string, params []ParamMine, seen map[strin
 		}
 	}
 
-	// XMLHttpRequest calls
 	matches = reJSXMLHttp.FindAllStringSubmatch(body, -1)
 	for _, match := range matches {
 		if len(match) > 1 {
@@ -201,7 +178,6 @@ func extractJSParams(body, requestURL string, params []ParamMine, seen map[strin
 		}
 	}
 
-	// POST/AJAX data objects
 	matches = reJSPostData.FindAllStringSubmatch(body, -1)
 	for _, match := range matches {
 		if len(match) > 1 {
@@ -216,7 +192,6 @@ func extractJSParams(body, requestURL string, params []ParamMine, seen map[strin
 		}
 	}
 
-	// Fetch API body parameters
 	matches = reFetchBody.FindAllStringSubmatch(body, -1)
 	for _, match := range matches {
 		if len(match) > 1 {
@@ -224,7 +199,6 @@ func extractJSParams(body, requestURL string, params []ParamMine, seen map[strin
 		}
 	}
 
-	// GraphQL variables
 	matches = reGraphQLVar.FindAllStringSubmatch(body, -1)
 	for _, match := range matches {
 		if len(match) > 1 && !seen[match[1]] && isValidParamName(match[1]) {
@@ -239,7 +213,6 @@ func extractJSParams(body, requestURL string, params []ParamMine, seen map[strin
 		}
 	}
 
-	// WebSocket URLs
 	matches = reWebSocketURL.FindAllStringSubmatch(body, -1)
 	for _, match := range matches {
 		if len(match) > 1 {
@@ -271,7 +244,6 @@ func extractHiddenFields(body, requestURL string, params []ParamMine, seen map[s
 	matches := reHiddenInput.FindAllStringSubmatch(body, -1)
 	for _, match := range matches {
 		var name string
-		// Check both capture groups (type-first or name-first patterns)
 		if len(match) > 1 && match[1] != "" {
 			name = match[1]
 		} else if len(match) > 2 && match[2] != "" {
@@ -348,11 +320,9 @@ func isValidParamName(name string) bool {
 	if len(name) < 1 || len(name) > 50 {
 		return false
 	}
-	// must start with letter or underscore
 	if !regexp.MustCompile(`^[a-zA-Z_]`).MatchString(name) {
 		return false
 	}
-	// can only contain alphanumeric, underscore, hyphen
 	return regexp.MustCompile(`^[a-zA-Z0-9_-]+$`).MatchString(name)
 }
 
@@ -389,7 +359,7 @@ func (pc *ParamMiner) FilterByType(paramType string) []ParamMine {
 	return filtered
 }
 
-// FilterByCertainty returns parameters filtered by certainty level
+// FilterByCertainty returns parameters filtered by certainty
 func (pc *ParamMiner) FilterByCertainty(certainty string) []ParamMine {
 	pc.mu.RLock()
 	defer pc.mu.RUnlock()
@@ -403,7 +373,7 @@ func (pc *ParamMiner) FilterByCertainty(certainty string) []ParamMine {
 	return filtered
 }
 
-// ToJSON converts parameters to JSON string
+// ToJSON converts parameters to JSON
 func (pc *ParamMiner) ToJSON() (string, error) {
 	pc.mu.RLock()
 	defer pc.mu.RUnlock()

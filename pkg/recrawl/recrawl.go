@@ -74,8 +74,10 @@ func init() {
 	log.Init("recrawl")
 }
 
+// NewRecrawl creates a new crawler with default options
 func NewRecrawl() *Crawler { return newCrawler(NewOptions()) }
 
+// NewRecrawlWithOptions creates a new crawler with custom options
 func NewRecrawlWithOptions(o *Options) *Crawler { return newCrawler(o) }
 
 func newCrawler(o *Options) *Crawler {
@@ -114,7 +116,6 @@ func (r *Crawler) Run(targets ...string) {
 			continue
 		}
 
-		// queue the main target first to prioritize normal crawling
 		r.queueURL(c_queue, mainTarget)
 	}
 
@@ -156,7 +157,6 @@ func (r *Crawler) InitializeWorkerPool() (chan<- *url.URL, <-chan *url.URL, chan
 						c_urls <- q
 					}
 
-					// trigger discovery fuzzing when queue is getting low
 					if r.Options.EnableDiscovery && !r.discoveryStarted && len(c_queue) < 100 {
 						go r.queueDiscoveryPaths(c_queue, c_wait)
 						r.discoveryStarted = true
@@ -229,7 +229,6 @@ func (r *Crawler) startWorkers(c_urls <-chan *url.URL, c_queue chan<- *url.URL, 
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			// Prevent a single worker panic from crashing the entire crawl
 			defer func() {
 				if rec := recover(); rec != nil {
 					log.Warnf("Worker recovered from panic: %v", rec)
@@ -301,7 +300,6 @@ func (r *Crawler) Worker(c_urls <-chan *url.URL, c_queue chan<- *url.URL, c_wait
 					break
 				}
 				
-				// track redirect in chain
 				redirectChain = append(redirectChain, Redirect{
 					URL:        currentURL.String(),
 					StatusCode: resp.StatusCode,
@@ -310,7 +308,6 @@ func (r *Crawler) Worker(c_urls <-chan *url.URL, c_queue chan<- *url.URL, c_wait
 				
 				_ = resp.Body.Close()
 				
-				// only follow redirects if enabled
 				if !r.Options.FollowRedirects {
 					break
 				}
@@ -341,7 +338,6 @@ func (r *Crawler) Worker(c_urls <-chan *url.URL, c_queue chan<- *url.URL, c_wait
 				}
 				_ = resp.Body.Close()
 				
-				// Send final result after all redirects
 				finalURL := currentURL.String()
 				if redirectCount == 0 {
 					finalURL = c_url.String()
@@ -567,7 +563,6 @@ func formatURL(u *url.URL, path string) string {
 		return u.Scheme + "://" + u.Host + path + "/"
 	}
 
-	// u a local, panic-safe extension check to avoid crashes
 	if hasFileExtension(path) || urlutil.HasParam(path) {
 		return u.Scheme + "://" + u.Host + u.Path + "/" + path
 	}
@@ -576,23 +571,19 @@ func formatURL(u *url.URL, path string) string {
 }
 
 func hasFileExtension(s string) bool {
-	// query and fragment
 	if i := strings.IndexAny(s, "?#"); i != -1 {
 		s = s[:i]
 	}
-	// trailing slash
 	s = strings.TrimSuffix(s, "/")
 	if s == "" {
 		return false
 	}
-	// last path segment
 	if idx := strings.LastIndex(s, "/"); idx != -1 {
 		s = s[idx+1:]
 	}
 	if s == "" {
 		return false
 	}
-	// check extension on the segment
 	return filepath.Ext(s) != ""
 }
 
@@ -604,7 +595,6 @@ func (r *Crawler) scrape(resp *http.Response) ([]string, error) {
 		return nil, err
 	}
 
-	// extract parameters if enabled
 	if r.Options.MineParams {
 		params := ExtractParameters(resp.Request.URL.String(), body)
 		for _, param := range params {
@@ -724,7 +714,6 @@ func (r *Crawler) isVisitedHost(key string) bool {
 }
 
 func (r *Crawler) cleanURL(u string) string {
-	// preseve existing scheme; add http only if missing.
 	if !strings.Contains(u, "://") {
 		u = "http://" + u
 	}
@@ -783,7 +772,6 @@ func (r *Crawler) loadDiscoveryPaths() error {
 func (r *Crawler) queueDiscoveryPaths(c_queue chan<- *url.URL, c_wait chan<- int) {
 	log.Debug("Starting discovery fuzzing")
 	
-	// get all visited hosts for fuzzing
 	var hosts []string
 	visitedHost.Range(func(key, value interface{}) bool {
 		if host, ok := key.(string); ok {
@@ -797,10 +785,8 @@ func (r *Crawler) queueDiscoveryPaths(c_queue chan<- *url.URL, c_wait chan<- int
 		return
 	}
 	
-	// generate discovery URLs for each host
 	for _, host := range hosts {
 		for _, path := range r.discoveryPaths {
-			// try both http and https schemes
 			for _, scheme := range []string{"https", "http"} {
 				rawURL := fmt.Sprintf("%s://%s/%s", scheme, host, strings.TrimPrefix(path, "/"))
 				if u, err := url.Parse(rawURL); err == nil {

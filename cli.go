@@ -421,7 +421,6 @@ func (c *CLI) displayParameters(runner *recrawl.Crawler) {
 		}
 	}
 
-	// helper to convert set->sorted list
 	toSorted := func(m map[string]struct{}) []string {
 		out := make([]string, 0, len(m))
 		for k := range m {

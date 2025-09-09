@@ -18,13 +18,13 @@ type HTTPClient struct {
 	client *http.Client
 }
 
-// HeaderRoundTripper wraps an http.RoundTripper, adding a set of headers to each request
+// HeaderRoundTripper wraps an http.RoundTripper
 type HeaderRoundTripper struct {
 	Transport http.RoundTripper
 	Headers   http.Header
 }
 
-// RoundTrip executes a single HTTP transaction and adds custom headers
+// RoundTrip executes HTTP transaction with custom headers
 func (hrt *HeaderRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 	for k, v := range hrt.Headers {
 		req.Header[k] = v
@@ -32,19 +32,17 @@ func (hrt *HeaderRoundTripper) RoundTrip(req *http.Request) (*http.Response, err
 	return hrt.Transport.RoundTrip(req)
 }
 
-// NewHTTPClient returns a new HTTP client with custom headers if provided
+// NewHTTPClient creates HTTP client with options
 func NewHTTPClient(options *Options) *HTTPClient {
-	// Initializing transport with the creation line
 	transport := &http.Transport{
 		TLSClientConfig:       &tls.Config{InsecureSkipVerify: true},
 		MaxIdleConnsPerHost:   options.Concurrency,
-		MaxConnsPerHost:       options.Concurrency, // cap parallel conns per host
+		MaxConnsPerHost:       options.Concurrency,
 		TLSHandshakeTimeout:   time.Duration(options.Timeout) * time.Second,
 		IdleConnTimeout:       30 * time.Second,
 		ResponseHeaderTimeout: time.Duration(options.Timeout) * time.Second,
 	}
 
-	// Set custom dialer with resolvers if provided
 	if len(options.Resolvers) > 0 {
 		transport.DialContext = createCustomDialer(options.Resolvers, time.Duration(options.Timeout)*time.Second)
 	}
@@ -87,23 +85,20 @@ func createCustomDialer(resolvers []string, timeout time.Duration) func(ctx cont
 			return nil, err
 		}
 
-		// Skip DNS resolution for IP addresses
 		if net.ParseIP(host) != nil {
 			return (&net.Dialer{Timeout: timeout}).DialContext(ctx, network, addr)
 		}
 
-		// Use custom DNS resolvers with miekg/dns
 		ip, err := resolveHostWithCustomResolvers(host, resolvers, timeout)
 		if err != nil {
 			return nil, err
 		}
 
-		// Connect to the resolved IP
 		return (&net.Dialer{Timeout: timeout}).DialContext(ctx, network, net.JoinHostPort(ip, port))
 	}
 }
 
-// resolveHostWithCustomResolvers uses miekg/dns to resolve a hostname with custom DNS servers
+// resolveHostWithCustomResolvers resolves hostname with custom DNS
 func resolveHostWithCustomResolvers(hostname string, resolvers []string, timeout time.Duration) (string, error) {
 	c := &dns.Client{Timeout: timeout}
 	
@@ -112,7 +107,6 @@ func resolveHostWithCustomResolvers(hostname string, resolvers []string, timeout
 			resolver = resolver + ":53"
 		}
 		
-		// Try A record first
 		m := new(dns.Msg)
 		m.SetQuestion(dns.Fqdn(hostname), dns.TypeA)
 		r, _, err := c.Exchange(m, resolver)
@@ -124,7 +118,6 @@ func resolveHostWithCustomResolvers(hostname string, resolvers []string, timeout
 			}
 		}
 		
-		// Try AAAA record if A record fails
 		m.SetQuestion(dns.Fqdn(hostname), dns.TypeAAAA)
 		r, _, err = c.Exchange(m, resolver)
 		if err == nil && len(r.Answer) > 0 {

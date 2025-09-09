@@ -86,19 +86,16 @@ func (c *CLI) parseFlags() {
 
 	var verbose bool
 
-	// TARGET
 	flag.StringVar(&opts.CLI.Target, "target", "", "")
 	flag.StringVar(&opts.CLI.Target, "t", "", "")
 	flag.StringVar(&opts.CLI.Infile, "i", "", "")
 	flag.StringVar(&opts.CLI.Infile, "infile", "", "")
 
-	// FILTERING
 	flag.StringVar(&opts.CLI.Include, "include-host", "", "")
 	flag.StringVar(&opts.CLI.Include, "ih", "", "")
 	flag.StringVar(&opts.CLI.Exclude, "exclude-host", "", "")
 	flag.StringVar(&opts.CLI.Exclude, "eh", "", "")
 
-	// CONFIGURATIONS
 	flag.IntVar(&opts.Concurrency, "concurrency", recrawl.NewOptions().Concurrency, "")
 	flag.IntVar(&opts.Concurrency, "c", recrawl.NewOptions().Concurrency, "")
 	flag.IntVar(&opts.Timeout, "timeout", recrawl.NewOptions().Timeout, "")
@@ -120,7 +117,6 @@ func (c *CLI) parseFlags() {
 	flag.BoolVar(&opts.PreferHTTP, "prefer-http", false, "")
 	flag.BoolVar(&opts.PreferHTTP, "ph", false, "")
 
-	// OUTPUT
 	flag.BoolVar(&opts.Silence, "s", false, "")
 	flag.BoolVar(&opts.Silence, "silence", false, "")
 	flag.BoolVar(&verbose, "v", false, "")

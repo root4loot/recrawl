@@ -51,6 +51,7 @@ type CLI struct {
 	Help             bool   // print help
 }
 
+// NewOptions creates default options
 func NewOptions() *Options {
 	return &Options{
 		Scope:           scope.NewScope(),
@@ -64,8 +65,10 @@ func NewOptions() *Options {
 	}
 }
 
+// NewEmptyOptions creates empty options
 func NewEmptyOptions() *Options { return &Options{} }
 
+// ApplyDefaults applies default values to unset options
 func (o *Options) ApplyDefaults() {
 	d := NewOptions()
 
@@ -86,11 +89,13 @@ func (o *Options) ApplyDefaults() {
 	}
 }
 
+// WithDefaults applies defaults and returns options
 func (o *Options) WithDefaults() *Options {
 	o.ApplyDefaults()
 	return o
 }
 
+// ValidateOptions validates option values
 func (o *Options) ValidateOptions() {
 	if o.Concurrency < 0 || o.Timeout < 0 || o.Delay < 0 || o.DelayJitter < 0 {
 		fmt.Printf("%s %s\n", color.FgRed.Text("[!]"), "options must be greater than 0")
