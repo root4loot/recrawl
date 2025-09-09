@@ -13,7 +13,7 @@ func TestParameterExtraction(t *testing.T) {
 		name     string
 		url      string
 		html     string
-    		expected map[string]ParamMine
+		expected map[string]ParamMine
 	}{
 		{
 			name: "URL query parameters",
@@ -239,11 +239,11 @@ func TestCommonNonParamFiltering(t *testing.T) {
 }
 
 func TestParameterCollection(t *testing.T) {
-    collection := NewParamMiner()
+	collection := NewParamMiner()
 
-    if collection == nil {
-        t.Fatal("NewParamMiner() returned nil")
-    }
+	if collection == nil {
+		t.Fatal("NewParamMiner() returned nil")
+	}
 
 	// Test adding parameters
 	param1 := ParamMine{Name: "username", Type: "form", Source: "input", Certainty: CertaintyHigh, URL: "http://test.com"}
@@ -331,7 +331,7 @@ func TestParameterExtractionWithCrawler(t *testing.T) {
 }
 
 func TestJSONOutput(t *testing.T) {
-    collection := NewParamMiner()
+	collection := NewParamMiner()
 
 	param1 := ParamMine{Name: "username", Type: "form", Source: "input", Certainty: CertaintyHigh, URL: "http://test.com"}
 	param2 := ParamMine{Name: "api_key", Type: "query", Source: "url", Certainty: CertaintyMedium, URL: "http://test.com"}

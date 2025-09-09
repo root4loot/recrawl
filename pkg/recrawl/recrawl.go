@@ -25,13 +25,14 @@ import (
 	"github.com/root4loot/goutils/sliceutil"
 	"github.com/root4loot/goutils/strutil"
 	"github.com/root4loot/goutils/urlutil"
+	wlfs "github.com/root4loot/recrawl/wordlists"
 	"github.com/root4loot/scope"
 )
 
 var (
 	re_path     = regexp.MustCompile(`(?:"|')(?:(((?:[a-zA-Z]{1,10}:(?:\\)?/(?:\\)?/|//)[^"'/]{1,}\.[a-zA-Z]{2,}[^"']*)|((?:/|\.\./|\./|\\/)[^"'><,;|*()(%%$^/\\\[\]][^"'><,;|()]*[^"'><,;|()]*))|([a-zA-Z0-9_\-/]{1,}/[a-zA-Z0-9_\-/]*\.[a-zA-Z0-9_]+(?:[\?|#][^"|']*)?)|([a-zA-Z0-9_\-/]{1,}/[a-zA-Z0-9_\-/]{3,}(?:[\?|#][^"|']*)?)|([a-zA-Z0-9_\-]+(?:\.[a-zA-Z0-9_]{1,})+)|([a-zA-Z0-9_\-/]+/))(?:"|')`)
 	re_robots   = regexp.MustCompile(`(?:Allow|Disallow): \s*(.*)`)
-	fuzzyHashes = make(map[string]map[string]bool) // Map of host to map of hash to bool
+	fuzzyHashes = make(map[string]map[string]bool)
 )
 
 type Crawler struct {
@@ -502,7 +503,7 @@ func formatURL(u *url.URL, path string) string {
 		return u.Scheme + "://" + u.Host + path + "/"
 	}
 
-	// Use a local, panic-safe extension check to avoid crashes
+	// u a local, panic-safe extension check to avoid crashes
 	if hasFileExtension(path) || urlutil.HasParam(path) {
 		return u.Scheme + "://" + u.Host + u.Path + "/" + path
 	}
@@ -510,13 +511,12 @@ func formatURL(u *url.URL, path string) string {
 	return u.Scheme + "://" + u.Host + u.Path + "/" + path + "/"
 }
 
-// safe check for file extension to avoid crashes from filepath.Ext
 func hasFileExtension(s string) bool {
-	// Strip query and fragment
+	// query and fragment
 	if i := strings.IndexAny(s, "?#"); i != -1 {
 		s = s[:i]
 	}
-	// remove trailing slash
+	// trailing slash
 	s = strings.TrimSuffix(s, "/")
 	if s == "" {
 		return false
@@ -743,9 +743,25 @@ func (r *Crawler) getBuiltinWordlistsForLevel(level string) []string {
 	return wordlists
 }
 
-// loadWordlistFile loads entries from a single wordlist file
 func (r *Crawler) loadWordlistFile(filename string) []string {
 	var entries []string
+
+	if isBuiltinWordlistFilename(filename) {
+		if data, err := wlfs.FS.ReadFile(filepath.Base(filename)); err == nil {
+			scanner := bufio.NewScanner(bytes.NewReader(data))
+			for scanner.Scan() {
+				line := strings.TrimSpace(scanner.Text())
+				if line == "" || strings.HasPrefix(line, "#") {
+					continue
+				}
+				entries = append(entries, line)
+			}
+			if err := scanner.Err(); err != nil {
+				log.Warnf("Error reading embedded wordlist %s: %v", filename, err)
+			}
+			return entries
+		}
+	}
 
 	file, err := os.Open(filename)
 	if err != nil {
@@ -757,7 +773,7 @@ func (r *Crawler) loadWordlistFile(filename string) []string {
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
 		line := strings.TrimSpace(scanner.Text())
-		// Skip empty lines and comments
+		// skip empty lines and comments
 		if line == "" || strings.HasPrefix(line, "#") {
 			continue
 		}
@@ -771,7 +787,15 @@ func (r *Crawler) loadWordlistFile(filename string) []string {
 	return entries
 }
 
-// queueWordlistPaths adds wordlist paths for a target to the queue
+func isBuiltinWordlistFilename(filename string) bool {
+	switch filepath.Base(filename) {
+	case "recrawl.txt", "raft-small-dirs.txt", "raft-medium-dirs.txt", "raft-large-dirs.txt":
+		return true
+	default:
+		return false
+	}
+}
+
 func (r *Crawler) queueWordlistPaths(targetURL *url.URL, c_queue chan<- *url.URL, c_wait chan<- int) {
 	wordlistEntries := r.loadWordlists()
 	if len(wordlistEntries) == 0 {
@@ -781,12 +805,11 @@ func (r *Crawler) queueWordlistPaths(targetURL *url.URL, c_queue chan<- *url.URL
 	log.Debugf("Queuing %d wordlist entries for %s", len(wordlistEntries), targetURL.Host)
 
 	for _, entry := range wordlistEntries {
-		// Skip directory entries for now (ending with /)
+		// skip entries that are clearly not paths
 		if strings.HasSuffix(entry, "/") {
 			continue
 		}
 
-		// Construct URL for this wordlist entry
 		wordlistURL := fmt.Sprintf("%s://%s/%s", targetURL.Scheme, targetURL.Host, entry)
 		if parsedURL, err := url.Parse(wordlistURL); err == nil {
 			c_wait <- 1
