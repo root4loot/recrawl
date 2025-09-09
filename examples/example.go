@@ -20,17 +20,18 @@ func main() {
 	opts.Timeout = 10
 	opts.Resolvers = []string{"8.8.8.8", "208.67.222.222"}
 	opts.UserAgent = "recrawl"
-	// Enable parameter mining
 	opts.MineParams = true
-
-	// Defaults already applied by NewOptions(); nothing else needed here
+	opts.EnableDiscovery = true
 
 	r := recrawl.NewRecrawlWithOptions(opts)
 
-	// process results as they come in
 	go func() {
 		for result := range r.Results {
-			fmt.Println(result.StatusCode, result.RequestURL, result.Error)
+			if len(result.RedirectChain) > 0 {
+				fmt.Printf("%d %s -> %s (redirects: %d)\n", result.StatusCode, result.RequestURL, result.FinalURL, len(result.RedirectChain))
+			} else {
+				fmt.Printf("%d %s\n", result.StatusCode, result.RequestURL)
+			}
 		}
 	}()
 
