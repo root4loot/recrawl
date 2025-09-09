@@ -55,8 +55,9 @@ type Results struct {
 }
 
 var (
-	visitedURL  sync.Map
-	visitedHost sync.Map
+	visitedURL     sync.Map
+	visitedHost    sync.Map
+	wordlistQueued sync.Map
 )
 
 func init() {
@@ -98,11 +99,8 @@ func (r *Crawler) Run(targets ...string) {
 			continue
 		}
 
-		go r.queueURL(c_queue, mainTarget)
-
-		if (strings.ToLower(r.Options.BruteforceLevel) != "none" && r.Options.UseBruteforce) || len(r.Options.WordlistFiles) > 0 || r.Options.CLI.WordlistFiles != "" {
-			go r.queueWordlistPaths(mainTarget, c_queue, c_wait)
-		}
+		// queue the main target first to prioritize normal crawling
+		r.queueURL(c_queue, mainTarget)
 	}
 
 	if len(targets) == 1 {
@@ -255,6 +253,8 @@ func (r *Crawler) Worker(c_urls <-chan *url.URL, c_queue chan<- *url.URL, c_wait
 				break
 			}
 
+			// defer wordlist queuing until after we add discovered links
+
 			if r.isRedundantBody(currentURL.Host, resp, 97) {
 				log.Infof("Skipping URL as similar content has been processed: %s", currentURL)
 				break
@@ -290,6 +290,12 @@ func (r *Crawler) Worker(c_urls <-chan *url.URL, c_queue chan<- *url.URL, c_wait
 						continue
 					}
 					go r.queueURL(c_queue, u)
+				}
+				// After enqueuing discovered links, queue wordlist paths once per host
+				if ((strings.ToLower(r.Options.BruteforceLevel) != "none" && r.Options.UseBruteforce) || len(r.Options.WordlistFiles) > 0 || r.Options.CLI.WordlistFiles != "") && resp.StatusCode < 400 {
+					if _, loaded := wordlistQueued.LoadOrStore(currentURL.Host, true); !loaded {
+						go r.queueWordlistPaths(currentURL, c_queue, c_wait)
+					}
 				}
 				break
 			}
