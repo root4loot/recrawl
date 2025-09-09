@@ -43,10 +43,10 @@ docker run -it recrawl -h
 ## Usage
 ```sh
 TARGETING:
-  -i, --infile         file containing targets                   (one per line)
-  -t, --target         target domain/url                         (comma-separated)
-  -ih, --include-host  also crawls this host (if found)          (comma-separated)
-  -eh, --exclude-host  do not crawl this host (if found)         (comma-separated)
+  -i, --infile         	  file containing targets                (one per line)
+  -t, --target         	  target domain/url                      (comma-separated)
+  -ih, --include-host  	  also crawls this host (if found)       (comma-separated)
+  -eh, --exclude-host  	  do not crawl this host (if found)      (comma-separated)
 
 CONFIGURATIONS:
   -c, --concurrency       number of concurrent requests          (Default: 20)
