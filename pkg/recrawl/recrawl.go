@@ -665,11 +665,14 @@ func (r *Crawler) isVisitedHost(key string) bool {
 	return ok
 }
 
-func (r *Crawler) cleanURL(url string) string {
-	url = urlutil.NormalizeSlashes(url)
-	url = urlutil.EnsureHTTP(url)
-	url = urlutil.EnsureTrailingSlash(url)
-	return url
+func (r *Crawler) cleanURL(u string) string {
+	// preseve existing scheme; add http only if missing.
+	if !strings.Contains(u, "://") {
+		u = "http://" + u
+	}
+	u = urlutil.NormalizeSlashes(u)
+	u = urlutil.EnsureTrailingSlash(u)
+	return u
 }
 
 func (r *Crawler) removeQuotes(input string) string {
