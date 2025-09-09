@@ -30,7 +30,6 @@ func TestBasicCrawlerInitialization(t *testing.T) {
 		t.Fatal("Results channel not initialized")
 	}
 
-	// Test with custom options
 	opts := &Options{
 		Concurrency: 5,
 		Timeout:     15,
@@ -245,20 +244,15 @@ func TestVisitedTracking(t *testing.T) {
 
 	testURL := "http://example.com/test"
 
-	// Initially not visited
 	if crawler.isVisitedURL(testURL) {
 		t.Error("URL should not be visited initially")
 	}
 
-	// Mark as visited
 	crawler.addVisitedURL(testURL)
-
-	// Should now be visited
 	if !crawler.isVisitedURL(testURL) {
 		t.Error("URL should be visited after adding")
 	}
 
-	// Different URL should not be visited
 	if crawler.isVisitedURL("http://example.com/other") {
 		t.Error("Different URL should not be visited")
 	}
@@ -290,7 +284,6 @@ func TestQuoteRemoval(t *testing.T) {
 }
 
 func TestMockServerIntegration(t *testing.T) {
-	// Simple mock server
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/html")
 		fmt.Fprint(w, `<html><body><a href="/test">Test Link</a></body></html>`)
@@ -317,7 +310,6 @@ func TestMockServerIntegration(t *testing.T) {
 		t.Errorf("Expected status 200, got %d", resp.StatusCode)
 	}
 
-	// Test scraping the response
 	paths, err := crawler.scrape(resp)
 	if err != nil {
 		t.Fatal("Scraping failed:", err)
@@ -336,7 +328,6 @@ func TestTargetProcessing(t *testing.T) {
 
 	crawler := NewRecrawl()
 
-	// Test processing server URL
 	u, err := crawler.initializeTargetProcessing(server.URL)
 	if err != nil {
 		t.Fatal("Failed to process target:", err)
@@ -346,7 +337,7 @@ func TestTargetProcessing(t *testing.T) {
 		t.Fatal("Returned URL is nil")
 	}
 
-	// Test that target gets added to scope
+	// test add target to scope
 	serverURL, _ := url.Parse(server.URL)
 	if !crawler.Scope.IsInScope(serverURL.Host) {
 		t.Error("Target host should be added to scope")
@@ -354,7 +345,7 @@ func TestTargetProcessing(t *testing.T) {
 }
 
 func TestDelayCalculation(t *testing.T) {
-	// Test without jitter (delay is returned as raw nanoseconds)
+	// without jitter
 	opts := &Options{Delay: 100, DelayJitter: 0}
 	crawler := NewRecrawlWithOptions(opts)
 
@@ -364,7 +355,7 @@ func TestDelayCalculation(t *testing.T) {
 		t.Errorf("Expected delay %v, got %v", expectedDelay, delay)
 	}
 
-	// Test with jitter (delay is returned as raw nanoseconds)
+	// with jitter
 	opts = &Options{Delay: 100, DelayJitter: 50}
 	crawler = NewRecrawlWithOptions(opts)
 
@@ -392,7 +383,7 @@ func TestErrorHandling(t *testing.T) {
 
 	crawler := NewRecrawl()
 
-	// Test 404
+	// 404
 	u, _ := url.Parse(server.URL + "/404")
 	_, resp, err := crawler.request(u)
 	if err != nil {
@@ -402,7 +393,7 @@ func TestErrorHandling(t *testing.T) {
 		t.Errorf("Expected 404, got %d", resp.StatusCode)
 	}
 
-	// Test 500
+	// 500
 	u, _ = url.Parse(server.URL + "/500")
 	_, resp, err = crawler.request(u)
 	if err != nil {
@@ -410,5 +401,53 @@ func TestErrorHandling(t *testing.T) {
 	}
 	if resp.StatusCode != http.StatusInternalServerError {
 		t.Errorf("Expected 500, got %d", resp.StatusCode)
+	}
+}
+
+func TestHasFileExtension(t *testing.T) {
+	tests := []struct {
+		in   string
+		want bool
+	}{
+		// basic
+		{"script.js", true},
+		{"/assets/main.min.js", true},
+		{"/img/logo.png", true},
+		{"/path/to/file.tar.gz", true},
+
+		// query params
+		{"/assets/vendor.js?v=1.0.0", true},
+		{"/download", false},
+		{"file", false},
+		{"file.txt?foo=bar&x=1", true},
+
+		// fragments
+		{"/images/logo.svg#top", true},
+		{"/doc/readme#section", false},
+
+		// trailing slash
+		{"/style.css/", true},
+		{"/dir/", false},
+		{"/dir/subdir/", false},
+
+		// encoded chars
+		{"file%2Etxt", false}, // encoded dot should not count as extension
+		{"/path/with%2Eencoded%2Edots", false},
+
+		// absolute URL
+		{"http://example.com/assets/app.js", true},
+		{"https://example.com/path/without/extension", false},
+
+		// empty / special
+		{"", false},
+		{"?q=1", false},
+		{"#frag", false},
+	}
+
+	for _, tt := range tests {
+		got := hasFileExtension(tt.in)
+		if got != tt.want {
+			t.Errorf("hasFileExtension(%q) = %v, want %v", tt.in, got, tt.want)
+		}
 	}
 }
