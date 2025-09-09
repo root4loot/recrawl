@@ -35,18 +35,18 @@ var (
 )
 
 type Crawler struct {
-    Options    *Options
-    Results    chan Result
-    Scope      *scope.Scope
-    client     *http.Client
-    ParamMiner *ParamMiner
+	Options    *Options
+	Results    chan Result
+	Scope      *scope.Scope
+	client     *http.Client
+	ParamMiner *ParamMiner
 }
 
 type Result struct {
-    RequestURL string
-    StatusCode int
-    Parameters []ParamMine
-    Error      error
+	RequestURL string
+	StatusCode int
+	Parameters []ParamMine
+	Error      error
 }
 
 type Results struct {
@@ -67,11 +67,11 @@ func NewRecrawl() *Crawler { return newCrawler(NewOptions()) }
 func NewRecrawlWithOptions(o *Options) *Crawler { return newCrawler(o) }
 
 func newCrawler(o *Options) *Crawler {
-    runner := &Crawler{
-        Results:    make(chan Result),
-        Options:    o,
-        ParamMiner: NewParamMiner(),
-    }
+	runner := &Crawler{
+		Results:    make(chan Result),
+		Options:    o,
+		ParamMiner: NewParamMiner(),
+	}
 
 	runner.Options.ApplyDefaults()
 	runner.setLogLevel()
@@ -502,11 +502,34 @@ func formatURL(u *url.URL, path string) string {
 		return u.Scheme + "://" + u.Host + path + "/"
 	}
 
-	if urlutil.HasFileExtension(path) || urlutil.HasParam(path) {
+	// Use a local, panic-safe extension check to avoid crashes
+	if hasFileExtension(path) || urlutil.HasParam(path) {
 		return u.Scheme + "://" + u.Host + u.Path + "/" + path
 	}
 
 	return u.Scheme + "://" + u.Host + u.Path + "/" + path + "/"
+}
+
+// safe check for file extension to avoid crashes from filepath.Ext
+func hasFileExtension(s string) bool {
+	// Strip query and fragment
+	if i := strings.IndexAny(s, "?#"); i != -1 {
+		s = s[:i]
+	}
+	// remove trailing slash
+	s = strings.TrimSuffix(s, "/")
+	if s == "" {
+		return false
+	}
+	// last path segment
+	if idx := strings.LastIndex(s, "/"); idx != -1 {
+		s = s[idx+1:]
+	}
+	if s == "" {
+		return false
+	}
+	// check extension on the segment
+	return filepath.Ext(s) != ""
 }
 
 func (r *Crawler) scrape(resp *http.Response) ([]string, error) {
@@ -518,12 +541,12 @@ func (r *Crawler) scrape(resp *http.Response) ([]string, error) {
 	}
 
 	// extract parameters if enabled
-    if r.Options.MineParams {
-        params := ExtractParameters(resp.Request.URL.String(), body)
-        for _, param := range params {
-            r.ParamMiner.AddParameter(param)
-        }
-    }
+	if r.Options.MineParams {
+		params := ExtractParameters(resp.Request.URL.String(), body)
+		for _, param := range params {
+			r.ParamMiner.AddParameter(param)
+		}
+	}
 
 	if strings.HasSuffix(resp.Request.URL.String(), "robots.txt") {
 		return r.scrapeRobotsTxt(body), nil
