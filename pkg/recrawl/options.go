@@ -29,6 +29,7 @@ type Options struct {
 	Headers         StringSlice  // custom headers to add to requests
 	PreferHTTP      bool         // prefer HTTP over HTTPS for non-schemed targets
 	MineParams      bool         // enable parameter extraction
+	EnableDiscovery bool         // enable web discovery fuzzing
 	CLI             CLI          // CLI options
 }
 
@@ -45,6 +46,7 @@ type CLI struct {
 	HideMedia        bool   // hide images and fonts from output
 	HideWarning      bool   // hide warnings
 	MineParams       bool   // enable parameter extraction
+	EnableDiscovery  bool   // enable web discovery fuzzing
 	Version          bool   // print version
 	Help             bool   // print help
 }
@@ -58,6 +60,7 @@ func NewOptions() *Options {
 		DelayJitter:     0,
 		UserAgent:       "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:120.0) Gecko/20100101 Firefox/120.0",
 		FollowRedirects: true,
+		EnableDiscovery: false,
 	}
 }
 

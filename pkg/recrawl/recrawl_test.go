@@ -451,3 +451,79 @@ func TestHasFileExtension(t *testing.T) {
 		}
 	}
 }
+
+func TestDiscoveryWordlistLoading(t *testing.T) {
+	opts := &Options{EnableDiscovery: true}
+	crawler := NewRecrawlWithOptions(opts)
+	
+	if !crawler.Options.EnableDiscovery {
+		t.Fatal("discovery should be enabled")
+	}
+	
+	if len(crawler.discoveryPaths) == 0 {
+		t.Fatal("discovery paths should be loaded")
+	}
+	
+	keyPaths := []string{"package.json", "node_modules", ".env", "api"}
+	found := make(map[string]bool)
+	
+	for _, path := range crawler.discoveryPaths {
+		for _, key := range keyPaths {
+			if strings.Contains(path, key) {
+				found[key] = true
+			}
+		}
+	}
+	
+	for _, key := range keyPaths {
+		if !found[key] {
+			t.Errorf("key path '%s' not found in discovery wordlist", key)
+		}
+	}
+}
+
+func TestDiscoveryDisabled(t *testing.T) {
+	crawler := NewRecrawl()
+	
+	if crawler.Options.EnableDiscovery {
+		t.Fatal("discovery should be disabled by default")
+	}
+	
+	if len(crawler.discoveryPaths) > 0 {
+		t.Fatal("discovery paths should not be loaded when disabled")
+	}
+}
+
+func TestDiscoveryQueueing(t *testing.T) {
+	opts := &Options{
+		EnableDiscovery: true,
+		Concurrency:     1,
+		Timeout:         5,
+	}
+	crawler := NewRecrawlWithOptions(opts)
+	
+	crawler.addVisitedHost("example.com")
+	
+	crawler.discoveryPaths = []string{"package.json", "api", ".env"}
+	
+	c_queue := make(chan *url.URL, 100)
+	c_wait := make(chan int, 100)
+	
+	go crawler.queueDiscoveryPaths(c_queue, c_wait)
+	
+	time.Sleep(100 * time.Millisecond)
+	close(c_queue)
+	
+	queuedCount := 0
+	for range c_queue {
+		queuedCount++
+	}
+	
+	if queuedCount == 0 {
+		t.Fatal("no URLs were queued for discovery")
+	}
+	
+	if queuedCount < 6 {
+		t.Errorf("expected at least 6 queued URLs, got %d", queuedCount)
+	}
+}

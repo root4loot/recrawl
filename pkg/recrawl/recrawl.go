@@ -5,6 +5,7 @@ package recrawl
 
 import (
     "bytes"
+    "embed"
     "fmt"
     "io"
     "math/rand"
@@ -26,6 +27,9 @@ import (
 	"github.com/root4loot/scope"
 )
 
+//go:embed wordlists/discovery.txt
+var discoveryWordlist embed.FS
+
 var (
 	re_path     = regexp.MustCompile(`(?:"|')(?:(((?:[a-zA-Z]{1,10}:(?:\\)?/(?:\\)?/|//)[^"'/]{1,}\.[a-zA-Z]{2,}[^"']*)|((?:/|\.\./|\./|\\/)[^"'><,;|*()(%%$^/\\\[\]][^"'><,;|()]*[^"'><,;|()]*))|([a-zA-Z0-9_\-/]{1,}/[a-zA-Z0-9_\-/]*\.[a-zA-Z0-9_]+(?:[\?|#][^"|']*)?)|([a-zA-Z0-9_\-/]{1,}/[a-zA-Z0-9_\-/]{3,}(?:[\?|#][^"|']*)?)|([a-zA-Z0-9_\-]+(?:\.[a-zA-Z0-9_]{1,})+)|([a-zA-Z0-9_\-/]+/))(?:"|')`)
 	re_robots   = regexp.MustCompile(`(?:Allow|Disallow): \s*(.*)`)
@@ -33,11 +37,13 @@ var (
 )
 
 type Crawler struct {
-	Options    *Options
-	Results    chan Result
-	Scope      *scope.Scope
-	client     *http.Client
-	ParamMiner *ParamMiner
+	Options          *Options
+	Results          chan Result
+	Scope            *scope.Scope
+	client           *http.Client
+	ParamMiner       *ParamMiner
+	discoveryPaths   []string
+	discoveryStarted bool
 }
 
 type Redirect struct {
@@ -83,6 +89,11 @@ func newCrawler(o *Options) *Crawler {
 	runner.setLogLevel()
 	runner.initializeScope()
 	runner.client = NewHTTPClient(o).client
+	
+	if err := runner.loadDiscoveryPaths(); err != nil {
+		log.Warnf("Discovery disabled due to wordlist loading error: %v", err)
+		runner.Options.EnableDiscovery = false
+	}
 
 	return runner
 }
@@ -143,6 +154,12 @@ func (r *Crawler) InitializeWorkerPool() (chan<- *url.URL, <-chan *url.URL, chan
 				if q != nil {
 					if r.Scope.IsInScope(q.Host) && !r.isVisitedURL(q.String()) {
 						c_urls <- q
+					}
+
+					// trigger discovery fuzzing when queue is getting low
+					if r.Options.EnableDiscovery && !r.discoveryStarted && len(c_queue) < 100 {
+						go r.queueDiscoveryPaths(c_queue, c_wait)
+						r.discoveryStarted = true
 					}
 
 					if !timeoutTimer.Stop() {
@@ -738,6 +755,65 @@ func (r *Crawler) setLogLevel() {
 	} else {
 		log.SetLevel(log.ErrorLevel)
 	}
+}
+
+func (r *Crawler) loadDiscoveryPaths() error {
+	if !r.Options.EnableDiscovery {
+		return nil
+	}
+	
+	data, err := discoveryWordlist.ReadFile("wordlists/discovery.txt")
+	if err != nil {
+		log.Warnf("Failed to load discovery wordlist: %v", err)
+		return err
+	}
+	
+	lines := strings.Split(string(data), "\n")
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		if line != "" && !strings.HasPrefix(line, "#") {
+			r.discoveryPaths = append(r.discoveryPaths, line)
+		}
+	}
+	
+	log.Debugf("Loaded %d discovery paths", len(r.discoveryPaths))
+	return nil
+}
+
+func (r *Crawler) queueDiscoveryPaths(c_queue chan<- *url.URL, c_wait chan<- int) {
+	log.Debug("Starting discovery fuzzing")
+	
+	// get all visited hosts for fuzzing
+	var hosts []string
+	visitedHost.Range(func(key, value interface{}) bool {
+		if host, ok := key.(string); ok {
+			hosts = append(hosts, host)
+		}
+		return true
+	})
+	
+	if len(hosts) == 0 {
+		log.Debug("No hosts available for discovery fuzzing")
+		return
+	}
+	
+	// generate discovery URLs for each host
+	for _, host := range hosts {
+		for _, path := range r.discoveryPaths {
+			// try both http and https schemes
+			for _, scheme := range []string{"https", "http"} {
+				rawURL := fmt.Sprintf("%s://%s/%s", scheme, host, strings.TrimPrefix(path, "/"))
+				if u, err := url.Parse(rawURL); err == nil {
+					if !r.isVisitedURL(u.String()) {
+						c_wait <- 1
+						go r.queueURL(c_queue, u)
+					}
+				}
+			}
+		}
+	}
+	
+	log.Debugf("Queued discovery paths for %d hosts", len(hosts))
 }
 
 // (bruteforce support removed)

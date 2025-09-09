@@ -41,6 +41,7 @@ CONFIGURATIONS:
   -H, --header            set custom header                      (Default: none)
   -ph, --prefer-http      prefer HTTP over HTTPS for targets     (Default: false)
   -mp, --mine-params      mine HTTP parameters from responses     (Default: false)
+  -ed, --enable-discovery enable web discovery fuzzing           (Default: false)
 
 OUTPUT:
   -fs, --filter-status    filter by status code                  (comma-separated)
@@ -139,6 +140,8 @@ func (c *CLI) parseFlags() {
 	flag.BoolVar(&opts.CLI.HideMedia, "hide-media", false, "")
 	flag.BoolVar(&opts.CLI.MineParams, "mine-params", false, "")
 	flag.BoolVar(&opts.CLI.MineParams, "mp", false, "")
+	flag.BoolVar(&opts.CLI.EnableDiscovery, "enable-discovery", false, "")
+	flag.BoolVar(&opts.CLI.EnableDiscovery, "ed", false, "")
 	flag.BoolVar(&opts.CLI.Help, "help", false, "")
 	flag.BoolVar(&opts.CLI.Help, "h", false, "")
 	flag.BoolVar(&opts.CLI.Version, "version", false, "")

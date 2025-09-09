@@ -93,6 +93,7 @@ func (c *CLI) initialize() {
 
 func (c *CLI) processCliOptions() {
 	c.opts.MineParams = c.opts.CLI.MineParams
+	c.opts.EnableDiscovery = c.opts.CLI.EnableDiscovery
 }
 
 func (c *CLI) processResults(runner *recrawl.Crawler) chan struct{} {

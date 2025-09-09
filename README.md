@@ -60,6 +60,7 @@ CONFIGURATIONS:
   -H, --header            set custom header                      (Default: none)
   -ph, --prefer-http      prefer HTTP over HTTPS for targets     (Default: false)
   -mp, --mine-params      mine HTTP parameters from responses     (Default: false)
+  -ed, --enable-discovery enable web discovery fuzzing           (Default: false)
 
 OUTPUT:
   -fs, --filter-status    filter by status code                  (comma-separated)
@@ -90,6 +91,13 @@ Parameters are grouped by certainty: high (URL/query + form fields), medium (JS/
 Notes:
 - The parameter summary prints after the crawl finishes.
 - Parameter names must be simple identifiers (letters, numbers, `_`, `-`) and start with a letter or underscore.
+
+## Web Discovery
+
+When enabled with `-ed/--enable-discovery`, recrawl performs web discovery fuzzing after normal crawling. Uses a curated 1022-entry wordlist containing:
+- Common files and directories (from SecLists raft-small)
+- API endpoints (`api/`, `api/auth`, etc.)
+- NPM/dev paths (`package.json`, `node_modules`, `.env`, etc.)
 
 **Scope Behavior**
 - If no includes are defined, everything is in scope unless explicitly excluded.
