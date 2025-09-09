@@ -35,6 +35,9 @@ func NewHTTPClient(options *Options) *HTTPClient {
 	transport := &http.Transport{
 		TLSClientConfig:       &tls.Config{InsecureSkipVerify: true},
 		MaxIdleConnsPerHost:   options.Concurrency,
+		MaxConnsPerHost:       options.Concurrency, // cap parallel conns per host
+		TLSHandshakeTimeout:   time.Duration(options.Timeout) * time.Second,
+		IdleConnTimeout:       30 * time.Second,
 		ResponseHeaderTimeout: time.Duration(options.Timeout) * time.Second,
 	}
 

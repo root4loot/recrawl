@@ -28,9 +28,6 @@ type Options struct {
 	FollowRedirects bool         // follow redirects
 	Headers         StringSlice  // custom headers to add to requests
 	PreferHTTP      bool         // prefer HTTP over HTTPS for non-schemed targets
-	UseBruteforce   bool         // enable light directory/file bruteforcing
-	BruteforceLevel string       // bruteforce intensity level: light, medium, heavy
-	WordlistFiles   StringSlice  // custom wordlist files to use
 	MineParams      bool         // enable parameter extraction
 	CLI             CLI          // CLI options
 }
@@ -47,8 +44,6 @@ type CLI struct {
 	HideStatusCodes  bool   // show status code
 	HideMedia        bool   // hide images and fonts from output
 	HideWarning      bool   // hide warnings
-	BruteforceLevel  string // bruteforce intensity level: none, light, medium, heavy
-	WordlistFiles    string // custom wordlist files (comma separated)
 	MineParams       bool   // enable parameter extraction
 	Version          bool   // print version
 	Help             bool   // print help
@@ -63,8 +58,6 @@ func NewOptions() *Options {
 		DelayJitter:     0,
 		UserAgent:       "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:120.0) Gecko/20100101 Firefox/120.0",
 		FollowRedirects: true,
-		UseBruteforce:   true,
-		BruteforceLevel: "light",
 	}
 }
 
@@ -87,9 +80,6 @@ func (o *Options) ApplyDefaults() {
 	}
 	if o.UserAgent == "" {
 		o.UserAgent = d.UserAgent
-	}
-	if o.BruteforceLevel == "" {
-		o.BruteforceLevel = d.BruteforceLevel
 	}
 }
 

@@ -17,7 +17,6 @@ type UsageData struct {
 	DefaultDelay           int
 	DefaultDelayJitter     int
 	DefaultFollowRedirects bool
-	DefaultBruteforceLevel string
 }
 
 const usageTemplate = `
@@ -42,10 +41,6 @@ CONFIGURATIONS:
   -H, --header            set custom header                      (Default: none)
   -ph, --prefer-http      prefer HTTP over HTTPS for targets     (Default: false)
   -mp, --mine-params      mine HTTP parameters from responses     (Default: false)
-
-WORDLISTS:
-  -bl, --bruteforce-level set bruteforce intensity               (none, light, medium, heavy) (Default: light)
-  -wf, --wordlist-file    custom wordlist file(s)                (comma-separated)
 
 OUTPUT:
   -fs, --filter-status    filter by status code                  (comma-separated)
@@ -72,7 +67,6 @@ func (c *CLI) usage() {
 		DefaultDelay:           recrawl.NewOptions().Delay,
 		DefaultDelayJitter:     recrawl.NewOptions().DelayJitter,
 		DefaultFollowRedirects: recrawl.NewOptions().FollowRedirects,
-		DefaultBruteforceLevel: recrawl.NewOptions().BruteforceLevel,
 	}
 
 	tmpl, err := template.New("usage").Parse(usageTemplate)
@@ -124,12 +118,6 @@ func (c *CLI) parseFlags() {
 	flag.Var(&opts.Headers, "H", "")
 	flag.BoolVar(&opts.PreferHTTP, "prefer-http", false, "")
 	flag.BoolVar(&opts.PreferHTTP, "ph", false, "")
-
-	// WORDLISTS
-	flag.StringVar(&opts.CLI.BruteforceLevel, "bruteforce-level", "light", "")
-	flag.StringVar(&opts.CLI.BruteforceLevel, "bl", "light", "")
-	flag.StringVar(&opts.CLI.WordlistFiles, "wordlist-file", "", "")
-	flag.StringVar(&opts.CLI.WordlistFiles, "wf", "", "")
 
 	// OUTPUT
 	flag.BoolVar(&opts.Silence, "s", false, "")

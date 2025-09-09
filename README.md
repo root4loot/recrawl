@@ -61,10 +61,6 @@ CONFIGURATIONS:
   -ph, --prefer-http      prefer HTTP over HTTPS for targets     (Default: false)
   -mp, --mine-params      mine HTTP parameters from responses     (Default: false)
 
-WORDLISTS:
-  -bl, --bruteforce-level set bruteforce intensity               (none, light, medium, heavy) (Default: light)
-  -wf, --wordlist-file    custom wordlist file(s)                (comma-separated)
-
 OUTPUT:
   -fs, --filter-status    filter by status code                  (comma-separated)
   -fe, --filter-ext       filter by extension                    (comma-separated)
@@ -93,7 +89,6 @@ Parameters are grouped by certainty: high (URL/query + form fields), medium (JS/
 
 Notes:
 - The parameter summary prints after the crawl finishes.
-- For quick runs, disable bruteforce (`-bl none`) and keep concurrency small (`-c 1`).
 - Parameter names must be simple identifiers (letters, numbers, `_`, `-`) and start with a letter or underscore.
 
 **Scope Behavior**

@@ -4,19 +4,17 @@
 package recrawl
 
 import (
-	"bufio"
-	"bytes"
-	"fmt"
-	"io"
-	"math/rand"
-	"net/http"
-	"net/url"
-	"os"
-	"path/filepath"
-	"regexp"
-	"strings"
-	"sync"
-	"time"
+    "bytes"
+    "fmt"
+    "io"
+    "math/rand"
+    "net/http"
+    "net/url"
+    "path/filepath"
+    "regexp"
+    "strings"
+    "sync"
+    "time"
 
 	"github.com/PuerkitoBio/purell"
 	"github.com/glaslos/ssdeep"
@@ -25,7 +23,6 @@ import (
 	"github.com/root4loot/goutils/sliceutil"
 	"github.com/root4loot/goutils/strutil"
 	"github.com/root4loot/goutils/urlutil"
-	wlfs "github.com/root4loot/recrawl/wordlists"
 	"github.com/root4loot/scope"
 )
 
@@ -55,9 +52,8 @@ type Results struct {
 }
 
 var (
-	visitedURL     sync.Map
-	visitedHost    sync.Map
-	wordlistQueued sync.Map
+	visitedURL  sync.Map
+	visitedHost sync.Map
 )
 
 func init() {
@@ -208,6 +204,12 @@ func (r *Crawler) startWorkers(c_urls <-chan *url.URL, c_queue chan<- *url.URL, 
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
+			// Prevent a single worker panic from crashing the entire crawl
+			defer func() {
+				if rec := recover(); rec != nil {
+					log.Warnf("Worker recovered from panic: %v", rec)
+				}
+			}()
 			r.Worker(c_urls, c_queue, c_wait, r.Results)
 		}()
 	}
@@ -253,10 +255,9 @@ func (r *Crawler) Worker(c_urls <-chan *url.URL, c_queue chan<- *url.URL, c_wait
 				break
 			}
 
-			// defer wordlist queuing until after we add discovered links
-
 			if r.isRedundantBody(currentURL.Host, resp, 97) {
 				log.Infof("Skipping URL as similar content has been processed: %s", currentURL)
+				_ = resp.Body.Close()
 				break
 			}
 
@@ -266,14 +267,17 @@ func (r *Crawler) Worker(c_urls <-chan *url.URL, c_queue chan<- *url.URL, c_wait
 				location, err := resp.Location()
 				if err != nil || location == nil {
 					log.Warnf("Failed to handle redirect from %s", currentURL)
+					_ = resp.Body.Close()
 					break
 				}
+				_ = resp.Body.Close()
 				currentURL = location
 				redirectCount++
 			} else {
 				paths, err := r.scrape(resp)
 				if err != nil {
 					log.Warnf("Failed to scrape %s: %v", currentURL, err)
+					_ = resp.Body.Close()
 					break
 				}
 
@@ -291,11 +295,7 @@ func (r *Crawler) Worker(c_urls <-chan *url.URL, c_queue chan<- *url.URL, c_wait
 					}
 					go r.queueURL(c_queue, u)
 				}
-				if len(rawURLs) > 0 && ((strings.ToLower(r.Options.BruteforceLevel) != "none" && r.Options.UseBruteforce) || len(r.Options.WordlistFiles) > 0 || r.Options.CLI.WordlistFiles != "") && resp.StatusCode < 400 {
-					if _, loaded := wordlistQueued.LoadOrStore(currentURL.Host, true); !loaded {
-						go r.queueWordlistPaths(currentURL, c_queue, c_wait)
-					}
-				}
+				_ = resp.Body.Close()
 				break
 			}
 		}
@@ -698,128 +698,4 @@ func (r *Crawler) setLogLevel() {
 	}
 }
 
-func (r *Crawler) loadWordlists() []string {
-	var wordlistEntries []string
-
-	if strings.ToLower(r.Options.BruteforceLevel) != "none" && r.Options.UseBruteforce {
-		builtinWordlists := r.getBuiltinWordlistsForLevel(r.Options.BruteforceLevel)
-		for _, wordlist := range builtinWordlists {
-			if entries := r.loadWordlistFile(wordlist); len(entries) > 0 {
-				wordlistEntries = append(wordlistEntries, entries...)
-				log.Debugf("Loaded %d entries from built-in wordlist: %s", len(entries), wordlist)
-			}
-		}
-	}
-
-	var wordlistFiles []string
-	if len(r.Options.WordlistFiles) > 0 {
-		wordlistFiles = r.Options.WordlistFiles
-	} else if r.Options.CLI.WordlistFiles != "" {
-		wordlistFiles = strings.Split(r.Options.CLI.WordlistFiles, ",")
-	}
-
-	for _, file := range wordlistFiles {
-		file = strings.TrimSpace(file)
-		if entries := r.loadWordlistFile(file); len(entries) > 0 {
-			wordlistEntries = append(wordlistEntries, entries...)
-			log.Debugf("Loaded %d entries from custom wordlist: %s", len(entries), file)
-		}
-	}
-
-	return sliceutil.Unique(wordlistEntries)
-}
-
-func (r *Crawler) getBuiltinWordlistsForLevel(level string) []string {
-	var wordlists []string
-
-	wordlists = append(wordlists, filepath.Join("wordlists", "recrawl.txt"))
-
-	switch strings.ToLower(level) {
-	case "none":
-		return []string{}
-	case "light":
-		wordlists = append(wordlists, filepath.Join("wordlists", "raft-small-dirs.txt"))
-	case "medium":
-		wordlists = append(wordlists, filepath.Join("wordlists", "raft-medium-dirs.txt"))
-	case "heavy":
-		wordlists = append(wordlists, filepath.Join("wordlists", "raft-large-dirs.txt"))
-	default:
-		log.Warnf("Unknown bruteforce level '%s', defaulting to 'light'", level)
-		return r.getBuiltinWordlistsForLevel("light")
-	}
-
-	return wordlists
-}
-
-func (r *Crawler) loadWordlistFile(filename string) []string {
-	var entries []string
-
-	if isBuiltinWordlistFilename(filename) {
-		if data, err := wlfs.FS.ReadFile(filepath.Base(filename)); err == nil {
-			scanner := bufio.NewScanner(bytes.NewReader(data))
-			for scanner.Scan() {
-				line := strings.TrimSpace(scanner.Text())
-				if line == "" || strings.HasPrefix(line, "#") {
-					continue
-				}
-				entries = append(entries, line)
-			}
-			if err := scanner.Err(); err != nil {
-				log.Warnf("Error reading embedded wordlist %s: %v", filename, err)
-			}
-			return entries
-		}
-	}
-
-	file, err := os.Open(filename)
-	if err != nil {
-		log.Debugf("Could not open wordlist file %s: %v", filename, err)
-		return entries
-	}
-	defer file.Close()
-
-	scanner := bufio.NewScanner(file)
-	for scanner.Scan() {
-		line := strings.TrimSpace(scanner.Text())
-		// skip empty lines and comments
-		if line == "" || strings.HasPrefix(line, "#") {
-			continue
-		}
-		entries = append(entries, line)
-	}
-
-	if err := scanner.Err(); err != nil {
-		log.Warnf("Error reading wordlist file %s: %v", filename, err)
-	}
-
-	return entries
-}
-
-func isBuiltinWordlistFilename(filename string) bool {
-	switch filepath.Base(filename) {
-	case "recrawl.txt", "raft-small-dirs.txt", "raft-medium-dirs.txt", "raft-large-dirs.txt":
-		return true
-	default:
-		return false
-	}
-}
-
-func (r *Crawler) queueWordlistPaths(targetURL *url.URL, c_queue chan<- *url.URL, c_wait chan<- int) {
-	wordlistEntries := r.loadWordlists()
-	if len(wordlistEntries) == 0 {
-		return
-	}
-
-	log.Debugf("Queuing %d wordlist entries for %s", len(wordlistEntries), targetURL.Host)
-
-	for _, entry := range wordlistEntries {
-		// allow both file and directory entries; normalize slashes
-		entry = strings.TrimSpace(entry)
-		entry = strings.TrimPrefix(entry, "/")
-		wordlistURL := fmt.Sprintf("%s://%s/%s", targetURL.Scheme, targetURL.Host, entry)
-		if parsedURL, err := url.Parse(wordlistURL); err == nil {
-			c_wait <- 1
-			go r.queueURL(c_queue, parsedURL)
-		}
-	}
-}
+// (bruteforce support removed)
