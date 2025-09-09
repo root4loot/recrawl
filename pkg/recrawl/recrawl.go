@@ -40,11 +40,19 @@ type Crawler struct {
 	ParamMiner *ParamMiner
 }
 
-type Result struct {
-	RequestURL string
+type Redirect struct {
+	URL        string
 	StatusCode int
-	Parameters []ParamMine
-	Error      error
+	Type       string // "http", "meta-refresh", "javascript"
+}
+
+type Result struct {
+	RequestURL    string
+	FinalURL      string       // URL after all redirects
+	RedirectChain []Redirect   // Chain of redirects with metadata
+	StatusCode    int
+	Parameters    []ParamMine
+	Error         error
 }
 
 type Results struct {
@@ -239,6 +247,7 @@ func (r *Crawler) Worker(c_urls <-chan *url.URL, c_queue chan<- *url.URL, c_wait
 
 		currentURL := c_url
 		redirectCount := 0
+		var redirectChain []Redirect
 		for {
 			if redirectCount >= 10 {
 				log.Infof("Redirect limit reached for %s", currentURL)
@@ -248,7 +257,13 @@ func (r *Crawler) Worker(c_urls <-chan *url.URL, c_queue chan<- *url.URL, c_wait
 			_, resp, err := r.request(currentURL)
 			if err != nil {
 				log.Infof("Error requesting %s: %v", currentURL, err)
-				r.Results <- Result{RequestURL: currentURL.String(), StatusCode: 0, Error: err}
+				r.Results <- Result{
+					RequestURL:    c_url.String(),
+					FinalURL:      currentURL.String(),
+					RedirectChain: redirectChain,
+					StatusCode:    0,
+					Error:         err,
+				}
 				break
 			}
 			if resp == nil {
@@ -261,8 +276,6 @@ func (r *Crawler) Worker(c_urls <-chan *url.URL, c_queue chan<- *url.URL, c_wait
 				break
 			}
 
-			r.Results <- Result{RequestURL: currentURL.String(), StatusCode: resp.StatusCode, Parameters: nil, Error: nil}
-
 			if resp.StatusCode >= 300 && resp.StatusCode <= 399 {
 				location, err := resp.Location()
 				if err != nil || location == nil {
@@ -270,7 +283,21 @@ func (r *Crawler) Worker(c_urls <-chan *url.URL, c_queue chan<- *url.URL, c_wait
 					_ = resp.Body.Close()
 					break
 				}
+				
+				// track redirect in chain
+				redirectChain = append(redirectChain, Redirect{
+					URL:        currentURL.String(),
+					StatusCode: resp.StatusCode,
+					Type:       "http",
+				})
+				
 				_ = resp.Body.Close()
+				
+				// only follow redirects if enabled
+				if !r.Options.FollowRedirects {
+					break
+				}
+				
 				currentURL = location
 				redirectCount++
 			} else {
@@ -296,6 +323,21 @@ func (r *Crawler) Worker(c_urls <-chan *url.URL, c_queue chan<- *url.URL, c_wait
 					go r.queueURL(c_queue, u)
 				}
 				_ = resp.Body.Close()
+				
+				// Send final result after all redirects
+				finalURL := currentURL.String()
+				if redirectCount == 0 {
+					finalURL = c_url.String()
+				}
+				
+				r.Results <- Result{
+					RequestURL:    c_url.String(),
+					FinalURL:      finalURL,
+					RedirectChain: redirectChain,
+					StatusCode:    resp.StatusCode,
+					Parameters:    nil,
+					Error:         nil,
+				}
 				break
 			}
 		}
