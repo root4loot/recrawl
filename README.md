@@ -13,7 +13,7 @@
 
 <div align="center">
    <a href="https://github.com/root4loot/recrawl/actions/workflows/build.yml">
-      <img src="https://github.com/root4loot/recrawl/actions/workflows/build.yml/badge.svg" alt="Build">
+      <img src="https://github.com/root4loot/recrawl/actions/workflows/build.yml/badge.svg?branch=master" alt="Build">
    </a>
 </div>
 
