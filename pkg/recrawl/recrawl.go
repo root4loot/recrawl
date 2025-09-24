@@ -59,6 +59,7 @@ type Result struct {
 	StatusCode    int
 	Parameters    []ParamMine
 	Error         error
+	IsCatchAll    bool         // Indicates if this appeared to be a catch-all redirect
 }
 
 type Results struct {
@@ -299,19 +300,28 @@ func (r *Crawler) Worker(c_urls <-chan *url.URL, c_queue chan<- *url.URL, c_wait
 					_ = resp.Body.Close()
 					break
 				}
-				
+
 				redirectChain = append(redirectChain, Redirect{
 					URL:        currentURL.String(),
 					StatusCode: resp.StatusCode,
 					Type:       "http",
 				})
-				
+
 				_ = resp.Body.Close()
-				
+
 				if !r.Options.FollowRedirects {
+					r.Results <- Result{
+						RequestURL:    c_url.String(),
+						FinalURL:      currentURL.String(),
+						RedirectChain: redirectChain,
+						StatusCode:    resp.StatusCode,
+						Parameters:    nil,
+						Error:         nil,
+						IsCatchAll:    r.isCatchAllRedirect(location.String()),
+					}
 					break
 				}
-				
+
 				currentURL = location
 				redirectCount++
 			} else {
@@ -342,14 +352,25 @@ func (r *Crawler) Worker(c_urls <-chan *url.URL, c_queue chan<- *url.URL, c_wait
 				if redirectCount == 0 {
 					finalURL = c_url.String()
 				}
-				
+
+				statusCode := resp.StatusCode
+				if len(redirectChain) > 0 {
+					statusCode = redirectChain[0].StatusCode
+				}
+
+				isCatchAll := false
+				if len(redirectChain) > 0 {
+					isCatchAll = r.isCatchAllRedirect(finalURL)
+				}
+
 				r.Results <- Result{
 					RequestURL:    c_url.String(),
 					FinalURL:      finalURL,
 					RedirectChain: redirectChain,
-					StatusCode:    resp.StatusCode,
+					StatusCode:    statusCode,
 					Parameters:    nil,
 					Error:         nil,
+					IsCatchAll:    isCatchAll,
 				}
 				break
 			}
@@ -732,6 +753,24 @@ func (r *Crawler) removeQuotes(input string) string {
 		return input[1 : len(input)-1]
 	}
 	return input
+}
+
+func (r *Crawler) isCatchAllRedirect(redirectURL string) bool {
+	suspiciousPatterns := []string{
+		"NotFound", "404", "not-found", "notfound",
+		"error", "Error", "ERROR",
+		"missing", "Missing",
+		"invalid", "Invalid",
+		"default", "Default",
+	}
+
+	for _, pattern := range suspiciousPatterns {
+		if strings.Contains(redirectURL, pattern) {
+			return true
+		}
+	}
+
+	return false
 }
 
 func (r *Crawler) setLogLevel() {

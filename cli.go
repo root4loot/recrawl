@@ -160,32 +160,41 @@ func (c *CLI) processStatusCode(result recrawl.Result) {
 		if c.hasStatusCodeFilter() {
 			codeFilters := strings.Split(c.opts.CLI.FilterStatusCode, ",")
 			if filterStatusContains(codeFilters, strconv.Itoa(result.StatusCode)) {
-				c.printWithColor(result.StatusCode, result.RequestURL)
+				c.printWithColor(result.StatusCode, result.RequestURL, result.IsCatchAll)
 			}
 		} else {
-			c.printWithColor(result.StatusCode, result.RequestURL)
+			c.printWithColor(result.StatusCode, result.RequestURL, result.IsCatchAll)
 		}
 	} else {
 		log.Result(result.RequestURL)
 	}
 }
 
-func (c *CLI) printWithColor(statusCode int, url string) {
+func (c *CLI) printWithColor(statusCode int, url string, isCatchAll bool) {
+	statusText := fmt.Sprintf("%d", statusCode)
+	if isCatchAll {
+		statusText = fmt.Sprintf("%d*", statusCode)
+	}
+
 	switch {
 	case statusCode >= 200 && statusCode < 300:
-		log.Result(color.Colorize(color.Green, fmt.Sprintf("%d %s", statusCode, url)))
+		log.Result(color.Colorize(color.Green, fmt.Sprintf("%s %s", statusText, url)))
 	case statusCode >= 300 && statusCode < 400:
-		log.Result(color.Colorize(color.Orange, fmt.Sprintf("%d %s", statusCode, url)))
+		if isCatchAll {
+			log.Result(color.Colorize(color.LightGrey, fmt.Sprintf("%s %s", statusText, url)))
+		} else {
+			log.Result(color.Colorize(color.Orange, fmt.Sprintf("%s %s", statusText, url)))
+		}
 	case statusCode >= 400 && statusCode < 500:
 		if c.opts.Verbose > 1 {
-			log.Result(color.Colorize(color.Red, fmt.Sprintf("%d %s", statusCode, url)))
+			log.Result(color.Colorize(color.Red, fmt.Sprintf("%s %s", statusText, url)))
 		}
 	case statusCode >= 500:
-		log.Result(color.Colorize(color.Purple, fmt.Sprintf("%d %s", statusCode, url)))
+		log.Result(color.Colorize(color.Purple, fmt.Sprintf("%s %s", statusText, url)))
 	case statusCode >= 100 && statusCode < 200:
-		log.Result(color.Colorize(color.Blue, fmt.Sprintf("%d %s", statusCode, url)))
+		log.Result(color.Colorize(color.Blue, fmt.Sprintf("%s %s", statusText, url)))
 	default:
-		log.Result(color.Colorize(color.LightGrey, fmt.Sprintf("%d %s", statusCode, url)))
+		log.Result(color.Colorize(color.LightGrey, fmt.Sprintf("%s %s", statusText, url)))
 	}
 }
 
