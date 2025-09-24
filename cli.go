@@ -137,7 +137,7 @@ func (c *CLI) processResults(runner *recrawl.Crawler) chan struct{} {
 }
 
 func (c *CLI) shouldExcludeMediaURL(url string) bool {
-	if c.hasHideMedia() && urlutil.IsMediaExt(urlutil.GetExt(url)) {
+	if c.hasHideMedia() && urlutil.IsMediaExtension(url) {
 		log.Debugf("Excluding media URL from output: %s", url)
 		return true
 	}
