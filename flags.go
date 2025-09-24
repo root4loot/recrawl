@@ -40,7 +40,7 @@ CONFIGURATIONS:
   -r, --resolvers         file containing list of resolvers      (Default: System DNS)
   -H, --header            set custom header                      (Default: none)
   -ph, --prefer-http      prefer HTTP over HTTPS for targets     (Default: false)
-  -mp, --mine-params      mine HTTP parameters from responses     (Default: false)
+  -mp, --mine-params      mine HTTP parameters from responses    (Default: false)
   -ed, --enable-discovery enable web discovery fuzzing           (Default: false)
 
 OUTPUT:

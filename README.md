@@ -39,11 +39,14 @@ docker run -it recrawl -h
 
 ## Usage
 ```sh
+Usage:
+  recrawl [options] (-t <target> | -I <targets.txt>)
+
 TARGETING:
-  -i, --infile         	  file containing targets                (one per line)
-  -t, --target         	  target domain/url                      (comma-separated)
-  -ih, --include-host  	  also crawls this host (if found)       (comma-separated)
-  -eh, --exclude-host  	  do not crawl this host (if found)      (comma-separated)
+  -i, --infile            file containing targets                (one per line)
+  -t, --target            target domain/url                      (comma-separated)
+  -ih, --include-host     also crawls this host (if found)       (comma-separated)
+  -eh, --exclude-host     do not crawl this host (if found)      (comma-separated)
 
 CONFIGURATIONS:
   -c, --concurrency       number of concurrent requests          (Default: 20)
@@ -56,7 +59,7 @@ CONFIGURATIONS:
   -r, --resolvers         file containing list of resolvers      (Default: System DNS)
   -H, --header            set custom header                      (Default: none)
   -ph, --prefer-http      prefer HTTP over HTTPS for targets     (Default: false)
-  -mp, --mine-params      mine HTTP parameters from responses     (Default: false)
+  -mp, --mine-params      mine HTTP parameters from responses    (Default: false)
   -ed, --enable-discovery enable web discovery fuzzing           (Default: false)
 
 OUTPUT:
