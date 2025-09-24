@@ -1,26 +1,18 @@
-<!-- <div align="center">
-  <br>
-  <img src="recrawl.png" alt="recrawl logo" width="310">
-</div>
-
-<br> -->
+<p align="center">
+  <img src="./recrawl.png" alt="" width="300"/>
+</p>
 
 <div align="center">
-   <strong>recrawl</strong>: A Web URL crawler written in Go
+  A web crawler written in Go
 </div>
 
 <br>
 
 <div align="center">
-   <a href="https://github.com/root4loot/recrawl/actions/workflows/build.yml">
-      <img src="https://github.com/root4loot/recrawl/actions/workflows/build.yml/badge.svg?branch=master" alt="Build">
-   </a>
-</div>
-
-<br>
-
-<div align="center" style="color:red">
-   <strong>Warning:</strong> This project is under active development. Expect bugs!
+  <a href="https://github.com/root4loot/recrawl/actions/workflows/build.yml">
+    <img src="https://github.com/root4loot/recrawl/actions/workflows/build.yml/badge.svg?branch=master" alt="Build">
+  </a>
+  <img src="https://img.shields.io/twitter/follow/danielantonsen.svg?style=dark" alt="Twitter Follow"/>
 </div>
 
 ## Installation
