@@ -13,10 +13,7 @@
 
 <div align="center">
    <a href="https://github.com/root4loot/recrawl/actions/workflows/build.yml">
-      <img src="https://github.com/root4loot/recrawl/actions/workflows/build.yml/badge.svg" alt="Build Status">
-   </a>
-   <a href="https://goreportcard.com/report/github.com/root4loot/recrawl">
-      <img src="https://goreportcard.com/badge/github.com/root4loot/recrawl" alt="Go Report Card">
+      <img src="https://github.com/root4loot/recrawl/actions/workflows/build.yml/badge.svg" alt="Build">
    </a>
 </div>
 
