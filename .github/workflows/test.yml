@@ -13,7 +13,7 @@ jobs:
     
     strategy:
       matrix:
-        go-version: [1.19, 1.20, 1.21]
+        go-version: ['1.24']
     
     steps:
     - name: Check out code
@@ -50,7 +50,7 @@ jobs:
         echo "Total coverage: ${COVERAGE}%"
         
     - name: Upload coverage to Codecov
-      if: matrix.go-version == '1.21'
+      if: matrix.go-version == '1.24'
       uses: codecov/codecov-action@v3
       with:
         file: ./coverage.out
@@ -69,7 +69,7 @@ jobs:
     - name: Set up Go
       uses: actions/setup-go@v4
       with:
-        go-version: '1.21'
+        go-version: '1.24'
         
     - name: Run golangci-lint
       uses: golangci/golangci-lint-action@v3
@@ -88,7 +88,7 @@ jobs:
     - name: Set up Go
       uses: actions/setup-go@v4
       with:
-        go-version: '1.21'
+        go-version: '1.24'
         
     - name: Build binary
       run: go build -v ./...
